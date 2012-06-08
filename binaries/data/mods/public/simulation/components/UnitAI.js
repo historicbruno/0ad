@@ -493,6 +493,9 @@ var UnitFsmSpec = {
 			}
 
 			var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+			// We don't want to rearrange the formation if the individual units are carrying
+			// out a task and one of the members dies/leaves the formation.
+			cmpFormation.SetRearrange(false);
 			cmpFormation.CallMemberFunction("Repair", [msg.data.target, msg.data.autocontinue, false]);
 
 			this.SetNextState("REPAIR");
@@ -508,7 +511,7 @@ var UnitFsmSpec = {
 		"Order.GatherNearPosition": function(msg) {
 			// TODO: see notes in Order.Attack
 			var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
-			cmpFormation.CallMemberFunction("GatherNearPosition", [msg.data.x, msg.data.z, msg.data.type, false]);
+			cmpFormation.CallMemberFunction("GatherNearPosition", [msg.data.x, msg.data.z, msg.data.type, msg.data.template, false]);
 			cmpFormation.Disband();
 		},
 
@@ -532,6 +535,7 @@ var UnitFsmSpec = {
 		"WALKING": {
 			"MoveStarted": function(msg) {
 				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+				cmpFormation.SetRearrange(true);
 				cmpFormation.MoveMembersIntoFormation(true);
 			},
 
@@ -942,8 +946,9 @@ var UnitFsmSpec = {
 						var nearby = this.FindNearbyResource(function (ent, type, template) {
 							return (
 								ent != oldTarget
-								&& type.specific == oldType.specific
-								&& (type.specific != "meat" || oldTemplate == template)
+								&& ((type.generic == "treasure" && oldType.generic == "treasure")
+								|| (type.specific == oldType.specific
+								&& (type.specific != "meat" || oldTemplate == template)))
 							);
 						});
 						if (nearby)
@@ -977,8 +982,9 @@ var UnitFsmSpec = {
 					// Also don't switch to a different type of huntable animal
 					var nearby = this.FindNearbyResource(function (ent, type, template) {
 						return (
-							type.specific == resourceType
-							&& (type.specific != "meat" || resourceTemplate == template)
+							(type.generic == "treasure" && resourceType.generic == "treasure")
+							|| (type.specific == resourceType.specific
+							&& (type.specific != "meat" || resourceTemplate == template))
 						);
 					});
 
@@ -1126,8 +1132,9 @@ var UnitFsmSpec = {
 					// Also don't switch to a different type of huntable animal
 					var nearby = this.FindNearbyResource(function (ent, type, template) {
 						return (
-							type.specific == resourceType.specific
-							&& (type.specific != "meat" || resourceTemplate == template)
+							(type.generic == "treasure" && resourceType.generic == "treasure")
+							|| (type.specific == resourceType.specific
+							&& (type.specific != "meat" || resourceTemplate == template))
 						);
 					});
 					if (nearby)
@@ -2875,9 +2882,9 @@ UnitAI.prototype.PerformGather = function(target, queued, force)
  * Adds gather-near-position order to the queue, not forced, so it can be
  * interrupted by attacks.
  */
-UnitAI.prototype.GatherNearPosition = function(x, z, type, queued)
+UnitAI.prototype.GatherNearPosition = function(x, z, type, template, queued)
 {
-	this.AddOrder("GatherNearPosition", { "type": type, "x": x, "z": z, "force": false }, queued);
+	this.AddOrder("GatherNearPosition", { "type": type, "template": template, "x": x, "z": z, "force": false }, queued);
 };
 
 /**

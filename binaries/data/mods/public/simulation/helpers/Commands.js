@@ -121,7 +121,7 @@ function ProcessCommand(player, cmd)
 	case "gather-near-position":
 		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
-			cmpUnitAI.GatherNearPosition(cmd.x, cmd.z, cmd.resourceType, cmd.queued);
+			cmpUnitAI.GatherNearPosition(cmd.x, cmd.z, cmd.resourceType, cmd.resourceTemplate, cmd.queued);
 		});
 		break;
 
@@ -232,8 +232,11 @@ function ProcessCommand(player, cmd)
 			var cmpRallyPoint = Engine.QueryInterface(ent, IID_RallyPoint);
 			if (cmpRallyPoint)
 			{
-				cmpRallyPoint.SetPosition(cmd.x, cmd.z);
-				cmpRallyPoint.SetData(cmd.data);
+				if (!cmd.queued)
+					cmpRallyPoint.Unset();
+
+				cmpRallyPoint.AddPosition(cmd.x, cmd.z);
+				cmpRallyPoint.AddData(cmd.data);
 			}
 		}
 		break;

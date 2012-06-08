@@ -221,6 +221,30 @@ Player.prototype.GetDiplomacy = function()
 Player.prototype.SetDiplomacy = function(dipl)
 {
 	this.diplomacy = dipl;
+	this.UpdateSharedLos();
+};
+
+Player.prototype.SetDiplomacyIndex = function(idx, value)
+{
+	// TODO: send a message too?
+	this.diplomacy[idx] = value;
+	this.UpdateSharedLos();
+};
+
+Player.prototype.UpdateSharedLos = function()
+{
+	var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
+	if (!cmpRangeManager)
+		return;
+
+	// TODO: only check our alliances currently, more advanced checks
+	//	will be needed when we have full diplomacy
+	var sharedLos = [];
+	for (var i = 0; i < this.diplomacy.length; ++i)
+		if (this.IsAlly(i))
+			sharedLos.push(i);
+
+	cmpRangeManager.SetSharedLos(this.playerID, sharedLos);
 };
 
 Player.prototype.GetFormations = function()
@@ -275,10 +299,7 @@ Player.prototype.IsAI = function()
 
 Player.prototype.SetAlly = function(id)
 {
-	if (id >= 0 && id != this.playerID)
-	{
-		this.diplomacy[id] = 1;
-	}
+	this.SetDiplomacyIndex(id, 1);
 };
 
 /**
@@ -286,15 +307,12 @@ Player.prototype.SetAlly = function(id)
  */
 Player.prototype.IsAlly = function(id)
 {
-	return (id >= 0 && id < this.diplomacy.length && (id == this.playerID || this.diplomacy[id] > 0));
+	return this.diplomacy[id] > 0;
 };
 
 Player.prototype.SetEnemy = function(id)
 {
-	if (id >= 0 && id != this.playerID)
-	{
-		this.diplomacy[id] = -1;
-	}
+	this.SetDiplomacyIndex(id, -1);
 };
 
 /**
@@ -302,15 +320,12 @@ Player.prototype.SetEnemy = function(id)
  */
 Player.prototype.IsEnemy = function(id)
 {
-	return (id >= 0 && id < this.diplomacy.length && id != this.playerID && this.diplomacy[id] < 0);
+	return this.diplomacy[id] < 0;
 };
 
 Player.prototype.SetNeutral = function(id)
 {
-	if (id >= 0 && id != this.playerID)
-	{
-		this.diplomacy[id] = 0;
-	}
+	this.SetDiplomacyIndex(id, 0);
 };
 
 /**
@@ -318,7 +333,7 @@ Player.prototype.SetNeutral = function(id)
  */
 Player.prototype.IsNeutral = function(id)
 {
-	return (id >= 0 && id < this.diplomacy.length && id != this.playerID && this.diplomacy[id] == 0);
+	return this.diplomacy[id] == 0;
 };
 
 /**

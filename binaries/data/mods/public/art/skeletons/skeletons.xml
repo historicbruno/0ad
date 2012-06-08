@@ -1450,7 +1450,7 @@ This skeleton is for the deer and any other similiar shaped animals with the exa
 		</bone>
 	</standard_skeleton>
 
-	<skeleton title="BlenderShark" target="BlenderShark"><identifier><root>head</root></identifier>
+	<skeleton title="BlenderShark" target="BlenderShark"><identifier><root>SHARK_</root></identifier>
 		<bone name="head"><target>head</target></bone>
 		<bone name="spine1"><target>spine1</target>
 			<bone name="spine2"><target>spine2</target>

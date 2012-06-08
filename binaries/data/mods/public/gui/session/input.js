@@ -191,31 +191,26 @@ function getActionInfo(action, target)
 	// e.g. prefer to attack an enemy unit, even if some friendly units are closer to the mouse)
 	var targetState = GetEntityState(target);
 
-	// If we selected buildings with rally points, and then click on one of those selected
-	// buildings, we should remove the rally point
-	//if (haveRallyPoints && selection.indexOf(target) != -1)
-	//	return {"type": "unset-rallypoint"};
-
 	// Check if the target entity is a resource, dropsite, foundation, or enemy unit.
 	// Check if any entities in the selection can gather the requested resource,
 	// can return to the dropsite, can build the foundation, or can attack the enemy
 	var simState = Engine.GuiInterfaceCall("GetSimulationState");
-	
+
 	// Look to see what type of command units going to the rally point should use
 	if (haveRallyPoints && action == "set-rallypoint")
 	{
 		// haveRallyPoints ensures all selected entities can have rally points.
 		// We assume that all entities are owned by the same player.
 		var entState = GetEntityState(selection[0]);
-		
+
 		var playerState = simState.players[entState.player];
 		var playerOwned = (targetState.player == entState.player);
 		var allyOwned = playerState.isAlly[targetState.player];
 		var enemyOwned = playerState.isEnemy[targetState.player];
 		var gaiaOwned = (targetState.player == 0);
-		
+
 		var cursor = "";
-		
+
 		// default to walking there
 		var data = {command: "walk"};
 		if (targetState.garrisonHolder && playerOwned)
@@ -234,17 +229,18 @@ function getActionInfo(action, target)
 		}
 		else if (targetState.resourceSupply)
 		{
-			var resourceType = targetState.resourceSupply.type.specific;
-			if (targetState.resourceSupply.type.generic === "treasure")
+			var resourceType = targetState.resourceSupply.type;
+			if (resourceType.generic == "treasure")
 			{
-				cursor = "action-gather-" + targetState.resourceSupply.type.generic;
+				cursor = "action-gather-" + resourceType.generic;
 			}
 			else
 			{
-				cursor = "action-gather-" + targetState.resourceSupply.type.specific;
+				cursor = "action-gather-" + resourceType.specific;
 			}
 			data.command = "gather";
 			data.resourceType = resourceType;
+			data.resourceTemplate = targetState.template;
 		}
 		else if (targetState.foundation && entState.buildEntities)
 		{
@@ -1298,6 +1294,7 @@ function doAction(action, ev)
 
 	case "setup-trade-route":
 		Engine.PostNetworkCommand({"type": "setup-trade-route", "entities": selection, "target": action.target});
+		Engine.GuiInterfaceCall("PlaySound", { "name": "order_trade", "entity": selection[0] });
 		return true;
 
 	case "garrison":
@@ -1317,12 +1314,13 @@ function doAction(action, ev)
 		{
 			pos = Engine.GetTerrainAtScreenPoint(ev.x, ev.y);
 		}
-		Engine.PostNetworkCommand({"type": "set-rallypoint", "entities": selection, "x": pos.x, "z": pos.z, "data": action.data});
+		Engine.PostNetworkCommand({"type": "set-rallypoint", "entities": selection, "x": pos.x, "z": pos.z, "data": action.data, "queued": queued});
 		// Display rally point at the new coordinates, to avoid display lag
 		Engine.GuiInterfaceCall("DisplayRallyPoint", {
 			"entities": selection,
 			"x": pos.x,
-			"z": pos.z
+			"z": pos.z,
+			"queued": queued
 		});
 		return true;
 
