@@ -169,7 +169,7 @@
 	<!-- ================================  ================================ -->
 	<!-- Time elapsed counter -->
 	<!-- ================================  ================================ -->
-	<object size="100%-100 50 100%-10 70" type="text" name="timeElapsedCounter" style="settingsText" hotkey="timeelapsedcounter.toggle" hidden="true">
+	<object size="100%-100 50 100%-10 70" type="text" name="timeElapsedCounter" style="SettingsText" hotkey="timeelapsedcounter.toggle" hidden="true">
 	    <action on="Press"><![CDATA[
 				this.hidden = !this.hidden;
 			]]>
@@ -364,7 +364,7 @@
 		ALPHA X : Jhelum<!-- IMPORTANT: remember to update pregame/mainmenu.xml in sync with this -->
 
 		<!-- Displays build date and revision number-->
-		<object size="50%-128 0 50%+128 100%-2" name="buildTimeLabel" type="text" text_align="center" text_valign="bottom" font="serif-12" textcolor="white" ghost="true">
+		<object size="50%-128 0 50%+128 100%-2" name="buildTimeLabel" type="text" style="BuildNameText" ghost="true">
 		    <action on="Load"><![CDATA[this.caption = buildTime(0) + " (" + buildTime(2) + ")";]]>
 		    </action>
 		</object>
@@ -617,87 +617,97 @@
 		<object size="50%-112 0 50%+112 100%" name="detailsAreaSingle">
 		    
 		    <!-- Stats Bars -->
-		    <object size= "2 0 100%-2 98" type="image" sprite="topPanelShader" tooltip_style="sessionToolTip">
+		    <object size= "2 0 100%-2 98" type="image" tooltip_style="sessionToolTip">
 			
-			<!-- Health bar -->
-			<object size="88 8 100% 32" name="healthSection">
-			    <object size="0 0 100% 16" name="healthLabel" type="text" style="StatsTextLeft" ghost="true">Health:</object>
-			    <object size="0 0 100% 16" name="healthStats" type="text" style="StatsTextRight" ghost="true"/>
-			    <object size="0 16 100% 24" name="health" type="image">
-				<object type="image" sprite="healthBackground" ghost="true"/>
-				<object type="image" sprite="healthForeground" ghost="true" name="healthBar"/>
-				<object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
+			<object size="0 8 100% 60" type="image" sprite="edgedPanelShader">
+			    <!-- Health bar -->
+			    <object size="88 0 100% 24" name="healthSection">
+				<object size="0 0 100% 16" name="healthLabel" type="text" style="StatsTextLeft" ghost="true">Health:</object>
+				<object size="0 0 100% 16" name="healthStats" type="text" style="StatsTextRight" ghost="true"/>
+				<object size="1 16 100% 23" name="health" type="image">
+				    <object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
+				    <object type="image" sprite="healthBackground" ghost="true"/>
+				    <object type="image" sprite="healthForeground" ghost="true" name="healthBar"/>
+				    <object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
+				</object>
 			    </object>
-			</object>
 
-			<!-- Stamina bar -->
-			<object size="88 36 100% 60" name="staminaSection">
-			    <object size="0 0 100% 16" name="staminaLabel" type="text" style="StatsTextLeft" ghost="true">Stamina:</object>
-			    <object size="0 0 100% 16" name="staminaStats" type="text" style="StatsTextRight" ghost="true"/>
-			    <object size="0 16 100% 24" name="stamina" type="image">
-				<object type="image" sprite="staminaBackground" ghost="true"/>
-				<object type="image" sprite="staminaForeground" ghost="true" name="staminaBar"/>
-				<object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
+			    <!-- Stamina bar -->
+			    <object size="88 28 100% 52" name="staminaSection">
+				<object size="0 0 100% 16" name="staminaLabel" type="text" style="StatsTextLeft" ghost="true">Stamina:</object>
+				<object size="0 0 100% 16" name="staminaStats" type="text" style="StatsTextRight" ghost="true"/>
+				<object size="1 16 100% 23" name="stamina" type="image">
+				    <object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
+				    <object type="image" sprite="staminaBackground" ghost="true"/>
+				    <object type="image" sprite="staminaForeground" ghost="true" name="staminaBar"/>
+				    <object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
+				</object>
+			    </object>
+
+			    <!-- Resource bar -->
+			    <object size="88 28 100% 52" name="resourceSection">
+				<object size="0 0 100% 16" name="resourceLabel" type="text" style="StatsTextLeft" ghost="true"/>
+				<object size="0 0 100% 16" name="resourceStats" type="text" style="StatsTextRight" ghost="true"/>
+				<object size="1 16 100% 23" name="resources" type="image">
+				    <object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
+				    <object type="image" sprite="resourceBackground" ghost="true"/>
+				    <object type="image" sprite="resourceForeground" ghost="true" name="resourceBar"/>
+				    <object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
+				</object>
 			    </object>
 			</object>
 			
-			<!-- Resource bar -->
-			<object size="88 36 100% 60" name="resourceSection">
-			    <object size="0 0 100% 16" name="resourceLabel" type="text" style="StatsTextLeft" ghost="true"/>
-			    <object size="0 0 100% 16" name="resourceStats" type="text" style="StatsTextRight" ghost="true"/>
-			    <object size="0 16 100% 24" name="resources" type="image">
-				<object type="image" sprite="resourceBackground" ghost="true"/>
-				<object type="image" sprite="resourceForeground" ghost="true" name="resourceBar"/>
-				<object type="image" sprite="statsBarShaderHorizontal" ghost="true"/>
-			    </object>
+			<object size="0 60 100% 96" type="image" sprite="edgedPanelShader">
+			    <!-- Attack and Armor -->
+			    <object size="90 0 126 36" name="attackAndArmorStats" type="image" sprite="stretched:session/icons/stances/defensive.png" tooltip="Attack and Armor" tooltip_style="sessionToolTip"/>
+
+			    <!-- Resource carrying icon/counter -->
+			    <object size="100%-72 0 100%-26 36" type="text" name="resourceCarryingText" style="StatsTextRight"/>
+			    <object size="100%-32 0 100%+4 36" type="image" name="resourceCarryingIcon"/>
 			</object>
 			
-			<!-- Attack and Armor -->
-			<object size="90 60 126 96" name="attackAndArmorStats" type="image" sprite="stretched:session/icons/stances/defensive.png" tooltip="Attack and Armor" tooltip_style="sessionToolTip"/>
+			<!-- Big unit icon -->
+			<object size="-8 -8 88 88" type="image" name="iconBorder" sprite="iconBorder" tooltip_style="sessionToolTip">
+			    <object size="1 1 100%-1 100%-1" type="image" name="icon" ghost="true"/>
 			
-			<!-- Resource carrying icon/counter -->
-			<object size="100%-72 60 100%-26 96" type="text" name="resourceCarryingText" style="StatsTextRight"/>
-			<object size="100%-32 60 100%+4 96" type="image" name="resourceCarryingIcon"/>
+			    <!-- Experience bar -->
+			    <object size="2 2 6 100%-2" type="image" name="experience" tooltip="Experience" tooltip_style="sessionToolTip">
+				<object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
+				<object type="image" sprite="experienceBackground" ghost="true"/>
+				<object type="image" sprite="experienceForeground" ghost="true" name="experienceBar"/>
+				<object type="image" sprite="statsBarShaderVertical" ghost="true"/>
+			    </object>
+			
+			    <object z="20" size="4 4 20 20" name="rankIcon" type="image" tooltip="Rank" tooltip_style="sessionToolTip"/>
+			</object>
 		    </object>
 		    
-		    <!-- Big unit icon -->
-		    <object size="-6 -6 90 90" type="image" name="iconBorder" sprite="iconBorder" tooltip_style="sessionToolTip">
-			<object size="1 1 100%-1 100%-1" type="image" name="icon" ghost="true"/>
+		    <!-- Names (this must come before the attack and armor icon to avoid clipping issues) -->
+		    <object size="2 96 100%-2 100%-36" name="statsArea" type="image" sprite="edgedPanelShader">
 			
-			<!-- Experience bar -->
-			<object size="1 1 9 100%-1" type="image" name="experience" tooltip="Experience" tooltip_style="sessionToolTip">
-			    <object type="image" sprite="experienceBackground" ghost="true"/>
-			    <object type="image" sprite="experienceForeground" ghost="true" name="experienceBar"/>
-			    <object type="image" sprite="statsBarShaderVertical" ghost="true"/>
-			</object>
-			
-			<object z="20" size="4 4 20 20" name="rankIcon" type="image" sprite="" ghost="true"/>
-		    </object>
-          
-		    <!-- Names -->
-		    <object size="2 92 100%-2 100%-36" name="statsArea" type="image">
-			
-			<!-- These images are used to cut off the top and bottom of the civ icon -->
-			<object z="30" size="0 5 100% 45" ghost="true" type="image" sprite="remove"/>
+			<!-- These images are used to clip off the top and bottom of the civ icon -->
+			<object z="30" size="0 -5 100% 40" ghost="true" type="image" sprite="remove"/>
 			<object z="30" size="0 100%-5 100% 100%+40" ghost="true" type="image" sprite="remove"/>
 			
-			<object z="30" size="0 5 100% 45" ghost="true">
+			<object z="30" size="0 2 100% 45" ghost="true">
 			    <!-- Specific Name -->
-			    <object size="0 0 100% 20" name="specific" ghost="true" type="text" style="PrimaryTextCentered"/>
+			    <object size="0 0 100% 20" name="specific" ghost="true" type="text" style="SpecificNameCentered"/>
 
 			    <!-- Generic Name -->
-			    <object size="0 20 100% 36" name="generic" ghost="true" type="text" style="StatsTextCentered"/>
+			    <object size="0 20 100% 36" name="generic" ghost="true" type="text" style="GenericNameCentered"/>
 			</object>
 			
 			<!-- Player Name and Civ -->
-			<object size="0 45 100% 100%">
-			    <object size="50%-64 -24 50%+64 112" name="playerCivIcon" ghost="true" type="image"/>
-			    <object size="0 0 100% 100%" name="playerColorBackground" ghost="true" type="image" sprite="playerColorBackground"/>
+			<object size="0 40 100% 100%">
+			    <object size="50%-64 50%-64 50%+64 50%+64" name="playerCivIcon" type="image" ghost="true"/>
+			    <object size="0 0 100% 100%" name="playerColorBackground" type="image" sprite="playerColorBackground" ghost="true"/>
+			    <object size="0 0 100% 100%" type="image" sprite="bottomEdgedPanelShader" ghost="true"/>
 			    
 			    <!-- Why is this being automatically ghosted? In the mean time, set ghost to false -->
-			    <object ghost="false" size="0 0 100% 100%-5" name="player" type="text" style="SecondaryTextCentered" tooltip_style="sessionToolTip"/>
+			    <object ghost="false" size="0 0 100% 100%-5" name="player" type="text" style="largeCenteredOutlinedText" tooltip_style="sessionToolTip"/>
 			</object>
 		    </object>
+
 		</object>
 
 		<!-- Unit details for Multiple Units -->
@@ -726,17 +736,19 @@
 		    <!-- Stats Bars -->
 		    <object size= "100%-38 50 100%-18 100%-44" type="image" tooltip_style="sessionToolTip">
 			<!-- Health bar -->
-			<object size="0 0 12 100%" type="image" name="healthMultiple" tooltip="Hitpoints" tooltip_style="sessionToolTip">
+			<object size="4 0 11 100%" type="image" name="healthMultiple" tooltip="Hitpoints" tooltip_style="sessionToolTip">
+			    <object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
 			    <object type="image" sprite="healthBackground" ghost="true"/>
 			    <object type="image" sprite="healthForeground" ghost="true" name="healthBarMultiple"/>
-			    <object type="image" sprite="statsBarShader" ghost="true"/>
+			    <object type="image" sprite="statsBarShaderVertical" ghost="true"/>
 			</object>
 
 			<!-- Stamina bar -->
-			<object size="14 0 26 100%" type="image" name="staminaMultiple" tooltip="Stamina" tooltip_style="sessionToolTipBold">
+			<object size="15 0 22 100%" type="image" name="staminaMultiple" tooltip="Stamina" tooltip_style="sessionToolTipBold">
+			    <object type="image" sprite="barBorder" ghost="true" size="-1 -1 100%+1 100%+1"/>
 			    <object type="image" sprite="staminaBackground" ghost="true"/>
 			    <object type="image" sprite="staminaForeground" ghost="true" name="staminaBarMultiple"/>
-			    <object type="image" sprite="statsBarShader" ghost="true"/>
+			    <object type="image" sprite="statsBarShaderVertical" ghost="true"/>
 			</object>
 		    </object>
 		</object>
@@ -746,20 +758,19 @@
 			size="0 100%-36 100% 100%-4"
 			type="image"
 			z="30"
-			
 		>
-			<object z="20" size="4 0 100%-4 100%" ghost="true" type="image" sprite="bottomPanelShader"/>
-		    
-			<object size="0 0 100% 100%">
-			    <repeat count="6">
-				<object name="unitCommandButton[n]" hidden="true" style="iconButton" type="button" size="0 0 32 32" tooltip_style="sessionToolTipBottomBold">
-				    <object name="unitCommandIcon[n]" ghost="true" type="image" size="0 0 100% 100%" style="commandIcon"/>
-				    <object name="unitCommandCount[n]" ghost="true" style="groupIconsText" type="text" size="0 0 100% 100%"/>
-				</object>
-			    </repeat>
-			</object>
+		    <object size="0 0 100% 100%">
+			<repeat count="6">
+			    <object name="unitCommandButton[n]" hidden="true" style="iconButton" type="button" size="0 0 32 32" tooltip_style="sessionToolTipBottomBold">
+				<object name="unitCommandIcon[n]" ghost="true" type="image" size="0 0 100% 100%" style="commandIcon"/>
+				<object name="unitCommandCount[n]" ghost="true" style="groupIconsText" type="text" size="0 0 100% 100%"/>
+			    </object>
+			</repeat>
 		    </object>
-		
+		</object>
+
+		<!-- shading for unit commands area -->
+		<object z="50" size="4 100%-36 100%-4 100%-4" ghost="true" type="image" sprite="bottomEdgedPanelShader"/>
 
 	    </object> <!-- END OF SELECTION DETAILS -->
 
@@ -831,10 +842,8 @@
 		<object name="unitQueuePanel"
 			size="4 -56 100% 0"
 			type="image"
-			style="TranslucentPanelThinBorder"
+			sprite="queuePanelShader"
 		>
-		    <object size="4 4 100%-4 100%-4" name="unitQueuePanelPlayerColor" type="image"/>
-		    
 		    <object size="-4 -2 52 54" type="image" sprite="stretched:session/icons/production.png" tooltip_style="sessionToolTipBottom" tooltip="Production queue">
 			<object name="queueProgress" ghost="true" style="iconButtonProgress" type="text"/>
 		    </object>
