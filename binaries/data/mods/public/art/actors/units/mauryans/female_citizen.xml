@@ -23,18 +23,18 @@
         <animation file="female/f_death_01.dae" name="Death" speed="130"/>
       </animations>
       <props>
-        <prop actor="props/units/heads/head_pers_fem_1.xml" attachpoint="head"/>
+        <prop actor="props/units/heads/head_maur_fem.xml" attachpoint="head"/>
       </props>
     </variant>
   </group>
   <group>
-    <variant frequency="1" name="Dress-01">
-      <mesh>skeletal/f_dress.dae</mesh>
-      <texture>skeletal/pers_fem_1.dds</texture>
+    <variant frequency="1" name="Skirt-Short">
+      <mesh>skeletal/f_tunic.dae</mesh>
+      <texture>skeletal/maur_fem.png</texture>
     </variant>
-    <variant frequency="1" name="Dress-02">
+    <variant frequency="1" name="Skirt-Long">
       <mesh>skeletal/f_dress.dae</mesh>
-      <texture>skeletal/pers_fem_2.dds</texture>
+      <texture>skeletal/maur_fem_b.png</texture>
     </variant>
   </group>
   <group>
