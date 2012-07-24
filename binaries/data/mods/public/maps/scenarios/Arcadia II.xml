@@ -31,6 +31,7 @@
 	<ScriptSettings><![CDATA[
 {
   "Description": "Springtime in Arcadia, Greece. Spring rains have gorged what would otherwise be dry creek beds throughout the rest of the year, dividing the lands between two warring tribes. Players start on either side of a mountainous region rich in resources. A Stoa with a +10 population bonus helps players jumpstart building their new colonies.",
+  "Preview" : "arcadia_2.png",
   "Keywords": [],
   "Name": "Arcadia 2",
   "PlayerData": [
@@ -22525,12 +22526,6 @@
 			<Template>units/gaul_cavalry_swordsman_e</Template>
 			<Player>2</Player>
 			<Position x="117.48984" z="114.63974"/>
-			<Orientation y="2.35621"/>
-		</Entity>
-		<Entity uid="4770">
-			<Template>units/gaul_war_dog_e</Template>
-			<Player>2</Player>
-			<Position x="121.20124" z="124.43096"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 	</Entities>

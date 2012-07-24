@@ -34,17 +34,17 @@
       <props>
         <prop actor="props/units/heads/head_hele_a.xml" attachpoint="head"/>
         <prop actor="props/units/weapons/bow_short.xml" attachpoint="l_hand"/>
-        <prop actor="props/temp/quiver.xml" attachpoint="back"/>
+        <prop actor="props/units/quiver_back.xml" attachpoint="back"/>
         <prop actor="props/units/heads/hele_straw.xml" attachpoint="helmet"/>
       </props>
     </variant>
   </group>
   <group>
     <variant frequency="1" name="Tunic-Sleeves">
-      <texture>skeletal/hele_isp_b.dds</texture>
+      <textures><texture file="skeletal/hele_isp_b.dds" name="baseTex"/></textures>
     </variant>
     <variant frequency="1" name="Tunic-Sleeveless">
-      <texture>skeletal/hele_isp_b_2.dds</texture>
+      <textures><texture file="skeletal/hele_isp_b_2.dds" name="baseTex"/></textures>
     </variant>
   </group>
   <group>
@@ -94,7 +94,7 @@
         <prop attachpoint="r_hand"/>
       </props>
     </variant>
-	<variant name="gather_ruins">
+    <variant name="gather_ruins">
       <props>
         <prop actor="props/units/tools/pick.xml" attachpoint="l_hand"/>
         <prop attachpoint="r_hand"/>

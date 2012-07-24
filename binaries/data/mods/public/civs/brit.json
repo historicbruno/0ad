@@ -75,10 +75,10 @@
 	"Structures":
 	[
 		{
-			"Name": "Melonas",
+			"Name": "Kennel",
 			"Class": "",
 			"Emblem": "",
-			"History": "The Celts developed the first rotary flour mill.",
+			"History": "The Britons were known for breeding war dogs.",
 			"Requirements": "",
 			"Phase": "",
 			"Special": "" 
@@ -98,7 +98,10 @@
 			"Count": 4 
 		},
 		{
-			"Template": "units/brit_cavalry_swordsman_b" 
+			"Template": "units/brit_cavalry_javelinist_b" 
+		},
+		{
+			"Template": "units/brit_war_dog_b" 
 		}
 	],
 	"Formations":

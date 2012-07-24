@@ -6,6 +6,7 @@ const FORMATION = "Formation";
 const TRAINING = "Training";
 const RESEARCH = "Research";
 const CONSTRUCTION = "Construction";
+const TRADING = "Trading";
 const COMMAND = "Command";
 const STANCE = "Stance";
 const GATE = "Gate";
@@ -23,6 +24,9 @@ const BARTER_RESOURCE_AMOUNT_TO_SELL = 100;
 const BARTER_BUNCH_MULTIPLIER = 5;
 const BARTER_RESOURCES = ["food", "wood", "stone", "metal"];
 const BARTER_ACTIONS = ["Sell", "Buy"];
+
+// Gate constants
+const GATE_ACTIONS = ["Lock", "Unlock"];
 
 // The number of currently visible buttons (used to optimise showing/hiding)
 var g_unitPanelButtons = {"Selection": 0, "Queue": 0, "Formation": 0, "Garrison": 0, "Training": 0, "Research": 0, "Barter": 0, "Trading": 0, "Construction": 0, "Command": 0, "Stance": 0, "Gate": 0};
@@ -140,8 +144,8 @@ function setOverlay(object, value)
  * 
  * @param guiName Short identifier string of this panel; see constants defined at the top of this file.
  * @param usedPanels Output object; usedPanels[guiName] will be set to 1 to indicate that this panel was used during this
- *                     run of updateUnitCommands and should not be hidden. TODO: why is this done this way instead of having
- *                     updateUnitCommands keep track of this?
+ * 				run of updateUnitCommands and should not be hidden. TODO: why is this done this way instead of having
+ * 				updateUnitCommands keep track of this?
  * @param unitEntState Entity state of the (first) selected unit.
  * @param items Panel-specific data to construct the icons with.
  * @param callback Callback function to argument to execute when an item's icon gets clicked. Takes a single 'item' argument.
@@ -159,7 +163,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 	{
 		case SELECTION:
 			if (numberOfItems > 16)
-				numberOfItems =  16;
+				numberOfItems = 16;
 			break;
 
 		case QUEUE:
@@ -176,27 +180,27 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 
 		case STANCE:
 			if (numberOfItems > 5)
-				numberOfItems =  5;
+				numberOfItems = 5;
 			break;
 
 		case FORMATION:
 			if (numberOfItems > 16)
-				numberOfItems =  16;
+				numberOfItems = 16;
 			break;
 
 		case TRAINING:
 			if (numberOfItems > 24)
-				numberOfItems =  24;
+				numberOfItems = 24;
 			break;
 
 		case RESEARCH:
 			if (numberOfItems > 8)
-				numberOfItems =  8;
+				numberOfItems = 8;
 			break;
 
 		case CONSTRUCTION:
 			if (numberOfItems > 24)
-				numberOfItems =  24;
+				numberOfItems = 24;
 			break;
 
 		case COMMAND:
@@ -205,8 +209,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 			break;
 
 		case GATE:
-			if(numberOfItems > 1)
-				numberOfItems = 1;
+			if(numberOfItems > 8)
+				numberOfItems = 8;
 			break;
 
 		default:
@@ -257,8 +261,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 				}
 			
 				if (!template)
-					continue; // ignore attempts to use invalid templates (an error should have been
-					          // reported already)
+					continue; 	// ignore attempts to use invalid templates (an error should have been
+								// reported already)
 				break;
 			case RESEARCH:
 				if (item.pair)
@@ -266,8 +270,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 					entType1 = item.top;
 					template1 = GetTechnologyData(entType1);
 					if (!template1)
-						continue; // ignore attempts to use invalid templates (an error should have been
-						          // reported already)
+						continue; 	// ignore attempts to use invalid templates (an error should have been
+									// reported already)
 					
 					entType = item.bottom;
 				}
@@ -277,8 +281,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 				}
 				template = GetTechnologyData(entType);
 				if (!template)
-					continue; // ignore attempts to use invalid templates (an error should have been
-					          // reported already)
+					continue; 	// ignore attempts to use invalid templates (an error should have been
+								// reported already)
 				
 				break;
 			case SELECTION:
@@ -288,8 +292,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 				entType = item;
 				template = GetTemplateData(entType);
 				if (!template)
-					continue; // ignore attempts to use invalid templates (an error should have been
-					          // reported already)
+					continue;	// ignore attempts to use invalid templates (an error should have been
+								// reported already)
 				break;
 		}
 
@@ -323,9 +327,14 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 				getGUIObjectByName("unit"+guiName+"Count["+i+"]").caption = (count > 1 ? count : "");
 				break;
 
+			case GATE:
+				var tooltip = item.tooltip;
+				if (item.template)
+					tooltip += "\n" + getEntityCostTooltip(GetTemplateData(item.template));
+				break;
+
 			case STANCE:
 			case FORMATION:
-			case GATE:
 				var tooltip = toTitleCase(item);
 				break;
 
@@ -497,11 +506,25 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 		else if (guiName == COMMAND)
 		{
 			icon.sprite = "stretched:session/icons/" + item.icon;
-
 		}
 		else if (guiName == GATE)
 		{
-			icon.sprite = "stretched:session/icons/production.png";
+			var gateIcon;
+			// If already a gate, show locking actions
+			if (unitEntState.gate)
+			{
+				gateIcon = "icons/lock_" + GATE_ACTIONS[i].toLowerCase() + "ed.png";
+				selection.hidden = unitEntState.gate.locked != item.locked;
+			}
+			// otherwise show gate upgrade icon
+			else
+			{
+				template = GetTemplateData(item.template);
+				gateIcon = template.icon ?  "portraits/" + template.icon : "icons/gate_closed.png";
+				selection.hidden = true;
+			}
+
+			icon.sprite = "stretched:session/" + gateIcon;
 		}
 		else if (template.icon)
 		{
@@ -626,8 +649,10 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 }
 
 // Sets up "unit trading panel" - special case for setupUnitPanel
-function setupUnitTradingPanel(unitEntState, selection)
+function setupUnitTradingPanel(usedPanels, unitEntState, selection)
 {
+	usedPanels[TRADING] = 1;
+
 	for (var i = 0; i < TRADING_RESOURCES.length; i++)
 	{
 		var resource = TRADING_RESOURCES[i];
@@ -782,55 +807,95 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 		removeDupes(buildableEnts);
 		removeDupes(trainableEnts);
 
-		if (buildableEnts.length && ((trainableEnts.length && hasClass(entState, "Unit")) || !trainableEnts.length))
+		// Whether the GUI's right panel has been filled.
+		var rightUsed = true;
+
+		// The first selected entity's type has priority.
+		if (entState.buildEntities)
 			setupUnitPanel(CONSTRUCTION, usedPanels, entState, buildableEnts, startBuildingPlacement);
-		else if (trainableEnts.length)
+		else if (entState.production && entState.production.entities)
 			setupUnitPanel(TRAINING, usedPanels, entState, trainableEnts,
 				function (trainEntType) { addTrainingToQueue(selection, trainEntType); } );
-		
-		if (entState.production && entState.production.technologies.length && selection.length == 1)
+		else if (entState.trader)
+			setupUnitTradingPanel(usedPanels, entState, selection);
+		else if (entState.gate)
 		{
-			setupUnitPanel(RESEARCH, usedPanels, entState, entState.production.technologies,
-				function (researchType) { addResearchToQueue(entState.id, researchType); } );
+			var items = [];
+			for (var i = 0; i < GATE_ACTIONS.length; ++i)
+				items.push({
+					"tooltip": GATE_ACTIONS[i] + " gate",
+					"locked": i == 0
+				});
+			setupUnitPanel(GATE, usedPanels, entState, items,
+				function (item) { lockGate(item.locked); } );
+		}
+		else if (!entState.foundation && (hasClass(entState, "LongWall")))
+		{
+			// Allow long wall pieces to be converted to gates
+			var longWallTypes = {};
+			var items = [];
+			for (var i in selection)
+			{
+				if ((state = GetEntityState(selection[i])) && hasClass(state, "LongWall") &&
+					!state.gate && !state.foundation && !longWallTypes[state.template])
+				{
+					var gateTemplate = getWallGateTemplate(state.id);
+					if (gateTemplate)
+					{
+						var wallName = GetTemplateData(state.template).name.generic;
+						var gateName = GetTemplateData(gateTemplate).name.generic;
+
+						items.push({
+							"tooltip": "Convert " + wallName + " to " + gateName,
+							"template": gateTemplate
+						});
+					}
+
+					// We only need one entity per type.
+					longWallTypes[state.template] = true;
+				}
+			}
+
+			if (items.length)
+				setupUnitPanel(GATE, usedPanels, entState, items,
+					function (item) { transformWallToGate(item.template); } );
+			else
+				rightUsed = false;
+		}
+		else
+			rightUsed = false;
+
+		if (!rightUsed)
+		{
+			// The right pane is empty. Fill the pane with a sane type.
+			// Prefer buildables for units and trainables for structures.
+			if (buildableEnts.length && (hasClass(entState, "Unit") || !trainableEnts.length))
+				setupUnitPanel(CONSTRUCTION, usedPanels, entState, buildableEnts, startBuildingPlacement);
+			else if (trainableEnts.length)
+				setupUnitPanel(TRAINING, usedPanels, entState, trainableEnts,
+					function (trainEntType) { addTrainingToQueue(selection, trainEntType); } );
+		}
+
+		// Show technologies if the active panel has at most one row of icons.
+		if (entState.production && entState.production.technologies.length)
+		{
+			var activepane = usedPanels[CONSTRUCTION] ? buildableEnts.length : trainableEnts.length;
+			if (selection.length == 1 || activepane <= 8)
+				setupUnitPanel(RESEARCH, usedPanels, entState, entState.production.technologies,
+					function (researchType) { addResearchToQueue(entState.id, researchType); } );
 		}
 
 		if (entState.production && entState.production.queue.length)
 			setupUnitPanel(QUEUE, usedPanels, entState, entState.production.queue,
 				function (item) { removeFromProductionQueue(entState.id, item.id); } );
-
-		if (entState.trader)
-		{
-			usedPanels["Trading"] = 1;
-			setupUnitTradingPanel(entState, selection);
-		}
-		
-		if(!entState.foundation && (entState.gate || hasClass(entState, "StoneWall") && !hasClass(entState, "Tower")))
-		{
-			if (entState.gate)
-			{
-				var action = entState.gate.locked ? "Unlock gate": "Lock gate";
-				setupUnitPanel(GATE, usedPanels, entState, [action],
-					function (item) { lockGate(!entState.gate.locked); } );
-			}
-			else // Wall
-			{ 
-				var templateData = GetTemplateData(entState.template);
-				// Only allow long walls section to be transformed to gates
-				if (templateData.wallPiece.length > 20)  //TODO : increase
-				{
-					setupUnitPanel(GATE, usedPanels, entState, ["Create a gate"],
-						function (item) { transformWallToGate(); } );
-				}
-			}
-		}
 		
 		supplementalDetailsPanel.hidden = false;
 		commandsPanel.hidden = false;
 	}
 	else // owned by another player
 	{
-	    supplementalDetailsPanel.hidden = true;
-	    commandsPanel.hidden = true;
+		supplementalDetailsPanel.hidden = true;
+		commandsPanel.hidden = true;
 	}
 
 	// Hides / unhides Unit Panels (panels should be grouped by type, not by order, but we will leave that for another time)
