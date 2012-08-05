@@ -41,6 +41,8 @@ public:
 
 	virtual entity_pos_t GetUnitRadius() = 0;
 
+	virtual bool IsControlPersistent() = 0;
+
 	/**
 	 * Test whether this entity is colliding with any obstruction that are set to
 	 * block the creation of foundations.
@@ -50,11 +52,24 @@ public:
 	virtual bool CheckFoundation(std::string className) = 0;
 
 	/**
+	 * Test whether this entity is colliding with any obstructions that share its
+	 * control groups and block the creation of foundations.
+	 * @return true if foundation is valid (not obstructed)
+	 */
+	virtual bool CheckDuplicateFoundation() = 0;
+
+	/**
 	 * Returns a list of entities that are colliding with this entity, and that
 	 * are set to block construction.
 	 * @return vector of blocking entities
 	 */
 	virtual std::vector<entity_id_t> GetConstructionCollisions() = 0;
+
+	/**
+	 * Detects collisions between foundation-blocking entities and
+	 * tries to fix them by setting control groups, if appropriate.
+	 */
+	virtual void ResolveFoundationCollisions() = 0;
 
 	virtual void SetActive(bool active) = 0;
 
