@@ -315,7 +315,9 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 				{
 					getGUIObjectByName("queueProgress").caption = (item.progress ? progress : "");
 					var size = getGUIObjectByName("unit"+guiName+"ProgressSlider["+i+"]").size;
-					size.top = Math.round(item.progress*40);
+
+					// Buttons are assumed to be square, so left/right offsets can be used for top/bottom.
+					size.top = size.left + Math.round(item.progress * (size.right - size.left));
 					getGUIObjectByName("unit"+guiName+"ProgressSlider["+i+"]").size = size;
 				}
 				break;
@@ -330,7 +332,20 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 			case GATE:
 				var tooltip = item.tooltip;
 				if (item.template)
-					tooltip += "\n" + getEntityCostTooltip(GetTemplateData(item.template));
+				{
+					var template = GetTemplateData(item.template);
+					tooltip += "\n" + getEntityCostTooltip(template);
+
+					var affordableMask = getGUIObjectByName("unitGateUnaffordable["+i+"]");
+					affordableMask.hidden = true;
+
+					var neededResources = Engine.GuiInterfaceCall("GetNeededResources", template.cost);
+					if (neededResources)
+					{
+						affordableMask.hidden = false;
+						tooltip += getNeededResourcesTooltip(neededResources);
+					}
+				}
 				break;
 
 			case STANCE:
@@ -414,6 +429,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 		// Button
 		var button = getGUIObjectByName("unit"+guiName+"Button["+i+"]");
 		var button1 = getGUIObjectByName("unit"+guiName+"Button["+(i+rowLength)+"]");
+		var affordableMask = getGUIObjectByName("unit"+guiName+"Unaffordable["+i+"]");
+		var affordableMask1 = getGUIObjectByName("unit"+guiName+"Unaffordable["+(i+rowLength)+"]");
 		var icon = getGUIObjectByName("unit"+guiName+"Icon["+i+"]");
 		var selection = getGUIObjectByName("unit"+guiName+"Selection["+i+"]");
 		var pair = getGUIObjectByName("unit"+guiName+"Pair["+i+"]");
@@ -421,7 +438,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 		button.tooltip = tooltip;
 
 		// Button Function (need nested functions to get the closure right)
-		button.onpress = (function(e){ return function() { callback(e) } })(item);
+		// Items can have a callback element that overrides the normal caller-supplied callback function.
+		button.onpress = (function(e){ return function() { e.callback ? e.callback(e) : callback(e) } })(item);
 
 		if (guiName == RESEARCH)
 		{
@@ -511,10 +529,10 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 		{
 			var gateIcon;
 			// If already a gate, show locking actions
-			if (unitEntState.gate)
+			if (item.gate)
 			{
-				gateIcon = "icons/lock_" + GATE_ACTIONS[i].toLowerCase() + "ed.png";
-				selection.hidden = unitEntState.gate.locked != item.locked;
+				gateIcon = "icons/lock_" + GATE_ACTIONS[item.locked ? 0 : 1].toLowerCase() + "ed.png";
+				selection.hidden = item.gate.locked === undefined ? false : item.gate.locked != item.locked;
 			}
 			// otherwise show gate upgrade icon
 			else
@@ -550,22 +568,84 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, items, callback)
 			
 			if (guiName == RESEARCH)
 			{
+				// Check resource requirements for first button
+				affordableMask.hidden = true;
+				var neededResources = Engine.GuiInterfaceCall("GetNeededResources", template.cost);
+				if (neededResources)
+				{
+					if (button.enabled !== false)
+					{
+						button.enabled = false;
+						affordableMask.hidden = false;
+					}
+					button.tooltip += getNeededResourcesTooltip(neededResources);
+				}
+
 				if (item.pair)
 				{
 					grayscale = "";
 					button1.enabled = true;
-					if (guiName == RESEARCH && !Engine.GuiInterfaceCall("CheckTechnologyRequirements", entType1))
+
+					if (!Engine.GuiInterfaceCall("CheckTechnologyRequirements", entType1))
 					{
 						button1.enabled = false;
 						button1.tooltip += "\n" + GetTechnologyData(entType1).requirementsTooltip;
 						grayscale = "grayscale:";
 					}
 					icon1.sprite = "stretched:" + grayscale + "session/portraits/" +template1.icon;
+
+					// Check resource requirements for second button
+					affordableMask1.hidden = true;
+					neededResources = Engine.GuiInterfaceCall("GetNeededResources", template.cost);
+					if (neededResources)
+					{
+						if (button1.enabled !== false)
+						{
+							button1.enabled = false;
+							affordableMask1.hidden = false;
+						}
+						button1.tooltip += getNeededResourcesTooltip(neededResources);
+					}
 				}
 				else
 				{
 					pair.hidden = true;
 					button1.hidden = true;
+					affordableMask1.hidden = true;
+  				}
+			}
+			else if (guiName == CONSTRUCTION || guiName == TRAINING)
+			{
+				affordableMask.hidden = true;
+				var totalCosts = {};
+				var trainNum = 1;
+				if (Engine.HotkeyIsPressed("session.batchtrain") && guiName == TRAINING)
+				{
+					var [batchSize, batchIncrement] = getTrainingBatchStatus(unitEntState.id, entType);
+					trainNum = batchSize + batchIncrement;
+				}
+
+				// Walls have no cost defined.
+				if (template.cost !== undefined)
+					for (var r in template.cost)
+						totalCosts[r] = Math.floor(template.cost[r] * trainNum);
+
+				var neededResources = Engine.GuiInterfaceCall("GetNeededResources", totalCosts);
+				if (neededResources)
+				{
+					var totalCost = 0;
+					if (button.enabled !== false)
+					{
+						for each (var resource in neededResources)
+							totalCost += resource;
+
+						button.enabled = false;
+						affordableMask.hidden = false;
+						var alpha = 75 + totalCost/6;
+						alpha = alpha > 150 ? 150 : alpha;
+						affordableMask.sprite = "colour: 255 0 0 " + (alpha);
+					}
+					button.tooltip += getNeededResourcesTooltip(neededResources);
 				}
 			}
 		}
@@ -715,12 +795,28 @@ function setupUnitBarterPanel(unitEntState)
 				var buyPrice = unitEntState.barterMarket.prices["buy"][resource];
 				amountToBuy = "+" + Math.round(sellPrice / buyPrice * amountToSell);
 			}
+
 			var amount;
 			if (j == 0)
 			{
 				button.onpress = (function(i){ return function() { g_barterSell = i; } })(i);
-				amount = (i == g_barterSell) ? "-" + amountToSell : "";
-			}
+				if (i == g_barterSell)
+				{
+					amount = "-" + amountToSell;
+					
+					var neededRes = {};
+					neededRes[resource] = amountToSell;
+					var neededResources = Engine.GuiInterfaceCall("GetNeededResources", neededRes);
+					var hidden = neededResources ? false : true;
+					for (var ii = 0; ii < BARTER_RESOURCES.length; ii++)
+					{
+						var affordableMask = getGUIObjectByName("unitBarterBuyUnaffordable["+ii+"]");
+						affordableMask.hidden = hidden;
+					}
+				}
+				else
+					amount = "";
+ 			}
 			else
 			{
 				var exchangeResourcesParameters = { "sell": BARTER_RESOURCES[g_barterSell], "buy": BARTER_RESOURCES[i], "amount": amountToSell };
@@ -818,26 +914,16 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 				function (trainEntType) { addTrainingToQueue(selection, trainEntType); } );
 		else if (entState.trader)
 			setupUnitTradingPanel(usedPanels, entState, selection);
-		else if (entState.gate)
-		{
-			var items = [];
-			for (var i = 0; i < GATE_ACTIONS.length; ++i)
-				items.push({
-					"tooltip": GATE_ACTIONS[i] + " gate",
-					"locked": i == 0
-				});
-			setupUnitPanel(GATE, usedPanels, entState, items,
-				function (item) { lockGate(item.locked); } );
-		}
-		else if (!entState.foundation && (hasClass(entState, "LongWall")))
+		else if (!entState.foundation && entState.gate || hasClass(entState, "LongWall"))
 		{
 			// Allow long wall pieces to be converted to gates
 			var longWallTypes = {};
-			var items = [];
+			var walls = [];
+			var gates = [];
 			for (var i in selection)
 			{
-				if ((state = GetEntityState(selection[i])) && hasClass(state, "LongWall") &&
-					!state.gate && !state.foundation && !longWallTypes[state.template])
+				state = GetEntityState(selection[i]);
+				if (hasClass(state, "LongWall") && !state.gate && !longWallTypes[state.template])
 				{
 					var gateTemplate = getWallGateTemplate(state.id);
 					if (gateTemplate)
@@ -845,20 +931,34 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 						var wallName = GetTemplateData(state.template).name.generic;
 						var gateName = GetTemplateData(gateTemplate).name.generic;
 
-						items.push({
+						walls.push({
 							"tooltip": "Convert " + wallName + " to " + gateName,
-							"template": gateTemplate
+							"template": gateTemplate,
+							"callback": function (item) { transformWallToGate(item.template); }
 						});
 					}
 
 					// We only need one entity per type.
 					longWallTypes[state.template] = true;
 				}
+				else if (state.gate && !gates.length)
+					for (var j = 0; j < GATE_ACTIONS.length; ++j)
+						gates.push({
+							"gate": state.gate,
+							"tooltip": GATE_ACTIONS[j] + " gate",
+							"locked": j == 0,
+							"callback": function (item) { lockGate(item.locked); }
+						});
+				// Show both 'locked' and 'unlocked' as active if the selected gates have both lock states.
+				else if (state.gate && state.gate.locked != gates[0].gate.locked)
+					for (var j = 0; j < gates.length; ++j)
+						delete gates[j].gate.locked;
 			}
 
+			// Place wall conversion options after gate lock/unlock icons.
+			var items = gates.concat(walls);
 			if (items.length)
-				setupUnitPanel(GATE, usedPanels, entState, items,
-					function (item) { transformWallToGate(item.template); } );
+				setupUnitPanel(GATE, usedPanels, entState, items);
 			else
 				rightUsed = false;
 		}

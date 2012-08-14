@@ -46,6 +46,7 @@
 #include "graphics/Camera.h"
 #include "graphics/GameView.h"
 #include "graphics/LightEnv.h"
+#include "graphics/LOSTexture.h"
 #include "graphics/MaterialManager.h"
 #include "graphics/Model.h"
 #include "graphics/ModelDef.h"
@@ -64,6 +65,7 @@
 #include "renderer/SkyManager.h"
 #include "renderer/TerrainOverlay.h"
 #include "renderer/TerrainRenderer.h"
+#include "renderer/TimeManager.h"
 #include "renderer/VertexBufferManager.h"
 #include "renderer/WaterManager.h"
 
@@ -268,6 +270,9 @@ public:
 
 	/// Material manager
 	CMaterialManager materialManager;
+	
+	/// Time manager
+	CTimeManager timeManager;
 
 	/// Shadow map
 	ShadowMap shadow;
@@ -430,11 +435,15 @@ CRenderer::CRenderer()
 	m_Options.m_PreferGLSL = false;
 	m_Options.m_ForceAlphaTest = false;
 	m_Options.m_GPUSkinning = false;
+	m_Options.m_GenTangents = false;
+	m_Options.m_SmoothLOS = false;
 
 	// TODO: be more consistent in use of the config system
 	CFG_GET_USER_VAL("preferglsl", Bool, m_Options.m_PreferGLSL);
 	CFG_GET_USER_VAL("forcealphatest", Bool, m_Options.m_ForceAlphaTest);
 	CFG_GET_USER_VAL("gpuskinning", Bool, m_Options.m_GPUSkinning);
+	CFG_GET_USER_VAL("gentangents", Bool, m_Options.m_GenTangents);
+	CFG_GET_USER_VAL("smoothlos", Bool, m_Options.m_SmoothLOS);
 
 #if CONFIG2_GLES
 	// Override config option since GLES only supports GLSL
@@ -564,11 +573,11 @@ void CRenderer::ReloadShaders()
 
 	bool cpuLighting = (GetRenderPath() == RP_FIXED);
 	m->Model.VertexRendererShader = ModelVertexRendererPtr(new ShaderModelVertexRenderer(cpuLighting));
-	m->Model.VertexInstancingShader = ModelVertexRendererPtr(new InstancingModelRenderer(false));
+	m->Model.VertexInstancingShader = ModelVertexRendererPtr(new InstancingModelRenderer(false, m_Options.m_GenTangents));
 
 	if (GetRenderPath() == RP_SHADER && m_Options.m_GPUSkinning) // TODO: should check caps and GLSL etc too
 	{
-		m->Model.VertexGPUSkinningShader = ModelVertexRendererPtr(new InstancingModelRenderer(true));
+		m->Model.VertexGPUSkinningShader = ModelVertexRendererPtr(new InstancingModelRenderer(true, false));
 		m->Model.NormalSkinned = ModelRendererPtr(new ShaderModelRenderer(m->Model.VertexGPUSkinningShader));
 		m->Model.TranspSkinned = ModelRendererPtr(new ShaderModelRenderer(m->Model.VertexGPUSkinningShader));
 	}
@@ -1352,6 +1361,8 @@ void CRenderer::RenderParticles()
 void CRenderer::RenderSubmissions()
 {
 	PROFILE3("render submissions");
+	
+	GetScene().GetLOSTexture().InterpolateLOS();
 
 	CShaderDefines context = m->globalContext;
 
@@ -1691,6 +1702,9 @@ void CRenderer::BindTexture(int unit, GLuint tex)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // LoadAlphaMaps: load the 14 default alpha maps, pack them into one composite texture and
 // calculate the coordinate of each alphamap within this packed texture
+// NB: A variant of this function is duplicated in TerrainTextureEntry.cpp, for use with the Shader
+// renderpath. This copy is kept to load the 'standard' maps for the fixed pipeline and should
+// be removed if/when the fixed pipeline goes.
 int CRenderer::LoadAlphaMaps()
 {
 	const wchar_t* const key = L"(alpha map composite)";
@@ -1806,6 +1820,25 @@ int CRenderer::LoadAlphaMaps()
 	// upload the composite texture
 	Tex t;
 	(void)tex_wrap(total_w, total_h, 8, TEX_GREY, data, 0, &t);
+	
+	/*VfsPath filename("blendtex.png");
+	
+	DynArray da;
+	RETURN_STATUS_IF_ERR(tex_encode(&t, filename.Extension(), &da));
+
+	// write to disk
+	//Status ret = INFO::OK;
+	{
+		shared_ptr<u8> file = DummySharedPtr(da.base);
+		const ssize_t bytes_written = g_VFS->CreateFile(filename, file, da.pos);
+		if(bytes_written > 0)
+			ENSURE(bytes_written == (ssize_t)da.pos);
+		//else
+		//	ret = (Status)bytes_written;
+	}
+
+	(void)da_free(&da);*/
+	
 	m_hCompositeAlphaMap = ogl_tex_wrap(&t, g_VFS, key);
 	(void)ogl_tex_set_filter(m_hCompositeAlphaMap, GL_LINEAR);
 	(void)ogl_tex_set_wrap  (m_hCompositeAlphaMap, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
@@ -1973,6 +2006,11 @@ CParticleManager& CRenderer::GetParticleManager()
 TerrainRenderer& CRenderer::GetTerrainRenderer()
 {
 	return m->terrainRenderer;
+}
+
+CTimeManager& CRenderer::GetTimeManager()
+{
+	return m->timeManager;
 }
 
 CMaterialManager& CRenderer::GetMaterialManager()

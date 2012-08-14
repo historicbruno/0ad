@@ -355,7 +355,9 @@ public:
 /**
  * Obstruction test filter that will test only against shapes that:
  *     - are part of neither one of the specified control groups
- *     - AND have at least one of the specified flags set.
+ *     - AND, depending on the value of the 'exclude' argument:
+ *       - have at least one of the specified flags set.
+ *       - OR have none of the specified flags set.
  * 
  * The first (primary) control group to reject shapes from must be specified and valid. The secondary
  * control group to reject entities from may be set to INVALID_ENTITY to not use it.
@@ -365,13 +367,41 @@ public:
  */
 class SkipControlGroupsRequireFlagObstructionFilter : public IObstructionTestFilter
 {
+	bool m_Exclude;
 	entity_id_t m_Group;
 	entity_id_t m_Group2;
 	flags_t m_Mask;
 
 public:
+	SkipControlGroupsRequireFlagObstructionFilter(bool exclude, entity_id_t group1, entity_id_t group2, flags_t mask) : 
+		m_Exclude(exclude), m_Group(group1), m_Group2(group2), m_Mask(mask)
+	{
+		Init();
+	}
+
 	SkipControlGroupsRequireFlagObstructionFilter(entity_id_t group1, entity_id_t group2, flags_t mask) : 
-		m_Group(group1), m_Group2(group2), m_Mask(mask)
+		m_Exclude(false), m_Group(group1), m_Group2(group2), m_Mask(mask)
+	{
+		Init();
+	}
+
+	virtual bool TestShape(tag_t UNUSED(tag), flags_t flags, entity_id_t group, entity_id_t group2) const
+	{
+		// Don't test shapes that share one or more of our control groups.
+		if (group == m_Group || group == m_Group2 || (group2 != INVALID_ENTITY &&
+				(group2 == m_Group || group2 == m_Group2)))
+			return false;
+
+		// If m_Exclude is true, don't test against shapes that have any of the
+		// obstruction flags specified in m_Mask.
+		if (m_Exclude)
+			return (flags & m_Mask) == 0;
+
+		// Otherwise, only include shapes that match at least one flag in m_Mask.
+		return (flags & m_Mask) != 0;
+	}
+private:
+	void Init()
 	{
 		// the primary control group to filter out must be valid
 		ENSURE(m_Group != INVALID_ENTITY);
@@ -381,19 +411,41 @@ public:
 		if (m_Group2 == INVALID_ENTITY)
 			m_Group2 = m_Group;
 	}
+};
 
-	virtual bool TestShape(tag_t UNUSED(tag), flags_t flags, entity_id_t group, entity_id_t group2) const
+/**
+ * Obstruction test filter that will test only against shapes that:
+ *     - are part of both of the specified control groups
+ *     - AND have at least one of the specified flags set.
+ * 
+ * The first (primary) control group to include shapes from must be specified and valid.
+ * 
+ * This filter is useful for preventing entities with identical control groups
+ * from colliding e.g. building a new wall segment on top of an existing wall)
+ *
+ * @todo This filter needs test cases.
+ */
+class SkipTagRequireControlGroupsAndFlagObstructionFilter : public IObstructionTestFilter
+{
+	bool m_Exclude;
+	tag_t m_Tag;
+	entity_id_t m_Group;
+	entity_id_t m_Group2;
+	flags_t m_Mask;
+
+public:
+	SkipTagRequireControlGroupsAndFlagObstructionFilter(tag_t tag, entity_id_t group1, entity_id_t group2, flags_t mask) : 
+		m_Tag(tag), m_Group(group1), m_Group2(group2), m_Mask(mask)
 	{
-		// To be included in the testing, a shape must have at least one of the flags in m_Mask set, and its
-		// primary control group must be valid and must equal neither our primary nor secondary control group.
-		bool includeInTesting = ((flags & m_Mask) != 0 && group != m_Group && group != m_Group2);
+		ENSURE(m_Group != INVALID_ENTITY);
+	}
 
-		// If the shape being tested has a valid secondary control group, exclude it from testing if it
-		// matches either our primary or secondary control group.
-		if (group2 != INVALID_ENTITY)
-			includeInTesting = (includeInTesting && group2 != m_Group && group2 != m_Group2);
-
-		return includeInTesting;
+	virtual bool TestShape(tag_t tag, flags_t flags, entity_id_t group, entity_id_t group2) const
+	{
+		// To be included in testing, a shape must not have the specified tag, and must
+		// match at least one of the flags in m_Mask, as well as both control groups.
+		return (tag.n != m_Tag.n && (flags & m_Mask) != 0 && ((group == m_Group
+			&& group2 == m_Group2) || (group2 == m_Group && group == m_Group2)));
 	}
 };
 

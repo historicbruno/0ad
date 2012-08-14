@@ -10,7 +10,11 @@
         <animation file="mechanical/rome_wall_gate_closing.dae" name="gate_closing" speed="65"/>
       </animations>
       <mesh>structural/rome_wall_gate.dae</mesh>
-      <textures><texture file="structural/rome_struct_2.png" name="baseTex"/></textures>
+      <textures>
+	    <texture file="structural/rome_struct_2.png" name="baseTex"/>
+	  	<texture file="structural/rome_struct_2_norm.png" name="normTex"/>
+	    <texture file="structural/rome_struct_2_spec.png" name="specTex"/>
+	  </textures>
     </variant>
   </group>
   <group>
@@ -20,7 +24,6 @@
         <prop actor="particle/destruction_smoke_med.xml" attachpoint="root"/>
         <prop actor="particle/destruction_dust_med.xml" attachpoint="root"/>
         <prop actor="particle/destruction_dust_med_gray.xml" attachpoint="root"/>
-        <prop actor="props/structures/hellenes/gate_props.xml" attachpoint="root"/>
         <prop actor="props/structures/hellenes/gate_door.xml" attachpoint="root"/>
       </props>
     </variant>

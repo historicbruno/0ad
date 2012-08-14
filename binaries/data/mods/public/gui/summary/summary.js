@@ -1,8 +1,8 @@
 // Max player slots for any map (should read from config)
 const MAX_SLOTS = 8;
 
-var panelNames = [ 'unitsBuildingsPanel', 'conquestPanel', 'resourcesPanel' ];
-var panelButtonNames = [ 'unitsBuildingsPanelButton', 'conquestPanelButton', 'resourcesPanelButton' ];
+var panelNames = [ 'unitsBuildingsPanel', 'conquestPanel', 'resourcesPanel', 'marketPanel' ];
+var panelButtonNames = [ 'unitsBuildingsPanelButton', 'conquestPanelButton', 'resourcesPanelButton', 'marketPanelButton' ];
 
 /**
  * Select active panel
@@ -104,9 +104,18 @@ function init(data)
 	getGUIObjectByName("foodGatheredHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
 	getGUIObjectByName("vegetarianRatioHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
 	getGUIObjectByName("woodGatheredHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
-	getGUIObjectByName("metalGatheredHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
 	getGUIObjectByName("stoneGatheredHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("metalGatheredHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
 	getGUIObjectByName("treasuresCollectedHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+
+	left = 50;
+	getGUIObjectByName("playerName3Heading").size = left + " 26 " + (left + playerNameHeadingWidth) + " 100%"; left += playerNameHeadingWidth;
+	getGUIObjectByName("exchangedFoodHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("exchangedWoodHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("exchangedStoneHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("exchangedMetalHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("barterEfficiencyHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
+	getGUIObjectByName("tradeIncomeHeading").size = left + " 16 " + (left + width) + " 100%"; left += width;
 
 	// Show counters
 	for (var i = 0; i < MAX_SLOTS; ++i)
@@ -128,8 +137,10 @@ function init(data)
 				var playerColourBox = getGUIObjectByName("playerColourBox"+k+"["+i+"]");
 				playerColourBox.sprite = colourString + " 255";
 
+				// Show the multiplayer name, e.g. "Foobar" rather than "Player 1".
+				// TODO: Perhaps show both the multiplayer and map-specific name?
 				var playerName = getGUIObjectByName("playerName"+k+"["+i+"]");
-				playerName.caption = playerState.name;
+				playerName.caption = data.players[i+1].name;
 
 				getGUIObjectByName("civIcon"+k+"["+i+"]").sprite = "stretched:"+civData[playerState.civ].Emblem;
 			}
@@ -148,9 +159,16 @@ function init(data)
 			var foodGathered = getGUIObjectByName("foodGathered["+i+"]");
 			var vegetarianRatio = getGUIObjectByName("vegetarianRatio["+i+"]");
 			var woodGathered = getGUIObjectByName("woodGathered["+i+"]");
-			var metalGathered = getGUIObjectByName("metalGathered["+i+"]");
 			var stoneGathered = getGUIObjectByName("stoneGathered["+i+"]");
+			var metalGathered = getGUIObjectByName("metalGathered["+i+"]");
 			var treasuresCollected = getGUIObjectByName("treasuresCollected["+i+"]");
+
+			var exchangedFood = getGUIObjectByName("exchangedFood["+i+"]");
+			var exchangedWood = getGUIObjectByName("exchangedWood["+i+"]");
+			var exchangedStone = getGUIObjectByName("exchangedStone["+i+"]");
+			var exchangedMetal = getGUIObjectByName("exchangedMetal["+i+"]");
+			var barterEfficiency = getGUIObjectByName("barterEfficiency["+i+"]");
+			var tradeIncome = getGUIObjectByName("tradeIncome["+i+"]");
 
 			// align counters
 
@@ -178,12 +196,23 @@ function init(data)
 			foodGathered.size = left + " 2 " + (left + width) + " 100%"; left += width;
 			vegetarianRatio.size = left + " 2 " + (left + width) + " 100%"; left += width;
 			woodGathered.size = left + " 2 " + (left + width) + " 100%"; left += width;
-			metalGathered.size = left + " 2 " + (left + width) + " 100%"; left += width;
 			stoneGathered.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			metalGathered.size = left + " 2 " + (left + width) + " 100%"; left += width;
 			treasuresCollected.size	= left + " 2 " + (left + width) + " 100%"; left += width;
 			size = getGUIObjectByName("playerBox2["+i+"]").size;
 			size.right = left + 10;
 			getGUIObjectByName("playerBox2["+i+"]").size = size;
+
+			left = 240;
+			exchangedFood.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			exchangedWood.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			exchangedStone.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			exchangedMetal.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			barterEfficiency.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			tradeIncome.size = left + " 2 " + (left + width) + " 100%"; left += width;
+			size = getGUIObjectByName("playerBox3["+i+"]").size;
+			size.right = left + 10;
+			getGUIObjectByName("playerBox3["+i+"]").size = size;
 
 			// display counters
 			unitsTrained.caption = playerState.statistics.unitsTrained;
@@ -201,9 +230,28 @@ function init(data)
 			vegetarianRatio.caption = Math.floor(playerState.statistics.resourcesGathered.food > 0 ?
 				(playerState.statistics.resourcesGathered.vegetarianFood / playerState.statistics.resourcesGathered.food) * 100 : 0) + "%";
 			woodGathered.caption = playerState.statistics.resourcesGathered.wood;
-			metalGathered.caption = playerState.statistics.resourcesGathered.metal;
 			stoneGathered.caption = playerState.statistics.resourcesGathered.stone;
+			metalGathered.caption = playerState.statistics.resourcesGathered.metal;
 			treasuresCollected.caption = playerState.statistics.treasuresCollected;
+
+			const SOLD_COLOR = "201 255 200";
+			const BOUGHT_COLOR = "255 213 213"
+			exchangedFood.caption = '[color="' + SOLD_COLOR + '"]+' + playerState.statistics.resourcesBought.food
+				+ '[/color] [color="' + BOUGHT_COLOR + '"]-' + playerState.statistics.resourcesSold.food + '[/color]';
+			exchangedWood.caption = '[color="' + SOLD_COLOR + '"]+' + playerState.statistics.resourcesBought.wood
+				+ '[/color] [color="' + BOUGHT_COLOR + '"]-' + playerState.statistics.resourcesSold.wood + '[/color]';
+			exchangedStone.caption = '[color="' + SOLD_COLOR + '"]+' + playerState.statistics.resourcesBought.stone
+				+ '[/color] [color="' + BOUGHT_COLOR + '"]-' + playerState.statistics.resourcesSold.stone + '[/color]';
+			exchangedMetal.caption = '[color="' + SOLD_COLOR + '"]+' + playerState.statistics.resourcesBought.metal
+				+ '[/color] [color="' + BOUGHT_COLOR + '"]-' + playerState.statistics.resourcesSold.metal + '[/color]';
+			var totalBought = 0;
+			for each (var boughtAmount in playerState.statistics.resourcesBought)
+				totalBought += boughtAmount;
+			var totalSold = 0;
+			for each (var soldAmount in playerState.statistics.resourcesSold)
+				totalSold += soldAmount;
+			barterEfficiency.caption = Math.floor(totalSold > 0 ? (totalBought / totalSold) * 100 : 0) + "%";
+			tradeIncome.caption = playerState.statistics.tradeIncome;
 		}
 		else
 		{
@@ -216,7 +264,7 @@ function init(data)
 		}
 	}
 
-        selectPanel(0);
+	selectPanel(0);
 }
 
 function onTick()

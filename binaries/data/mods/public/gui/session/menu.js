@@ -9,12 +9,12 @@ const RESUME = "Resume";
 const MARGIN = 4;
 
 // Includes the main menu button
-const NUM_BUTTONS = 6;
+const NUM_BUTTONS = 7;
 
 // Regular menu buttons
 const BUTTON_HEIGHT = 32;
 
-// The position where the bottom of the menu will end up (currently 164)
+// The position where the bottom of the menu will end up (currently 228)
 const END_MENU_POSITION = (BUTTON_HEIGHT * NUM_BUTTONS) + MARGIN;
 
 // Menu starting position: bottom
@@ -116,6 +116,16 @@ function pauseMenuButton()
 	togglePause();
 }
 
+function resignMenuButton()
+{
+	closeMenu();
+	closeOpenDialogs();
+	pauseGame();
+	var btCaptions = ["Yes", "No"];
+	var btCode = [resignGame, resumeGame];
+	messageBox(400, 200, "Are you sure you want to resign?", "Confirmation", 0, btCaptions, btCode);
+}
+
 function exitMenuButton()
 {
 	closeMenu();
@@ -172,7 +182,7 @@ function closeChat()
 	getGUIObjectByName("chatDialogPanel").hidden = true;
 }
 
-function toggleChatWindow()
+function toggleChatWindow(teamChat)
 {
 	closeSettings();
 
@@ -184,6 +194,7 @@ function toggleChatWindow()
 	else
 		chatInput.caption = ""; // Clear chat input
 
+	getGUIObjectByName("toggleTeamChat").checked = teamChat;
 	chatWindow.hidden = !chatWindow.hidden;
 }
 

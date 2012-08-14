@@ -83,6 +83,18 @@ function getPlayerData(playerAssignments)
     return players;
 }
 
+// Returns whether a player has physical allies.
+function hasAllies(playerID, playerData)
+{
+	if (playerData[playerID] && playerData[playerID].team != -1)
+	{
+		for (var i = 0; i < playerData.length; i++)
+			if (playerData[i].team == playerData[playerID].team)
+				return true;
+	}
+	return false;
+}
+
 function findGuidForPlayerID(playerAssignments, player)
 {
     for (var playerGuid in playerAssignments)
@@ -202,6 +214,11 @@ function getEntityCommandsList(entState)
     if (hasClass(entState, "Unit"))
     {
 	commands.push({
+	    "name": "stop",
+	    "tooltip": "Stop",
+	    "icon": "stop.png"
+	});
+	commands.push({
 	    "name": "garrison",
 	    "tooltip": "Garrison",
 	    "icon": "garrison.png"
@@ -299,6 +316,18 @@ function getPopulationBonusTooltip(template)
     if (template.cost && template.cost.populationBonus)
 	popBonus = "\n[font=\"serif-bold-13\"]Population Bonus:[/font] " + template.cost.populationBonus;
     return popBonus;
+}
+
+/**
+ * Returns a message with the amount of each resource needed to create an entity.
+ */
+function getNeededResourcesTooltip(resources)
+{
+	var formatted = [];
+	for (var resource in resources)
+		formatted.push(resources[resource] + " [font=\"serif-12\"]" + getCostComponentDisplayName(resource) + "[/font]");
+
+	return "\n\n[font=\"serif-bold-13\"][color=\"red\"]Insufficient resources:[/color][/font]\n" + formatted.join(", ");
 }
 
 function getEntitySpeed(template)

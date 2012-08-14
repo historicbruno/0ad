@@ -9,6 +9,7 @@ const NOTIFICATION_TIMEOUT = 10000;
 const MAX_NUM_NOTIFICATION_LINES = 3;
 var notifications = [];
 var notificationsTimers = [];
+var cheatList = parseJSONData("simulation/data/cheats.json").Cheats;
 
 // Notifications
 function handleNotifications()
@@ -25,6 +26,14 @@ function handleNotifications()
 			"type": "message",
 			"guid": findGuidForPlayerID(g_PlayerAssignments, notification.player),
 			"text": notification.message
+		});
+	}
+	else if (notification.type == "defeat")
+	{
+		addChatMessage({
+			"type": "defeat",
+			"guid": findGuidForPlayerID(g_PlayerAssignments, notification.player),
+			"player": notification.player
 		});
 	}
 	else if (notification.type == "quit")
@@ -166,13 +175,44 @@ function submitChatInput()
 {
 	var input = getGUIObjectByName("chatInput");
 	var text = input.caption;
+	var isCheat = false;
 	if (text.length)
 	{
-		if (g_IsNetworked)
-			Engine.SendNetworkChat(text);
-		else
-			addChatMessage({ "type": "message", "guid": "local", "text": text });
+		for (var i = 0; i < cheatList.length; i++)
+		{
+			var cheat = cheatList[i];
 
+			// Line must start with the cheat.
+			if (text.indexOf(cheat.Name) == 0)
+			{
+				var number;
+				if (cheat.IsNumeric)
+				{
+					// Match the first word in the substring.
+					var match = text.substr(cheat.Name.length).match(/\S+/);
+					if (match && match[0])
+						number = Math.floor(match[0]);
+
+					if (number <= 0 || isNaN(number))
+						number = cheat.DefaultNumber;
+				}
+
+				Engine.PostNetworkCommand({"type": "cheat", "action": cheat.Action, "number": number, "selected": g_Selection.toList(), "templates": cheat.Templates, "player": Engine.GetPlayerID()});
+				isCheat = true;
+				break;
+			}
+		}
+
+		if (!isCheat)
+		{
+			if (getGUIObjectByName("toggleTeamChat").checked)
+				text = "/team " + text;
+
+			if (g_IsNetworked)
+				Engine.SendNetworkChat(text);
+			else
+				addChatMessage({ "type": "message", "guid": "local", "text": text });
+		}
 		input.caption = ""; // Clear chat input
 	}
 
@@ -189,11 +229,25 @@ function addChatMessage(msg, playerAssignments)
 		playerAssignments = g_PlayerAssignments;
 
 	var playerColor, username;
+
+	// No prefix by default. May be set by parseChatCommands().
+	msg.prefix = "";
+
 	if (playerAssignments[msg.guid])
 	{
 		var n = playerAssignments[msg.guid].player;
 		playerColor = g_Players[n].color.r + " " + g_Players[n].color.g + " " + g_Players[n].color.b;
 		username = escapeText(playerAssignments[msg.guid].name);
+
+		// Parse in-line commands in regular messages.
+		if (msg.type == "message")
+			parseChatCommands(msg, playerAssignments);
+	}
+	else if (msg.type == "defeat" && msg.player)
+	{
+		// This case is hit for AIs, whose names don't exist in playerAssignments.
+		playerColor = g_Players[msg.player].color.r + " " + g_Players[msg.player].color.g + " " + g_Players[msg.player].color.b;
+		username = escapeText(g_Players[msg.player].name);
 	}
 	else
 	{
@@ -202,9 +256,9 @@ function addChatMessage(msg, playerAssignments)
 	}
 
 	var message = escapeText(msg.text);
-
+	
 	var formatted;
-
+	
 	switch (msg.type)
 	{
 	case "connect":
@@ -213,9 +267,26 @@ function addChatMessage(msg, playerAssignments)
 	case "disconnect":
 		formatted = "[color=\"" + playerColor + "\"]" + username + "[/color] has left the game.";
 		break;
+	case "defeat":
+		// In singleplayer, the local player is "You". "You has" is incorrect.
+		var verb = (!g_IsNetworked && msg.player == Engine.GetPlayerID()) ? "have" : "has";
+		formatted = "[color=\"" + playerColor + "\"]" + username + "[/color] " + verb + " been defeated.";
+		break;
 	case "message":
-		console.write("<" + username + "> " + message);
-		formatted = "<[color=\"" + playerColor + "\"]" + username + "[/color]> " + message;
+		// May have been hidden by the 'team' command.
+		if (msg.hide)
+			return;
+
+		if (msg.action)
+		{
+			console.write(msg.prefix + "* " + username + " " + message);
+			formatted = msg.prefix + "* [color=\"" + playerColor + "\"]" + username + "[/color] " + message;
+		}
+		else
+		{
+			console.write(msg.prefix + "<" + username + "> " + message);
+			formatted = msg.prefix + "<[color=\"" + playerColor + "\"]" + username + "[/color]> " + message;
+		}
 		break;
 	default:
 		error("Invalid chat message '" + uneval(msg) + "'");
@@ -237,4 +308,85 @@ function removeOldChatMessages()
 	chatTimers.shift();
 	chatMessages.shift();
 	getGUIObjectByName("chatText").caption = chatMessages.join("\n");
+}
+
+// Parses chat messages for commands.
+function parseChatCommands(msg, playerAssignments)
+{
+	// Only interested in messages that start with '/'.
+	if (!msg.text || msg.text[0] != '/')
+		return;
+
+	var sender = playerAssignments[msg.guid].player;
+	var recurse = false;
+	var split = msg.text.split(/\s/);
+
+	// Parse commands embedded in the message.
+	switch (split[0])
+	{
+		case "/all":
+			// Resets values that 'team' or 'enemy' may have set.
+			msg.prefix = "";
+			msg.hide = false;
+			recurse = true;
+			break;
+		case "/team":
+			var playerData = getPlayerData();
+			if (hasAllies(sender, playerData))
+			{
+				if (playerData[Engine.GetPlayerID()].team != playerData[sender].team)
+					msg.hide = true;
+				else
+					msg.prefix = "(Team) ";
+			}
+			recurse = true;
+			break;
+		case "/enemy":
+			var playerData = getPlayerData();
+			if (hasAllies(sender, playerData))
+			{
+				if (playerData[Engine.GetPlayerID()].team == playerData[sender].team && sender != Engine.GetPlayerID())
+					msg.hide = true;
+				else
+					msg.prefix = "(Enemy) ";
+			}
+			recurse = true;
+			break;
+		case "/me":
+			msg.action = true;
+			break;
+		case "/msg":
+			var trimmed = msg.text.substr(split[0].length + 1);
+			var matched = "";
+
+			// Reject names which don't match or are a superset of the intended name.
+			for each (var player in playerAssignments)
+				if (trimmed.indexOf(player.name + " ") == 0 && player.name.length > matched.length)
+					matched = player.name;
+
+			// If the local player's name was the longest one matched, show the message.
+			var playerName = g_Players[Engine.GetPlayerID()].name;			
+			if (matched.length && (matched == playerName || sender == Engine.GetPlayerID()))
+			{
+				msg.prefix = "(Private) ";
+				msg.text = trimmed.substr(matched.length + 1);
+				msg.hide = false; // Might override team message hiding.
+				return;
+			}
+			else
+				msg.hide = true;
+			break;
+		default:
+			return;
+	}
+
+	msg.text = msg.text.substr(split[0].length + 1);
+
+	// Hide the message if parsing commands left it empty.
+	if (!msg.text.length)
+		msg.hide = true;
+
+	// Attempt to parse more commands if the current command allows it.
+	if (recurse)
+		parseChatCommands(msg, playerAssignments);
 }

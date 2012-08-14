@@ -150,9 +150,11 @@ void CDropDown::HandleMessage(SGUIMessage &Message)
 		if (!m_Open)
 		{
 			m_Open = true;
-			GetScrollBar(0).SetPos(0.f);
 			GetScrollBar(0).SetZ(GetBufferedZ());
 			GUI<int>::GetSetting(this, "selected", m_ElementHighlight);
+
+			// Start at the position of the selected item, if possible.
+			GetScrollBar(0).SetPos( m_ItemsYPositions.empty() ? 0 : m_ItemsYPositions[m_ElementHighlight] );
 			return; // overshadow
 		}
 		else
@@ -192,6 +194,11 @@ void CDropDown::HandleMessage(SGUIMessage &Message)
 
 	// Important that this is after, so that overshadowed implementations aren't processed
 	CList::HandleMessage(Message);
+
+	// As HandleMessage functions return void, we need to manually verify
+	// whether the child list's items were modified.
+	if (CList::GetModified())
+		SetupText();
 }
 
 InReaction CDropDown::ManuallyHandleEvent(const SDL_Event_* ev)

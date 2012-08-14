@@ -29,6 +29,8 @@ Player.prototype.Init = function()
 	this.startCam = undefined;
 	this.controlAllUnits = false;
 	this.isAI = false;
+	this.cheatsEnabled = true;
+	this.cheatTimeMultiplier = 1;
 };
 
 Player.prototype.SetPlayerID = function(id)
@@ -158,22 +160,30 @@ Player.prototype.AddResources = function(amounts)
 	}
 };
 
-Player.prototype.TrySubtractResources = function(amounts)
+Player.prototype.GetNeededResources = function(amounts)
 {
 	// Check if we can afford it all
 	var amountsNeeded = {};
 	for (var type in amounts)
-		if (amounts[type] > this.resourceCount[type])
+		if (this.resourceCount[type] != undefined && amounts[type] > this.resourceCount[type])
 			amountsNeeded[type] = amounts[type] - this.resourceCount[type];
-	
-	var formattedAmountsNeeded = [];
-	for (var type in amountsNeeded)
-		formattedAmountsNeeded.push(type + ": " + amountsNeeded[type]);
+
+	if (Object.keys(amountsNeeded).length == 0)
+		return undefined;
+	return amountsNeeded;
+};
+
+Player.prototype.TrySubtractResources = function(amounts)
+{
+	var amountsNeeded = this.GetNeededResources(amounts);
 			
 	// If we don't have enough resources, send a notification to the player
-	if (formattedAmountsNeeded.length)
+	if (amountsNeeded)
 	{
-		var notification = {"player": this.playerID, "message": "Insufficient resources - " + formattedAmountsNeeded.join(", ")};
+		var formatted = [];
+		for (var type in amountsNeeded)
+			formatted.push(amountsNeeded[type] + " " + type[0].toUpperCase() + type.substr(1) );
+		var notification = {"player": this.playerID, "message": "Insufficient resources - " + formatted.join(", ")};
 		var cmpGUIInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
 		cmpGUIInterface.PushNotification(notification);
 		return false;
@@ -382,19 +392,46 @@ Player.prototype.OnGlobalOwnershipChanged = function(msg)
 	}
 };
 
-Player.prototype.OnPlayerDefeated = function()
+Player.prototype.OnPlayerDefeated = function(msg)
 {
 	this.state = "defeated";
 
 	// Reassign all player's entities to Gaia
 	var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
 	var entities = cmpRangeManager.GetEntitiesByPlayer(this.playerID);
+
+	// The ownership change is done in two steps so that entities don't hit idle
+	// (and thus possibly look for "enemies" to attack) before nearby allies get
+	// converted to Gaia as well.
 	for each (var entity in entities)
 	{
-		// Note: maybe we need to reassign units and buildings only?
 		var cmpOwnership = Engine.QueryInterface(entity, IID_Ownership);
-		cmpOwnership.SetOwner(0);
+		cmpOwnership.SetOwnerQuiet(0);
 	}
+
+	// With the real ownership change complete, send OwnershipChanged messages.
+	for each (var entity in entities)
+		Engine.PostMessage(entity, MT_OwnershipChanged, { "entity": entity,
+			"from": this.playerID, "to": 0 });
+
+	// Reveal the map for this player.
+	cmpRangeManager.SetLosRevealAll(this.playerID, true);
+
+	// Send a chat message notifying of the player's defeat.
+	var notification = {"type": "defeat", "player": this.playerID};
+	var cmpGUIInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
+	cmpGUIInterface.PushNotification(notification);
 };
+
+
+Player.prototype.SetCheatEnabled = function(flag)
+{
+	this.cheatsEnabled = flag;
+}
+
+Player.prototype.GetCheatEnabled = function(flag)
+{
+	return this.cheatsEnabled;
+}
 
 Engine.RegisterComponentType(IID_Player, "Player", Player);
