@@ -573,6 +573,7 @@ static void InitRenderer()
 	g_Renderer.SetOptionBool(CRenderer::OPT_SHADOWPCF, g_ShadowPCF);
 	g_Renderer.SetOptionBool(CRenderer::OPT_PARTICLES, g_Particles);
 	g_Renderer.SetOptionBool(CRenderer::OPT_SILHOUETTES, g_Silhouettes);
+	g_Renderer.SetOptionBool(CRenderer::OPT_SHOWSKY, g_ShowSky);
 
 	// create terrain related stuff
 	new CTerrainTextureManager;
@@ -1232,6 +1233,6 @@ void CancelLoad(const CStrW& message)
 		jsval msgval = ToJSVal(message);
 
 		if (ok && !JSVAL_IS_VOID(fval))
-			ok = JS_CallFunctionValue(cx, g_GUI->GetScriptObject(), fval, 1, &msgval, &rval);
+			JS_CallFunctionValue(cx, g_GUI->GetScriptObject(), fval, 1, &msgval, &rval);
 	}
 }
