@@ -540,7 +540,7 @@ function tryPlaceBuilding(queued)
 	return true;
 }
 
-function tryPlaceWall()
+function tryPlaceWall(queued)
 {
 	if (placementSupport.mode !== "wall")
 	{
@@ -563,7 +563,7 @@ function tryPlaceWall()
 		"type": "construct-wall",
 		"autorepair": true,
 		"autocontinue": true,
-		"queued": true,
+		"queued": queued,
 		"entities": selection,
 		"wallSet": placementSupport.wallSet,
 		"pieces": wallPlacementInfo.pieces,
@@ -864,21 +864,22 @@ function handleInputBeforeGui(ev, hoveredObject)
 			case "mousebuttondown":
 				if (ev.button == SDL_BUTTON_LEFT)
 				{
-					if (tryPlaceWall())
+					var queued = Engine.HotkeyIsPressed("session.queue");
+					if (tryPlaceWall(queued))
 					{
-    					if (Engine.HotkeyIsPressed("session.queue"))
-    					{
-    						// continue building, just set a new starting position where we left off
-    						placementSupport.position = placementSupport.wallEndPosition;
-    						placementSupport.wallEndPosition = undefined;
-    						
-    						inputState = INPUT_BUILDING_WALL_CLICK;
-    					}
-    					else
-    					{
-    						placementSupport.Reset();
-    						inputState = INPUT_NORMAL;
-    					}
+						if (queued)
+						{
+							// continue building, just set a new starting position where we left off
+							placementSupport.position = placementSupport.wallEndPosition;
+							placementSupport.wallEndPosition = undefined;
+							
+							inputState = INPUT_BUILDING_WALL_CLICK;
+						}
+						else
+						{
+							placementSupport.Reset();
+							inputState = INPUT_NORMAL;
+						}
 					}
 					else
 					{
@@ -1716,30 +1717,57 @@ function setCameraFollow(entity)
 
 var lastIdleUnit = 0;
 var currIdleClass = 0;
+var lastIdleType = undefined;
 
 function resetIdleUnit()
 {
 	lastIdleUnit = 0;
 	currIdleClass = 0;
+	lastIdleType = undefined;
 }
 
 function findIdleUnit(classes)
 {
-	// Cycle through idling classes before giving up
-	for (var i = 0; i <= classes.length; ++i)
+	var append = Engine.HotkeyIsPressed("selection.add");
+	var selectall = Engine.HotkeyIsPressed("selection.offscreen");
+
+	// Reset the last idle unit, etc., if the selection type has changed.
+	var type = classes.join();
+	if (selectall || type != lastIdleType)
+		resetIdleUnit();
+	lastIdleType = type;
+
+	// If selectall is true, there is no limit and it's necessary to iterate
+	// over all of the classes, resetting only when the first match is found.
+	var matched = false;
+
+	for (var i = 0; i < classes.length; ++i)
 	{
-		var data = { prevUnit: lastIdleUnit, idleClass: classes[currIdleClass] };
-		var newIdleUnit = Engine.GuiInterfaceCall("FindIdleUnit", data);
+		var data = { idleClass: classes[currIdleClass], prevUnit: lastIdleUnit, limit: 1 };
+		if (append)
+			data.excludeUnits = g_Selection.toList();
+
+		if (selectall)
+			data = { idleClass: classes[currIdleClass] };
 
 		// Check if we have new valid entity
-		if (newIdleUnit && newIdleUnit != lastIdleUnit)
+		var idleUnits = Engine.GuiInterfaceCall("FindIdleUnits", data);
+		if (idleUnits.length && idleUnits[0] != lastIdleUnit)
 		{
-			lastIdleUnit = newIdleUnit;
-			g_Selection.reset()
-			g_Selection.addList([lastIdleUnit]);
-			Engine.CameraFollow(lastIdleUnit);
+			lastIdleUnit = idleUnits[0];
+			if (!append && (!selectall || selectall && !matched))
+				g_Selection.reset()
 
-			return;
+			if (selectall)
+				g_Selection.addList(idleUnits);
+			else
+			{
+				g_Selection.addList([lastIdleUnit]);
+				Engine.CameraFollow(lastIdleUnit);
+				return;
+			}
+
+			matched = true;
 		}
 
 		lastIdleUnit = 0;
