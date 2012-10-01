@@ -15,6 +15,11 @@ Health.prototype.Schema =
 			"<data type='positiveInteger'/>" +
 		"</element>" +
 	"</optional>" +
+	"<optional>" +
+		"<element name='SpawnEntityOnDeath' a:help='Entity template to spawn when this entity dies. Note: this is different than the corpse, which retains the original entity&apos;s appearance'>" +
+			"<text/>" +
+		"</element>" +
+	"</optional>" +
 	"<element name='RegenRate' a:help='Hitpoint regeneration rate per second. Not yet implemented'>" +
 		"<ref name='nonNegativeDecimal'/>" +
 	"</element>" +
@@ -34,6 +39,8 @@ Health.prototype.Schema =
 
 Health.prototype.Init = function()
 {
+	// Cache this value so it allows techs to maintain previous health level
+	this.maxHitpoints = +this.template.Max;
 	// Default to <Initial>, but use <Max> if it's undefined or zero
 	// (Allowing 0 initial HP would break our death detection code)
 	this.hitpoints = +(this.template.Initial || this.GetMaxHitpoints());
@@ -52,7 +59,7 @@ Health.prototype.GetHitpoints = function()
 
 Health.prototype.GetMaxHitpoints = function()
 {
-	return +this.template.Max;
+	return this.maxHitpoints;
 };
 
 Health.prototype.SetHitpoints = function(value)
@@ -110,8 +117,12 @@ Health.prototype.Reduce = function(amount)
 		if (this.hitpoints)
 		{
 			state.killed = true;
-			
+
 			PlaySound("death", this.entity);
+
+			// If SpawnEntityOnDeath is set, spawn the entity
+			if(this.template.SpawnEntityOnDeath)
+				this.CreateDeathSpawnedEntity();
 
 			if (this.template.DeathType == "corpse")
 			{
@@ -132,7 +143,7 @@ Health.prototype.Reduce = function(amount)
 
 			var old = this.hitpoints;
 			this.hitpoints = 0;
-			
+
 			Engine.PostMessage(this.entity, MT_HealthChanged, { "from": old, "to": this.hitpoints });
 		}
 
@@ -208,6 +219,28 @@ Health.prototype.CreateCorpse = function(leaveResources)
 	return corpse;
 };
 
+Health.prototype.CreateDeathSpawnedEntity = function()
+{
+	// If the unit died while not in the world, don't spawn a death entity for it
+	// since there's nowhere for it to be placed
+	var cmpPosition = Engine.QueryInterface(this.entity, IID_Position);
+	if (!cmpPosition.IsInWorld())
+		return INVALID_ENTITY;
+
+	// Create SpawnEntityOnDeath entity
+	var spawnedEntity = Engine.AddLocalEntity(this.template.SpawnEntityOnDeath);
+
+	// Move to same position
+	var cmpSpawnedPosition = Engine.QueryInterface(spawnedEntity, IID_Position);
+	var pos = cmpPosition.GetPosition();
+	cmpSpawnedPosition.JumpTo(pos.x, pos.z);
+	var rot = cmpPosition.GetRotation();
+	cmpSpawnedPosition.SetYRotation(rot.y);
+	cmpSpawnedPosition.SetXZRotation(rot.x, rot.z);
+
+	return spawnedEntity;
+};
+
 Health.prototype.Repair = function(builderEnt, work)
 {
 	var damage = this.GetMaxHitpoints() - this.GetHitpoints();
@@ -232,6 +265,25 @@ Health.prototype.Repair = function(builderEnt, work)
 	{
 		Engine.PostMessage(this.entity, MT_ConstructionFinished,
 			{ "entity": this.entity, "newentity": this.entity });
+	}
+};
+
+Health.prototype.OnTechnologyModification = function(msg)
+{
+	if (msg.component == "Health")
+	{
+		var cmpTechnologyManager = QueryOwnerInterface(this.entity, IID_TechnologyManager);
+		if (cmpTechnologyManager)
+		{
+			var oldMaxHitpoints = this.GetMaxHitpoints();
+			var newMaxHitpoints = Math.round(cmpTechnologyManager.ApplyModifications("Health/Max", +this.template.Max, this.entity));
+			if (oldMaxHitpoints != newMaxHitpoints)
+			{
+				var newHitpoints = Math.round(this.GetHitpoints() * newMaxHitpoints/oldMaxHitpoints);
+				this.maxHitpoints = newMaxHitpoints;
+				this.SetHitpoints(newHitpoints);
+			}
+		}
 	}
 };
 
