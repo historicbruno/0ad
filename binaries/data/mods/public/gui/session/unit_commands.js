@@ -184,15 +184,12 @@ function formatBatchTrainingString(buildingsCountToTrainFullBatch, fullBatchSize
 	if (buildingsCountToTrainFullBatch > 1 ||
 		(buildingsCountToTrainFullBatch == 1 && remainderBatch > 0))
 	{
-		batchDetailsString += " (";
-		if (fullBatchesString != "" && remainderBatchString != "")
-			batchDetailsString += fullBatchesString + " + " + remainderBatchString;
-		else if (fullBatchesString != "")
-			batchDetailsString += fullBatchesString;
-		else
-			batchDetailsString += remainderBatchString;
+		batchDetailsString += " (" + fullBatchesString;
+		if (remainderBatchString != "")
+			batchDetailsString += " + " + remainderBatchString;
 		batchDetailsString += ")";
 	}
+
 	return "\n\n[font=\"serif-bold-13\"]Shift-click[/font][font=\"serif-13\"] to train "
 		+ totalBatchTrainingCount + batchDetailsString + ".[/font]";
 }
@@ -433,7 +430,14 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				if (template.tooltip)
 					tooltip += "\n[font=\"serif-13\"]" + template.tooltip + "[/font]";
 
-				tooltip += "\n" + getEntityCostTooltip(template);
+				var [buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch] =
+					getTrainingBatchStatus(playerState, unitEntState.id, entType, selection);
+				if (Engine.HotkeyIsPressed("session.batchtrain"))
+				{
+					trainNum = buildingsCountToTrainFullBatch * fullBatchSize + remainderBatch;
+				}
+
+				tooltip += "\n" + getEntityCostTooltip(template, trainNum, unitEntState.id);
 
 				if (template.health)
 					tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + template.health;
@@ -448,9 +452,12 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 					getEntityLimitAndCount(playerState, entType)
 				tooltip += formatLimitString(trainEntLimit, trainEntCount);
 
-				var [buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch] =
-					getTrainingBatchStatus(playerState, unitEntState.id, entType, selection);
 				tooltip += formatBatchTrainingString(buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch);
+				var key = g_ConfigDB.system["hotkey.session.queueunit." + (i+1)];
+				if (key !== undefined)
+				{
+					tooltip += "\n[font=\"serif-bold-13\"]HotKey (" + key  + ").[/font]";
+				}
 				break;
 				
 			case RESEARCH:
@@ -672,7 +679,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 
 					// Check resource requirements for second button
 					affordableMask1.hidden = true;
-					neededResources = Engine.GuiInterfaceCall("GetNeededResources", template.cost);
+					neededResources = Engine.GuiInterfaceCall("GetNeededResources", template1.cost);
 					if (neededResources)
 					{
 						if (button1.enabled !== false)
@@ -987,21 +994,8 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 			setupUnitBarterPanel(entState, playerState);
 		}
 
-		var buildableEnts = [];
-		var trainableEnts = [];
-		var state;
-		// Get all buildable and trainable entities
-		for (var i in selection)
-		{
-			if ((state = GetEntityState(selection[i])) && state.buildEntities && state.buildEntities.length)
-				buildableEnts = buildableEnts.concat(state.buildEntities);
-			if ((state = GetEntityState(selection[i])) && state.production && state.production.entities.length)
-				trainableEnts = trainableEnts.concat(state.production.entities);
-		}
-		
-		// Remove duplicates
-		removeDupes(buildableEnts);
-		removeDupes(trainableEnts);
+		var buildableEnts = getAllBuildableEntities(selection);
+		var trainableEnts = getAllTrainableEntities(selection);
 
 		// Whether the GUI's right panel has been filled.
 		var rightUsed = true;
@@ -1114,4 +1108,38 @@ function hideUnitCommands()
 {
 	for each (var panelName in g_unitPanels)
 		getGUIObjectByName("unit" + panelName + "Panel").hidden = true;
+}
+
+// Get all of the available entities which can be trained by the selected entities
+function getAllTrainableEntities(selection)
+{
+	var trainableEnts = [];
+	var state;
+	// Get all buildable and trainable entities
+	for (var i in selection)
+	{
+		if ((state = GetEntityState(selection[i])) && state.production && state.production.entities.length)
+			trainableEnts = trainableEnts.concat(state.production.entities);
+	}
+	
+	// Remove duplicates
+	removeDupes(trainableEnts);
+	return trainableEnts;
+}
+
+// Get all of the available entities which can be built by the selected entities
+function getAllBuildableEntities(selection)
+{
+	var buildableEnts = [];
+	var state;
+	// Get all buildable entities
+	for (var i in selection)
+	{
+		if ((state = GetEntityState(selection[i])) && state.buildEntities && state.buildEntities.length)
+			buildableEnts = buildableEnts.concat(state.buildEntities);
+	}
+	
+	// Remove duplicates
+	removeDupes(buildableEnts);
+	return buildableEnts;
 }

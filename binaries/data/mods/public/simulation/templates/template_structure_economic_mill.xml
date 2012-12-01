@@ -25,7 +25,7 @@
   </Footprint>
   <Health>
     <Max>800</Max>
-    <SpawnEntityOnDeath>rubble/rubble_3x3</SpawnEntityOnDeath>
+    <SpawnEntityOnDeath>rubble/rubble_stone_3x3</SpawnEntityOnDeath>
   </Health>
   <Identity>
     <GenericName>Mill</GenericName>
@@ -44,11 +44,12 @@
     <Static width="13.0" depth="13.0"/>
   </Obstruction>
   <ProductionQueue>
+    <BatchTimeModifier>0.7</BatchTimeModifier>
     <Technologies datatype="tokens">
       pair_gather_01
       pair_gather_02
       pair_gather_03
-	  pair_gather_wood_01
+      pair_gather_wood_01
     </Technologies>
   </ProductionQueue>
   <RallyPoint disable=""/>

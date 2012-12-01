@@ -24,8 +24,7 @@
 
 #include "lib/external_libraries/openal.h"
 #include "maths/Vector3D.h"
-
-#include <string>
+#include "ps/CStr.h"
 
 class ISoundItem
 {
@@ -37,7 +36,7 @@ public:
 	virtual bool IsPlaying() = 0;
 	
 	
-	virtual std::string	GetName() = 0;
+	virtual CStrW* GetName() = 0;
 	virtual bool IdleTask() = 0;
 	
 	virtual void Play() = 0;

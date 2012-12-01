@@ -26,7 +26,6 @@
 #include "lib/file/vfs/vfs_path.h"
 #include "ps/CStr.h"
 
-#include <string>
 #include <map>
 
 class CSoundData;
@@ -53,7 +52,7 @@ public:
 	
 	virtual ALuint GetBuffer();
 	virtual ALsizei GetBufferCount();
-	virtual std::wstring* GetFileName();
+	virtual CStrW* GetFileName();
 	virtual void SetFileName(const Path& aName);
 
 	virtual ALuint* GetBufferPtr();
@@ -63,7 +62,7 @@ protected:
 
 	ALuint m_ALBuffer;
 	int m_RetentionCount;
-	std::wstring* m_FileName;
+	CStrW* m_FileName;
 
 };
 

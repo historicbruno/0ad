@@ -1472,7 +1472,7 @@ const batchIncrementSize = 5;
 
 function flushTrainingBatch()
 {
-	var appropriateBuildings = getBuidlingsWhichCanTrainEntity(batchTrainingEntities, batchTrainingType);
+	var appropriateBuildings = getBuildingsWhichCanTrainEntity(batchTrainingEntities, batchTrainingType);
 	// If training limits don't allow us to train batchTrainingCount in each appropriate building
 	if (batchTrainingEntityAllowedCount !== undefined &&
 		batchTrainingEntityAllowedCount < batchTrainingCount * appropriateBuildings.length)
@@ -1496,7 +1496,7 @@ function flushTrainingBatch()
 	}
 }
 
-function getBuidlingsWhichCanTrainEntity(entitiesToCheck, trainEntType)
+function getBuildingsWhichCanTrainEntity(entitiesToCheck, trainEntType)
 {
 	return entitiesToCheck.filter(function(entity) {
 		var state = GetEntityState(entity);
@@ -1524,11 +1524,33 @@ function getEntityLimitAndCount(playerState, entType)
 	return [trainEntLimit, trainEntCount, canBeTrainedCount];
 }
 
+// Add the unit shown at position to the training queue for all entities in the selection
+function addTrainingByPosition(position)
+{
+	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var playerState = simState.players[Engine.GetPlayerID()];
+	var selection = g_Selection.toList();
+
+	if (!selection.length)
+		return;
+	
+	var trainableEnts = getAllTrainableEntities(selection);
+	
+	// Check if the position is valid
+	if (!trainableEnts.length || trainableEnts.length <= position) 
+		return;
+	
+	var entToTrain = trainableEnts[position];
+	
+	addTrainingToQueue(selection, entToTrain, playerState);
+	return;
+}
+
 // Called by GUI when user clicks training button
 function addTrainingToQueue(selection, trainEntType, playerState)
 {
 	// Create list of buildings which can train trainEntType
-	var appropriateBuildings = getBuidlingsWhichCanTrainEntity(selection, trainEntType);
+	var appropriateBuildings = getBuildingsWhichCanTrainEntity(selection, trainEntType);
 
 	// Check trainEntType entity limit and count
 	var [trainEntLimit, trainEntCount, canBeTrainedCount] = getEntityLimitAndCount(playerState, trainEntType)
@@ -1597,9 +1619,9 @@ function addResearchToQueue(entity, researchType)
 // the training button with shift down
 function getTrainingBatchStatus(playerState, entity, trainEntType, selection)
 {
-	var apporpriateBuildings = [entity];
+	var appropriateBuildings = [entity];
 	if (selection && selection.indexOf(entity) != -1)
-		appropriateBuildings = getBuidlingsWhichCanTrainEntity(selection, trainEntType);
+		appropriateBuildings = getBuildingsWhichCanTrainEntity(selection, trainEntType);
 	var nextBatchTrainingCount = 0;
 	if (inputState == INPUT_BATCHTRAINING && batchTrainingEntities.indexOf(entity) != -1 &&
 		batchTrainingType == trainEntType)
