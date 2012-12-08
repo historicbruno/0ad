@@ -30,7 +30,6 @@
   <Identity>
     <Civ>rome</Civ>
     <SpecificName>Ballista</SpecificName>
-    <Icon>units/rome_mechanical_siege_ballista.png</Icon>
   </Identity>
   <Obstruction>
     <Unit radius="3.5"/>
@@ -38,7 +37,4 @@
   <Vision>
     <Range>88</Range>
   </Vision>
-  <VisualActor>
-    <Actor>units/romans/siege_rock.xml</Actor>
-  </VisualActor>
 </Entity>

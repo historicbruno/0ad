@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_mechanical_siege_onager">
   <Identity>
-    <Civ>athen</Civ>
+    <Civ>hele</Civ>
     <SpecificName>Lithóbolos</SpecificName>
-    <Icon>units/hele_mechanical_siege_lithobolos.png</Icon>
   </Identity>
   <Obstruction>
     <Unit radius="3.5"/>
@@ -11,7 +10,4 @@
   <Vision>
     <Range>88</Range>
   </Vision>
-  <VisualActor>
-    <Actor>units/athenians/siege_rock.xml</Actor>
-  </VisualActor>
 </Entity>
