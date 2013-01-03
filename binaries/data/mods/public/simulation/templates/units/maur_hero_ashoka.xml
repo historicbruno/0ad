@@ -32,13 +32,13 @@
     <Height>5.0</Height>
   </Footprint>
   <Health>
-    <Max>1800</Max>
+    <Max>1000</Max>
   </Health>
   <Identity>
     <Civ>maur</Civ>
     <GenericName>Ashoka the Great</GenericName>
     <SpecificName>Aśoka Devānāmpriya</SpecificName>
-    <Icon>units/pers_hero_cyrus.png</Icon>
+    <Icon>units/maur_hero_ashoka.png</Icon>
     <Tooltip>Hero Chariot Archer.
 Hero Aura: "TBD."</Tooltip>
     <History>TBD.</History>
