@@ -539,6 +539,7 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 	//   "x": ...,
 	//   "z": ...,
 	//   "angle": ...,
+	//   "actorSeed": ...,
 	//   "autorepair": true,                // whether to automatically start constructing/repairing the new foundation
 	//   "autocontinue": true,              // whether to automatically gather/build/etc after finishing this
 	//   "queued": true,                    // whether to add the construction/repairing of this foundation to entities' queue (if applicable)
@@ -596,9 +597,13 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 			cmpObstruction.SetControlGroup2(cmd.obstructionControlGroup2);
 	}
 	
+	// Make it owned by the current player
+	var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
+	cmpOwnership.SetOwner(player);
+	
 	// Check whether it's obstructed by other entities or invalid terrain
 	var cmpBuildRestrictions = Engine.QueryInterface(ent, IID_BuildRestrictions);
-	if (!cmpBuildRestrictions || !cmpBuildRestrictions.CheckPlacement(player))
+	if (!cmpBuildRestrictions || !cmpBuildRestrictions.CheckPlacement())
 	{
 		if (g_DebugCommands)
 		{
@@ -621,9 +626,7 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		{
 			warn("Invalid command: build limits check failed for player "+player+": "+uneval(cmd));
 		}
-		
-		// TODO: The UI should tell the user they can't build this (but we still need this check)
-		
+
 		// Remove the foundation because the construction was aborted
 		Engine.DestroyEntity(ent);
 		return false;
@@ -689,15 +692,15 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		Engine.DestroyEntity(ent);
 		return false;
 	}
-	
-	// Make it owned by the current player
-	var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
-	cmpOwnership.SetOwner(player);
-	
+
+	var cmpVisual = Engine.QueryInterface(ent, IID_Visual);
+	if (cmpVisual && cmd.actorSeed !== undefined)
+		cmpVisual.SetActorSeed(cmd.actorSeed);
+
 	// Initialise the foundation
 	var cmpFoundation = Engine.QueryInterface(ent, IID_Foundation);
 	cmpFoundation.InitialiseConstruction(player, cmd.template);
-	
+
 	// Tell the units to start building this new entity
 	if (cmd.autorepair)
 	{
@@ -709,7 +712,7 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 			"queued": cmd.queued
 		});
 	}
-	
+
 	return ent;
 }
 
