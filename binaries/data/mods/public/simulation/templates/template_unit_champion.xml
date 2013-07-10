@@ -6,6 +6,7 @@
   <Identity>
     <GenericName>Champion Unit</GenericName>
     <Classes datatype="tokens">Champion Organic</Classes>
+    <RequiredTechnology>phase_city</RequiredTechnology>
   </Identity>
   <Loot>
     <xp>150</xp>

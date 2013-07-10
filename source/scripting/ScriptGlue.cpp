@@ -1,4 +1,4 @@
-/* Copyright (C) 2010 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -53,6 +53,7 @@
 #include "renderer/Renderer.h"
 #include "scriptinterface/ScriptInterface.h"
 #include "simulation2/Simulation2.h"
+#include "soundmanager/ISoundManager.h"
 
 // rationale: the function table is now at the end of the source file to
 // avoid the need for forward declarations for every function.
@@ -340,8 +341,11 @@ JSBool SetPaused(JSContext* cx, uintN argc, jsval* vp)
 	try
 	{
 		g_Game->m_Paused = ToPrimitive<bool> (JS_ARGV(cx, vp)[0]);
+
+		if ( g_SoundManager )
+			g_SoundManager->Pause(g_Game->m_Paused);
 	}
-	catch (PSERROR_Scripting_ConversionFailed)
+	catch (PSERROR_Scripting_ConversionFailed&)
 	{
 		JS_ReportError(cx, "Invalid parameter to SetPaused");
 	}

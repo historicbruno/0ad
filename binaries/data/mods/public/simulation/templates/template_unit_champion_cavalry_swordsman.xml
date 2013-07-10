@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_champion_cavalry">
   <Armour>
-    <Hack>9.0</Hack>
-    <Pierce>14.0</Pierce>
-    <Crush>8.0</Crush>
+    <Hack>4</Hack>
+    <Pierce>6</Pierce>
+    <Crush>7</Crush>
   </Armour>
   <Attack>
     <Melee>
@@ -34,7 +34,7 @@
 		  <Multiplier>0.5</Multiplier>
 		</CamelStench>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Melee>
     <Charge>
@@ -61,7 +61,7 @@
 		  <Multiplier>0.5</Multiplier>
 		</CamelStench>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Charge>
   </Attack>

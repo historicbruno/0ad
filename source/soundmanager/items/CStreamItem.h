@@ -28,15 +28,15 @@
 class CStreamItem : public CSoundBase
 {
 public:
-	CStreamItem(CSoundData* sndData);
-	virtual ~CStreamItem();
-	
-	virtual void SetLooping(bool loops);
-	virtual bool IdleTask();
-	
-protected:	
-	virtual void Attach(CSoundData* itemData);
+  CStreamItem(CSoundData* sndData);
+  virtual ~CStreamItem();
+  
+  virtual void SetLooping(bool loops);
+  virtual bool IdleTask();
+  virtual void Attach(CSoundData* itemData);
 
+protected:  
+  void ReleaseOpenALStream();
 };
 
 #endif // CONFIG2_AUDIO

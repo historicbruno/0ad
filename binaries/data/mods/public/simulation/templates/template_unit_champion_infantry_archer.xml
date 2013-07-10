@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_champion_infantry">
   <Armour>
-    <Hack>5.0</Hack>
-    <Pierce>5.0</Pierce>
-    <Crush>5.0</Crush>
+    <Hack>4</Hack>
+    <Pierce>5</Pierce>
+    <Crush>6</Crush>
   </Armour>
   <Attack>
     <Ranged>
       <Hack>0.0</Hack>
-      <Pierce>25.0</Pierce>
+      <Pierce>15.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>58</MaxRange>
-      <MinRange>10.0</MinRange>
+      <MinRange>0.0</MinRange>
       <ProjectileSpeed>75.0</ProjectileSpeed>
       <PrepareTime>1200</PrepareTime>
       <RepeatTime>2000</RepeatTime>
@@ -23,7 +23,7 @@
         </BonusPrimary>
         <BonusSecondary>
           <Classes>Cavalry Spear</Classes>
-          <Multiplier>1.5</Multiplier>
+          <Multiplier>1.25</Multiplier>
         </BonusSecondary>
       </Bonuses>
       <PreferredClasses datatype="tokens">Organic</PreferredClasses>
@@ -46,7 +46,8 @@
     <Classes datatype="tokens">Ranged Bow</Classes>
     <GenericName>Champion Archer</GenericName>
 	<Tooltip>Champion Archer.
-Counters: 2x vs. Swordsmen, 1.5x vs. Cavalry Spearmen. Countered by: Cavalry Swordsmen, Cavalry Skirmishers.</Tooltip>
+Counters: 2x vs. Swordsmen, 1.25x vs. Cavalry Spearmen. 
+Countered by: Cavalry Swordsmen, Cavalry Skirmishers.</Tooltip>
   </Identity>
   <Sound>
     <SoundGroups>

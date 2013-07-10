@@ -1,27 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Entity parent="template_unit_infantry_melee_spearman">
-  <Armour>
-    <Pierce>9.0</Pierce>
-  </Armour>
-  <Attack>
-    <Melee>
-      <MaxRange>6.0</MaxRange>
-    </Melee>
-    <Charge>
-      <MaxRange>6.0</MaxRange>
-    </Charge>
-  </Attack>
+<Entity parent="template_unit_infantry_melee_pikeman">
   <Builder>
     <Entities datatype="tokens">
       structures/mace_theatron
       structures/mace_library
     </Entities>
   </Builder>
-  <Cost>
-    <Resources>
-      <wood>60</wood>
-    </Resources>
-  </Cost>
   <Identity>
     <Civ>mace</Civ>
     <SelectionGroupName>units/mace_infantry_spearman_b</SelectionGroupName>
@@ -33,12 +17,6 @@
   <Promotion>
     <Entity>units/mace_infantry_spearman_a</Entity>
   </Promotion>
-  <UnitMotion>
-    <WalkSpeed>6.5</WalkSpeed>
-    <Run>
-      <Speed>13.0</Speed>
-    </Run>
-  </UnitMotion>
   <VisualActor>
     <Actor>units/macedonians/infantry_spearman_b.xml</Actor>
   </VisualActor>

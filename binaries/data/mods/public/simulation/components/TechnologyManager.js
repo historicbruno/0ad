@@ -110,9 +110,13 @@ TechnologyManager.prototype.CanResearch = function (tech)
 	if (template.supersedes && !this.IsTechnologyResearched(template.supersedes))
 		return false;
 	
+	if (template.top && this.IsInProgress(template.top) ||
+	    template.bottom && this.IsInProgress(template.bottom))
+		return false;
+	
 	if (template.pair && !this.CanResearch(template.pair))
 		return false;
-		
+	
 	if (this.IsInProgress(tech))
 		return false;
 	
@@ -420,6 +424,28 @@ TechnologyManager.prototype.GetResearcher = function(tech)
 TechnologyManager.prototype.GetTechModifications = function()
 {
 	return this.modifications;
+};
+
+// called by GUIInterface for PlayerData. AI use.
+TechnologyManager.prototype.GetQueuedResearch = function()
+{
+	return this.researchQueued;
+};
+TechnologyManager.prototype.GetStartedResearch = function()
+{
+	return this.researchStarted;
+};
+TechnologyManager.prototype.GetResearchedTechs = function()
+{
+	return this.researchedTechs;
+};
+TechnologyManager.prototype.GetClassCounts = function()
+{
+	return this.classCounts;
+};
+TechnologyManager.prototype.GetTypeCountsByClass = function()
+{
+	return this.typeCountsByClass;
 };
 
 Engine.RegisterComponentType(IID_TechnologyManager, "TechnologyManager", TechnologyManager);

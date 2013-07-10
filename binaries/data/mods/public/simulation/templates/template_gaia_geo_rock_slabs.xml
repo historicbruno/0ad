@@ -12,6 +12,7 @@
   </Position>
   <ResourceSupply>
     <Amount>5000</Amount>
+	<MaxGatherers>24</MaxGatherers>
   </ResourceSupply>
   <Sound>
     <SoundGroups>

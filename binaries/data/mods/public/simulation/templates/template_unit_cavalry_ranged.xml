@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_cavalry">
+  <Armour>
+    <Hack>1</Hack>
+    <Pierce>3</Pierce>
+    <Crush>1</Crush>
+  </Armour>
   <Attack>
     <Ranged>
       <Hack>0.0</Hack>
       <Pierce>10.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>16.0</MaxRange>
-      <MinRange>10.0</MinRange>
+      <MinRange>0.0</MinRange>
       <ProjectileSpeed>25.0</ProjectileSpeed>
       <PrepareTime>900</PrepareTime>
       <RepeatTime>1500</RepeatTime>

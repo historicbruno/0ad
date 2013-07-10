@@ -71,6 +71,7 @@ bool CObjectBase::Load(const VfsPath& pathname)
 	AT(speed);
 	AT(event);
 	AT(load);
+	AT(sound);
 	AT(attachpoint);
 	AT(actor);
 	AT(frequency);
@@ -221,6 +222,11 @@ bool CObjectBase::Load(const VfsPath& pathname)
 								{
 									float pos = ae.Value.ToFloat();
 									anim.m_ActionPos2 = clamp(pos, 0.f, 1.f);
+								}
+								else if (ae.Name == at_sound)
+								{
+									float pos = ae.Value.ToFloat();
+									anim.m_SoundPos = clamp(pos, 0.f, 1.f);
 								}
 							}
 							currentVariant->m_Anims.push_back(anim);
@@ -585,7 +591,7 @@ std::set<CStr> CObjectBase::CalculateRandomRemainingSelections(rng_t& rng, const
 		if (prop)
 		{
 			std::vector<std::set<CStr> > propInitialSelections = initialSelections;
-			if (remainingSelections.size() > 0)
+			if (!remainingSelections.empty())
 				propInitialSelections.push_back(remainingSelections);
 
 			std::set<CStr> propRemainingSelections = prop->CalculateRandomRemainingSelections(rng, propInitialSelections);
@@ -611,7 +617,7 @@ std::vector<std::vector<CStr> > CObjectBase::GetVariantGroups() const
 	// Set of objects already processed, so we don't do them more than once
 	std::set<const CObjectBase*> objectsProcessed;
 
-	while (objectsQueue.size())
+	while (!objectsQueue.empty())
 	{
 		const CObjectBase* obj = objectsQueue.front();
 		objectsQueue.pop();

@@ -1,5 +1,6 @@
 {
   "name": "Aegis Bot",
-  "description": "Improvements over qBot by Wraitii. Still experimental(bugs possible).\nThis bot may be harder to defeat than the regular qBot. Please report any problems on the Wildfire forums.",
-  "constructor": "QBotAI"
+  "description": "Wraitii's improvement of qBot. It is more reliable and generally a better player. Note that it doesn't support saved games yet, and there may be other bugs. Please report issues to Wildfire Games (see the link in the main menu).",
+  "constructor": "QBotAI",
+  "useShared": true
 }

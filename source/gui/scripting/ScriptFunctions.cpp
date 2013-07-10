@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -422,6 +422,26 @@ CScriptVal GetMapSettings(void* cbdata)
 }
 
 /**
+ * Get the current X coordinate of the camera.
+ */
+float CameraGetX(void* UNUSED(cbdata))
+{
+	if (g_Game && g_Game->GetView())
+		return g_Game->GetView()->GetCameraX();
+	return -1;
+}
+
+/**
+ * Get the current Z coordinate of the camera.
+ */
+float CameraGetZ(void* UNUSED(cbdata))
+{
+	if (g_Game && g_Game->GetView())
+		return g_Game->GetView()->GetCameraZ();
+	return -1;
+}
+
+/**
  * Start / stop camera following mode
  * @param entityid unit id to follow. If zero, stop following mode
  */
@@ -524,6 +544,11 @@ void SubmitUserReport(void* UNUSED(cbdata), std::string type, int version, std::
 void SetSimRate(void* UNUSED(cbdata), float rate)
 {
 	g_Game->SetSimRate(rate);
+}
+
+float GetSimRate(void* UNUSED(cbdata))
+{
+	return g_Game->GetSimRate();
 }
 
 void SetTurnLength(void* UNUSED(cbdata), int length)
@@ -660,6 +685,8 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<bool, &IsAtlasRunning>("IsAtlasRunning");
 	scriptInterface.RegisterFunction<CScriptVal, VfsPath, &LoadMapSettings>("LoadMapSettings");
 	scriptInterface.RegisterFunction<CScriptVal, &GetMapSettings>("GetMapSettings");
+	scriptInterface.RegisterFunction<float, &CameraGetX>("CameraGetX");
+	scriptInterface.RegisterFunction<float, &CameraGetZ>("CameraGetZ");
 	scriptInterface.RegisterFunction<void, entity_id_t, &CameraFollow>("CameraFollow");
 	scriptInterface.RegisterFunction<void, entity_id_t, &CameraFollowFPS>("CameraFollowFPS");
 	scriptInterface.RegisterFunction<void, entity_pos_t, entity_pos_t, &CameraMoveTo>("CameraMoveTo");
@@ -680,6 +707,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 
 	// Development/debugging functions
 	scriptInterface.RegisterFunction<void, float, &SetSimRate>("SetSimRate");
+	scriptInterface.RegisterFunction<float, &GetSimRate>("GetSimRate");
 	scriptInterface.RegisterFunction<void, int, &SetTurnLength>("SetTurnLength");
 	scriptInterface.RegisterFunction<void, float, float, float, &SetCameraTarget>("SetCameraTarget");
 	scriptInterface.RegisterFunction<int, &Crash>("Crash");

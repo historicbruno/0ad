@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -402,25 +402,13 @@ public:
 
 		// TODO: do something with m_AnchorType
 
-		CMatrix3D m;
-		CMatrix3D mXZ;
-		float Cos = cosf(rotY);
-		float Sin = sinf(rotY);
-
-		m.SetIdentity();
-		m._11 = -Cos;
-		m._13 = -Sin;
-		m._31 = Sin;
-		m._33 = -Cos;
-
-		mXZ.SetIdentity();
-		mXZ.SetXRotation(m_RotX.ToFloat());
-		mXZ.RotateZ(m_RotZ.ToFloat());
-		// TODO: is this all done in the correct order?
-		mXZ = m * mXZ;
-		mXZ.Translate(CVector3D(x, y, z));
-
-		return mXZ;
+        CMatrix3D m;
+		m.SetXRotation(m_RotX.ToFloat());
+		m.RotateZ(m_RotZ.ToFloat());
+		m.RotateY(rotY + (float)M_PI);
+		m.Translate(CVector3D(x, y, z));
+		
+		return m;
 	}
 
 	virtual void HandleMessage(const CMessage& msg, bool UNUSED(global))

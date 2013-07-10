@@ -37,7 +37,7 @@ function getPlayerData(playerAssignments)
 {
 	var players = [];
 
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 	if (!simState)
 		return players;
 
@@ -62,6 +62,7 @@ function getPlayerData(playerAssignments)
 		    "teamsLocked": playerState.teamsLocked,
 		    "state": playerState.state,
 		    "isAlly": playerState.isAlly,
+		    "isMutualAlly": playerState.isMutualAlly,
 		    "isNeutral": playerState.isNeutral,
 		    "isEnemy": playerState.isEnemy,
 		    "guid": undefined, // network guid for players controlled by hosts
@@ -176,6 +177,42 @@ function damageTypeDetails(dmg)
 	}
 }
 
+// Converts an armor level into the actual reduction percentage
+function armorLevelToPercentage(level)
+{
+	return 100 - Math.round(Math.pow(0.9, level) * 100);
+}
+
+// Also for the unit details panel
+function armorTypeDetails(dmg)
+{
+	if (dmg)
+	{
+		var dmgArray = [];
+		if (dmg.hack)
+		{
+			dmgArray.push(dmg.hack + "[font=\"sans-10\"][color=\"orange\"] Hack[/color][/font] " +
+				" [font=\"sans-10\"](" + armorLevelToPercentage(dmg.hack) + "%)[/font]");
+		}
+		if (dmg.pierce)
+		{
+			dmgArray.push(dmg.pierce + "[font=\"sans-10\"][color=\"orange\"] Pierce[/color][/font] " +
+				" [font=\"sans-10\"](" + armorLevelToPercentage(dmg.pierce) + "%)[/font]");
+		}
+		if (dmg.crush)
+		{
+			dmgArray.push(dmg.crush + "[font=\"sans-10\"][color=\"orange\"] Crush[/color][/font] " +
+				" [font=\"sans-10\"](" + armorLevelToPercentage(dmg.crush) + "%)[/font]");
+		}
+
+		return dmgArray.join(", ");
+	}
+	else
+	{
+		return "[font=\"serif-12\"](None)[/font]";
+	}
+}
+
 // For the training tooltip
 function damageTypesToText(dmg)
 {
@@ -188,6 +225,27 @@ function damageTypesToText(dmg)
 	var hackDamage = dmg.hack;
 	var pierceDamage = dmg.pierce;
 	var crushDamage = dmg.crush;
+
+	var dmgArray = [];
+	if (hackDamage) dmgArray.push(Math.round(hackDamage) + hackLabel);
+	if (pierceDamage) dmgArray.push(Math.round(pierceDamage) + pierceLabel);
+	if (crushDamage) dmgArray.push(Math.round(crushDamage) + crushLabel);
+
+	return dmgArray.join("[font=\"serif-12\"], [/font]");
+}
+
+// Also for the training tooltip
+function armorTypesToText(dmg)
+{
+	if (!dmg)
+		return "[font=\"serif-12\"](None)[/font]";
+
+	var hackDamage = dmg.hack;
+	var pierceDamage = dmg.pierce;
+	var crushDamage = dmg.crush;
+	var hackLabel = "[font=\"serif-12\"] Hack (" + armorLevelToPercentage(hackDamage) + "%)[/font]";
+	var pierceLabel = "[font=\"serif-12\"] Pierce (" + armorLevelToPercentage(pierceDamage) + "%)[/font]";
+	var crushLabel = "[font=\"serif-12\"] Crush (" + armorLevelToPercentage(crushDamage) + "%)[/font]";
 
 	var dmgArray = [];
 	if (hackDamage) dmgArray.push(hackDamage + hackLabel);
@@ -260,15 +318,26 @@ function getCostComponentDisplayName(costComponentName)
 }
 
 /**
+ * Multiplies the costs for a template by a given batch size.
+ */
+function multiplyEntityCosts(template, trainNum)
+{
+	var totalCosts = {};
+	for (var r in template.cost)
+		totalCosts[r] = Math.floor(template.cost[r] * trainNum);
+
+	return totalCosts;
+}
+
+/**
  * Helper function for getEntityCostTooltip.
  */
 function getEntityCostComponentsTooltipString(template, trainNum, entity)
 {
-	var totalCosts = {};
 	if (!trainNum)
 		trainNum = 1;
-	for (var r in template.cost)
-		totalCosts[r] = Math.floor(template.cost[r] * trainNum);
+
+	var totalCosts = multiplyEntityCosts(template, trainNum);
 	totalCosts.time = Math.ceil(template.cost.time * (entity ? Engine.GuiInterfaceCall("GetBatchTime", {"entity": entity, "batchSize": trainNum}) : 1));
 
 	var costs = [];

@@ -22,9 +22,9 @@
 
 #if CONFIG2_AUDIO
 
-#include "lib/external_libraries/openal.h"
 #include "maths/Vector3D.h"
 #include "ps/CStr.h"
+#include "soundmanager/data/SoundData.h"
 
 class ISoundItem
 {
@@ -36,28 +36,33 @@ public:
 	virtual bool IsPlaying() = 0;
 	
 	
-	virtual CStrW* GetName() = 0;
+	virtual Path* GetName() = 0;
 	virtual bool IdleTask() = 0;
 	virtual	bool IsFading() = 0;
-
+	virtual bool Finished() = 0;
+	
 	virtual void Play() = 0;
 	virtual void Stop() = 0;
 
+	virtual void Attach(CSoundData* itemData) = 0;
+
 	virtual void EnsurePlay() = 0;
-	virtual void PlayAsMusic() = 0;
-	virtual void PlayAsAmbient() = 0;
 
 	virtual void PlayAndDelete() = 0;
 	virtual void StopAndDelete() = 0;
-	virtual void FadeToIn(ALfloat newVolume, double fadeDuration) = 0;
+	virtual void FadeToIn(float newVolume, double fadeDuration) = 0;
 	virtual void FadeAndDelete(double fadeTime) = 0;
+	virtual void FadeAndPause(double fadeTime) = 0;
 	virtual void PlayLoop() = 0;
 
-	virtual void SetCone(ALfloat innerCone, ALfloat outerCone, ALfloat coneGain) = 0;
-	virtual void SetPitch(ALfloat pitch) = 0;
-	virtual void SetGain(ALfloat gain) = 0;
+	virtual void SetCone(float innerCone, float outerCone, float coneGain) = 0;
+	virtual void SetPitch(float pitch) = 0;
+	virtual void SetGain(float gain) = 0;
 	virtual void SetLocation(const CVector3D& position) = 0;
-	virtual void SetRollOff(ALfloat gain) = 0;
+	virtual void SetRollOff(float gain) = 0;
+
+	virtual void Pause() = 0;
+	virtual void Resume() = 0;
 };
 
 #endif // CONFIG2_AUDIO

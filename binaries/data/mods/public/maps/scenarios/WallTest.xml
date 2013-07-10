@@ -40,7 +40,6 @@
   "Name": "WallTest",
   "PlayerData": [
     {
-      "AI": "",
       "Civ": "hele",
       "Colour": {
         "b": 200,
@@ -70,7 +69,6 @@
       "Team": -1
     },
     {
-      "AI": "qbot",
       "Civ": "hele",
       "Colour": {
         "b": 20,
@@ -177,7 +175,7 @@
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="72">
-			<Template>structures/cart_mill</Template>
+			<Template>structures/cart_storehouse</Template>
 			<Player>1</Player>
 			<Position x="285.44394" z="308.2942"/>
 			<Orientation y="2.35621"/>

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_champion_infantry">
   <Armour>
-    <Hack>6.0</Hack>
-    <Pierce>6.0</Pierce>
-    <Crush>5.0</Crush>
+    <Hack>4</Hack>
+    <Pierce>5</Pierce>
+    <Crush>6</Crush>
   </Armour>
   <Attack>
     <Ranged>
       <Hack>0.0</Hack>
-      <Pierce>30.0</Pierce>
+      <Pierce>25.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>48</MaxRange>
-      <MinRange>12.0</MinRange>
+      <MinRange>0.0</MinRange>
       <ProjectileSpeed>50.0</ProjectileSpeed>
       <PrepareTime>1200</PrepareTime>
       <RepeatTime>2000</RepeatTime>

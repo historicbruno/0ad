@@ -23,8 +23,9 @@
 #if CONFIG2_AUDIO
 
 #include "lib/external_libraries/openal.h"
-#include "soundmanager/items/ISoundItem.h"
+#include "ps/ThreadUtil.h"
 #include "soundmanager/data/SoundData.h"
+#include "soundmanager/items/ISoundItem.h"
 
 class CSoundBase : public ISoundItem
 {
@@ -36,47 +37,57 @@ protected:
 	bool m_LastPlay;
 	bool m_Looping;
 	bool m_ShouldBePlaying;
+	bool m_PauseAfterFade;
+	bool m_IsPaused;
 	
 	double m_StartFadeTime;
 	double m_EndFadeTime;
+
 	ALfloat	m_StartVolume;
 	ALfloat	m_EndVolume;
+	CMutex m_ItemMutex;
 
 public:
 	CSoundBase();
 	
 	virtual ~CSoundBase();
 	
-	virtual bool InitOpenAL();
-	virtual void ResetVars();
-	virtual void EnsurePlay();
+	bool InitOpenAL();
+	void ResetVars();
+	void EnsurePlay();
 
-	virtual void SetGain(ALfloat gain);
-	virtual void SetRollOff(ALfloat gain);
-	virtual	void SetPitch(ALfloat pitch);
-	virtual	void SetDirection(const CVector3D& direction);
-	virtual	void SetCone(ALfloat innerCone, ALfloat outerCone, ALfloat coneGain);
-	virtual void SetLastPlay(bool last);
-	virtual	bool IsFading();
-
+	void SetGain(ALfloat gain);
+	void SetRollOff(ALfloat gain);
+	void SetPitch(ALfloat pitch);
+	void SetDirection(const CVector3D& direction);
+	void SetCone(ALfloat innerCone, ALfloat outerCone, ALfloat coneGain);
+	void SetLastPlay(bool last);
+	void ReleaseOpenAL();
+	bool IsFading();
+	bool Finished();
+	
 	void Play();
 	void PlayAndDelete();
-	bool IdleTask();
 	void PlayLoop();
 	void Stop();
 	void StopAndDelete();
 	void FadeToIn(ALfloat newVolume, double fadeDuration);
 
-	void PlayAsMusic();
-	void PlayAsAmbient();
+	bool GetLooping();
+	bool IsPlaying();
 
-	CStrW* GetName();
+	void SetLocation(const CVector3D& position);
+	void FadeAndDelete(double fadeTime);
+	void FadeAndPause(double fadeTime);
 
-	virtual bool GetLooping();
+	void Pause();
+	void Resume();
+
+	Path* GetName();
+
 	virtual void SetLooping(bool loops);
-	virtual bool IsPlaying();
-	virtual void SetLocation(const CVector3D& position);
-	virtual void FadeAndDelete(double fadeTime);
+	virtual bool IdleTask();
+	virtual void Attach(CSoundData* itemData);
 
 protected:
 

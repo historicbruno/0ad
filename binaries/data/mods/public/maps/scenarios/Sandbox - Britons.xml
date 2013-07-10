@@ -2,13 +2,17 @@
 
 <Scenario version="5">
 	<Environment>
-		<LightingModel>standard</LightingModel>
 		<SkySet>cirrus</SkySet>
 		<SunColour r="0.74902" g="0.74902" b="0.74902"/>
 		<SunElevation angle="0.785398"/>
 		<SunRotation angle="-0.785396"/>
 		<TerrainAmbientColour r="0.501961" g="0.501961" b="0.501961"/>
 		<UnitsAmbientColour r="0.501961" g="0.501961" b="0.501961"/>
+		<Fog>
+			<FogFactor>0</FogFactor>
+			<FogThickness>0.5</FogThickness>
+			<FogColour r="0.8" g="0.8" b="0.898039"/>
+		</Fog>
 		<Water>
 			<WaterBody>
 				<Type>default</Type>
@@ -22,9 +26,16 @@
 				<ReflectionTintStrength>0</ReflectionTintStrength>
 			</WaterBody>
 		</Water>
+		<Postproc>
+			<Brightness>0</Brightness>
+			<Contrast>1</Contrast>
+			<Saturation>0.99</Saturation>
+			<Bloom>0.1999</Bloom>
+			<PostEffect>default</PostEffect>
+		</Postproc>
 	</Environment>
 	<Camera>
-		<Position x="669.768" y="80.7426" z="277.032"/>
+		<Position x="652.958" y="118.484" z="222.983"/>
 		<Rotation angle="0"/>
 		<Declination angle="0.610865"/>
 	</Camera>
@@ -27983,13 +27994,13 @@
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="6261">
-			<Template>structures/brit_mill</Template>
+			<Template>structures/brit_storehouse</Template>
 			<Player>1</Player>
 			<Position x="628.2226" z="434.38938"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="6262">
-			<Template>structures/brit_mill</Template>
+			<Template>structures/brit_storehouse</Template>
 			<Player>1</Player>
 			<Position x="661.81495" z="299.05588"/>
 			<Orientation y="2.35621"/>
@@ -28012,12 +28023,6 @@
 			<Position x="639.76197" z="492.95398"/>
 			<Orientation y="2.35621"/>
 		</Entity>
-		<Entity uid="6266">
-			<Template>structures/brit_kennel</Template>
-			<Player>1</Player>
-			<Position x="716.95069" z="363.09772"/>
-			<Orientation y="-2.84128"/>
-		</Entity>
 		<Entity uid="6267">
 			<Template>structures/brit_temple</Template>
 			<Player>1</Player>
@@ -28039,19 +28044,13 @@
 		<Entity uid="6270">
 			<Template>structures/brit_farmstead</Template>
 			<Player>1</Player>
-			<Position x="717.60785" z="342.19349"/>
+			<Position x="718.43458" z="348.10871"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="6271">
 			<Template>structures/brit_defense_tower</Template>
 			<Player>1</Player>
 			<Position x="622.30323" z="393.49387"/>
-			<Orientation y="2.35621"/>
-		</Entity>
-		<Entity uid="6272">
-			<Template>structures/brit_defense_tower</Template>
-			<Player>1</Player>
-			<Position x="650.80652" z="405.93201"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="6273">
@@ -28117,44 +28116,44 @@
 		<Entity uid="6283">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="720.45075" z="395.03635"/>
-			<Orientation y="2.35621"/>
+			<Position x="721.88965" z="388.21634"/>
+			<Orientation y="-1.91277"/>
 		</Entity>
 		<Entity uid="6284">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="705.63721" z="385.28303"/>
-			<Orientation y="1.39454"/>
+			<Position x="705.64563" z="385.2425"/>
+			<Orientation y="-2.19111"/>
 		</Entity>
 		<Entity uid="6285">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="659.48694" z="415.58411"/>
-			<Orientation y="1.37914"/>
+			<Position x="650.63416" z="438.17713"/>
+			<Orientation y="3.06395"/>
 		</Entity>
 		<Entity uid="6286">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
 			<Position x="740.2931" z="375.76874"/>
-			<Orientation y="-2.66364"/>
+			<Orientation y="-2.26088"/>
 		</Entity>
 		<Entity uid="6287">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="598.6031" z="337.52591"/>
+			<Position x="597.96814" z="339.55286"/>
 			<Orientation y="2.06469"/>
 		</Entity>
 		<Entity uid="6288">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="610.76587" z="323.25538"/>
+			<Position x="672.95203" z="421.31675"/>
 			<Orientation y="-2.47483"/>
 		</Entity>
 		<Entity uid="6289">
 			<Template>structures/brit_house</Template>
 			<Player>1</Player>
-			<Position x="614.91663" z="308.95905"/>
-			<Orientation y="2.35621"/>
+			<Position x="741.54603" z="390.6677"/>
+			<Orientation y="-1.99885"/>
 		</Entity>
 		<Entity uid="6290">
 			<Template>structures/brit_civil_centre</Template>
@@ -28215,6 +28214,41 @@
 			<Player>1</Player>
 			<Position x="671.89557" z="380.45832"/>
 			<Orientation y="0.82946"/>
+		</Entity>
+		<Entity uid="6300">
+			<Template>structures/brit_crannog</Template>
+			<Player>1</Player>
+			<Position x="569.9419" z="310.623"/>
+			<Orientation y="-2.28776"/>
+			<Actor seed="59406"/>
+		</Entity>
+		<Entity uid="6301">
+			<Template>structures/brit_fortress</Template>
+			<Player>1</Player>
+			<Position x="623.6402" z="319.8094"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="24924"/>
+		</Entity>
+		<Entity uid="6302">
+			<Template>structures/brit_market</Template>
+			<Player>1</Player>
+			<Position x="653.41871" z="408.91889"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="10978"/>
+		</Entity>
+		<Entity uid="6303">
+			<Template>structures/brit_field</Template>
+			<Player>1</Player>
+			<Position x="662.36713" z="342.62305"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="6632"/>
+		</Entity>
+		<Entity uid="6304">
+			<Template>structures/brit_field</Template>
+			<Player>1</Player>
+			<Position x="682.87354" z="363.91498"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="14302"/>
 		</Entity>
 	</Entities>
 	<Paths/>

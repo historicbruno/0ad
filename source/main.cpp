@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -258,7 +258,7 @@ static int ProgressiveLoad()
 			break;
 		}
 	}
-	catch (PSERROR_Game_World_MapLoadFailed e)
+	catch (PSERROR_Game_World_MapLoadFailed& e)
 	{
 		// Map loading failed
 
@@ -460,6 +460,7 @@ static void RunGameOrAtlas(int argc, const char* argv[])
 	// run non-visual simulation replay if requested
 	if (args.Has("replay"))
 	{
+		// TODO: Support mods
 		Paths paths(args);
 		g_VFS = CreateVfs(20 * MiB);
 		g_VFS->Mount(L"cache/", paths.Cache(), VFS_MOUNT_ARCHIVABLE);

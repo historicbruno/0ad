@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -46,7 +46,7 @@
 #include "simulation2/Simulation2.h"
 #include "simulation2/components/ICmpPlayer.h"
 #include "simulation2/components/ICmpPlayerManager.h"
-#include "soundmanager/SoundManager.h"
+#include "soundmanager/ISoundManager.h"
 
 extern bool g_GameRestarted;
 
@@ -126,6 +126,10 @@ void CGame::RegisterInit(const CScriptValRooted& attribs, const std::string& sav
 	std::string mapType;
 	m_Simulation2->GetScriptInterface().GetProperty(attribs.get(), "mapType", mapType);
 
+	float speed;
+	if (m_Simulation2->GetScriptInterface().HasProperty(attribs.get(), "gameSpeed") && m_Simulation2->GetScriptInterface().GetProperty(attribs.get(), "gameSpeed", speed))
+		SetSimRate(speed);
+
 	LDR_BeginRegistering();
 
 	RegMemFun(m_Simulation2, &CSimulation2::ProgressiveLoad, L"Simulation init", 1000);
@@ -199,6 +203,18 @@ PSRETURN CGame::ReallyStartGame()
 		m_Simulation2->InitGame(settings);
 	}
 
+	// We need to do an initial Interpolate call to set up all the models etc,
+	// because Update might never interpolate (e.g. if the game starts paused)
+	// and we could end up rendering before having set up any models (so they'd
+	// all be invisible)
+	Interpolate(0, 0);
+
+	m_GameStarted=true;
+	
+	// Render a frame to begin loading assets
+	if (CRenderer::IsInitialised())
+		Render();
+
 	// Call the reallyStartGame GUI function, but only if it exists
 	if (g_GUI && g_GUI->HasPages())
 	{
@@ -212,14 +228,7 @@ PSRETURN CGame::ReallyStartGame()
 	if (g_NetClient)
 		g_NetClient->LoadFinished();
 
-	// We need to do an initial Interpolate call to set up all the models etc,
-	// because Update might never interpolate (e.g. if the game starts paused)
-	// and we could end up rendering before having set up any models (so they'd
-	// all be invisible)
-	Interpolate(0, 0);
-
 	debug_printf(L"GAME STARTED, ALL INIT COMPLETE\n");
-	m_GameStarted=true;
 
 	// The call tree we've built for pregame probably isn't useful in-game.
 	if (CProfileManager::IsInitialised())
@@ -295,16 +304,10 @@ bool CGame::Update(const double deltaRealTime, bool doInterpolate)
 	if (doInterpolate)
 	{
 		m_TurnManager->Interpolate(deltaSimTime, deltaRealTime);
-#if CONFIG2_AUDIO
+
 		if ( g_SoundManager )
 			g_SoundManager->IdleTask();
-#endif
 	}
-	
-	// TODO: maybe we should add a CCmpParticleInterface that passes the interpolation commands
-	// etc to CParticleManager. But in the meantime just handle it explicitly here.
-	if (doInterpolate && CRenderer::IsInitialised())
-		g_Renderer.GetParticleManager().Interpolate(deltaSimTime);
 
 	return ok;
 }
@@ -315,9 +318,6 @@ void CGame::Interpolate(float simFrameLength, float realFrameLength)
 		return;
 
 	m_TurnManager->Interpolate(simFrameLength, realFrameLength);
-
-	if (CRenderer::IsInitialised())
-		g_Renderer.GetParticleManager().Interpolate(simFrameLength);
 }
 
 

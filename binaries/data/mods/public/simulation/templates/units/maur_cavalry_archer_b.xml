@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_cavalry_ranged_archer">
   <Armour>
-    <Hack>5.0</Hack>
-    <Pierce>11.0</Pierce>
-    <Crush>15.0</Crush>
+    <Hack>6</Hack>
+    <Pierce>10</Pierce>
+    <Crush>10</Crush>
   </Armour>
   <Cost>
     <BuildTime>30</BuildTime>
@@ -25,7 +25,7 @@
     <SelectionGroupName>units/maur_cavalry_archer_b</SelectionGroupName>
     <GenericName>Elephant Archer</GenericName>
     <SpecificName>Vachii Gaja</SpecificName>
-    <Icon>units/cart_champion_cavalry.png</Icon>
+    <Icon>units/maur_cavalry_archer.png</Icon>
     <History>Elephant Archer.</History>
   </Identity>
   <Promotion>
@@ -49,7 +49,7 @@
     </SoundGroups>
   </Sound>
   <UnitMotion>
-    <WalkSpeed>7.5</WalkSpeed>
+    <WalkSpeed>6.0</WalkSpeed>
     <Run>
       <Speed>12.0</Speed>
     </Run>
@@ -58,6 +58,6 @@
     <Range>84</Range>
   </Vision>
   <VisualActor>
-    <Actor>units/mauryans/cavalry_archer_b.xml</Actor>
+    <Actor>units/mauryans/elephant_archer_b.xml</Actor>
   </VisualActor>
 </Entity>

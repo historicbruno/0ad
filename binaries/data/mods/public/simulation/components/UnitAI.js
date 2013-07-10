@@ -156,10 +156,6 @@ var UnitFsmSpec = {
 		// ignore
 	},
 
-	"EntityRenamed": function(msg) {
-		// ignore
-	},
-	
 	"PackFinished": function(msg) {
 		// ignore
 	},
@@ -270,6 +266,33 @@ var UnitFsmSpec = {
 			this.SetNextState("INDIVIDUAL.WALKING");
 	},
 
+	"Order.WalkAndFight": function(msg) {
+		// Let players move captured domestic animals around
+		if (this.IsAnimal() && !this.IsDomestic())
+		{
+			this.FinishOrder();
+			return;
+		}
+
+		// For packable units:
+		// 1. If packed, we can move.
+		// 2. If unpacked, we first need to pack, then follow case 1.
+		if (this.CanPack())
+		{
+			// Case 2: pack
+			this.PushOrderFront("Pack", { "force": true });
+			return;
+		}
+
+		this.SetHeldPosition(this.order.data.x, this.order.data.z);
+		this.MoveToPoint(this.order.data.x, this.order.data.z);
+		if (this.IsAnimal())
+			this.SetNextState("ANIMAL.WALKING");   // WalkAndFight not applicable for animals
+		else
+			this.SetNextState("INDIVIDUAL.WALKINGANDFIGHTING");
+	},
+
+
 	"Order.WalkToTarget": function(msg) {
 		// Let players move captured domestic animals around
 		if (this.IsAnimal() && !this.IsDomestic())
@@ -341,10 +364,10 @@ var UnitFsmSpec = {
 			this.FinishOrder();
 			return;
 		}
-		this.attackType = type;
+		this.order.data.attackType = type;
 
 		// If we are already at the target, try attacking it from here
-		if (this.CheckTargetRange(this.order.data.target, IID_Attack, this.attackType))
+		if (this.CheckTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 		{
 			this.StopMoving();
 			// For packable units within attack range:
@@ -353,8 +376,10 @@ var UnitFsmSpec = {
 			if (this.CanUnpack())
 			{
 				// Ignore unforced attacks
+				// this would prevent attacks from AttackVisibleEntity or AttackEntityInZone ?
+				// so we accept attacks against targets for which we have a bonus
 				// TODO: use special stances instead?
-				if (!this.order.data.force)
+				if (!this.order.data.force && this.GetAttackBonus(type, this.order.data.target) < 1.5)
 				{
 					this.FinishOrder();
 					return;
@@ -403,7 +428,7 @@ var UnitFsmSpec = {
 		}
 
 		// Try to move within attack range
-		if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.attackType))
+		if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 		{
 			// We've started walking to the given point
 			if (this.IsAnimal())
@@ -627,6 +652,14 @@ var UnitFsmSpec = {
 
 			this.MoveToPoint(this.order.data.x, this.order.data.z);
 			this.SetNextState("WALKING");
+		},
+
+		"Order.WalkAndFight": function(msg) {
+			var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+			cmpFormation.CallMemberFunction("SetHeldPosition", [msg.data.x, msg.data.z]);
+
+			this.MoveToPoint(this.order.data.x, this.order.data.z);
+			this.SetNextState("WALKINGANDFIGHTING");
 		},
 		
 		"Order.MoveIntoFormation": function(msg) {
@@ -885,6 +918,54 @@ var UnitFsmSpec = {
 			},
 		},
 
+		"WALKINGANDFIGHTING": {
+			"enter": function(msg) {
+				this.StartTimer(0, 1000);
+			},
+
+			"Timer": function(msg) {
+				// check if there are no enemies to attack
+				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+				for each (var ent in cmpFormation.members)
+				{
+					var cmpUnitAI =  Engine.QueryInterface(ent, IID_UnitAI);
+	    				if (cmpUnitAI.FindNewTargets())
+					{
+						if (cmpUnitAI.orderQueue[0] && cmpUnitAI.orderQueue[0].type == "Attack")
+						{
+							var data = cmpUnitAI.orderQueue[0].data;
+							cmpUnitAI.FinishOrder();
+							this.PushOrderFront("Attack", { "target": data.target, "force": false, "forceResponse": data.forceResponse });
+							break;
+						}
+					}
+				}
+			},
+
+			"leave": function(msg) {
+				this.StopTimer();
+			},
+
+			"MoveStarted": function(msg) {
+				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+				cmpFormation.SetRearrange(true);
+				cmpFormation.MoveMembersIntoFormation(true, true);
+			},
+
+			"MoveCompleted": function(msg) {
+				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+
+				if (this.FinishOrder())
+				{
+					cmpFormation.CallMemberFunction("ResetFinishOrder", []);
+					return;
+				}
+
+				// No more orders left.
+				cmpFormation.Disband();
+			},
+		},
+
 		"FORMING": {
 			"MoveStarted": function(msg) {
 				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
@@ -912,21 +993,6 @@ var UnitFsmSpec = {
 				this.StartTimer(1000, 1000);
 			},
 
-			"EntityRenamed": function(msg) {
-				if (this.order.data && this.order.data.target
-				    && this.order.data.target == msg.entity)
-				{
-					this.order.data.target = msg.newentity;
-
-					// If we're hunting, that means we have a queued gather
-					// order whose target also needs to be updated.
-					if (this.order.data.hunting && this.orderQueue[1] &&
-							this.orderQueue[1].type == "Gather")
-						this.orderQueue[1].data.target = msg.newentity;
-				}
-			},
-
-
 			"Timer": function(msg) {
 				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
 
@@ -938,7 +1004,27 @@ var UnitFsmSpec = {
 
 				// Execute the next order
 				if (this.FinishOrder())
+				{
+					// if WalkAndFight order, look for new target before moving again
+					if (this.orderQueue.length > 0 && this.orderQueue[0].type == "WalkAndFight")
+					{
+						for each (var ent in cmpFormation.members)
+						{
+							var cmpUnitAI =  Engine.QueryInterface(ent, IID_UnitAI);
+	    						if (cmpUnitAI.FindNewTargets())
+							{
+								if (cmpUnitAI.orderQueue[0] && cmpUnitAI.orderQueue[0].type == "Attack")
+								{
+									var data = cmpUnitAI.orderQueue[0].data;
+									cmpUnitAI.FinishOrder();
+									this.PushOrderFront("Attack", { "target": data.target, "force": false, "forceResponse": data.forceResponse });
+									break;
+								}
+							}
+						}
+					}
 					return;
+				}
 
 				// No more order left.
 				cmpFormation.Disband();
@@ -1094,7 +1180,8 @@ var UnitFsmSpec = {
 
 			"leave": function() {
 				var rangeMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
-				rangeMan.DisableActiveQuery(this.losRangeQuery);
+				if (this.losRangeQuery)
+					rangeMan.DisableActiveQuery(this.losRangeQuery);
 				if (this.losHealRangeQuery)
 					rangeMan.DisableActiveQuery(this.losHealRangeQuery);
 
@@ -1146,6 +1233,25 @@ var UnitFsmSpec = {
 			},
 		},
 
+		"WALKINGANDFIGHTING": {
+			"enter": function () {
+				this.StartTimer(0, 1000);
+				this.SelectAnimation("move");
+			},
+
+			"Timer": function(msg) {
+				this.FindNewTargets();
+			},
+
+			"leave": function(msg) {
+				this.StopTimer();
+			},
+
+			"MoveCompleted": function() {
+				this.FinishOrder();
+			},
+		},
+
 		"FLEEING": {
 			"enter": function() {
 				this.PlaySound("panic");
@@ -1173,19 +1279,6 @@ var UnitFsmSpec = {
 			"Order.LeaveFoundation": function(msg) {
 				// Ignore the order as we're busy.
 				return { "discardOrder": true };
-			},
-
-			"EntityRenamed": function(msg) {
-				if (this.order.data.target == msg.entity)
-				{
-					this.order.data.target = msg.newentity;
-
-					// If we're hunting, that means we have a queued gather
-					// order whose target also needs to be updated.
-					if (this.order.data.hunting && this.orderQueue[1] &&
-							this.orderQueue[1].type == "Gather")
-						this.orderQueue[1].data.target = msg.newentity;
-				}
 			},
 
 			"Attacked": function(msg) {
@@ -1242,9 +1335,9 @@ var UnitFsmSpec = {
 			"UNPACKING": {
 				"enter": function() {
 					// If we're not in range yet (maybe we stopped moving), move to target again
-					if (!this.CheckTargetRange(this.order.data.target, IID_Attack, this.attackType))
+					if (!this.CheckTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 					{
-						if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.attackType))
+						if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 							this.SetNextState("APPROACHING");
 						else
 						{
@@ -1266,12 +1359,16 @@ var UnitFsmSpec = {
 
 				"leave": function() {
 				},
+				
+				"Attacked": function(msg) {
+					// Ignore further attacks while unpacking
+				},
 			},
 
 			"ATTACKING": {
 				"enter": function() {
 					var cmpAttack = Engine.QueryInterface(this.entity, IID_Attack);
-					this.attackTimers = cmpAttack.GetTimers(this.attackType);
+					this.attackTimers = cmpAttack.GetTimers(this.order.data.attackType);
 
 					// If the repeat time since the last attack hasn't elapsed,
 					// delay this attack to avoid attacking too fast.
@@ -1283,8 +1380,8 @@ var UnitFsmSpec = {
 						prepare = Math.max(prepare, repeatLeft);
 					}
 
-					// add prefix + no Capital First Letter for this.attackType
-					var attackName = "attack_" + this.attackType.toLowerCase();
+					// add prefix + no capital first letter for attackType
+					var attackName = "attack_" + this.order.data.attackType.toLowerCase();
 					this.SelectAnimation(attackName, false, 1.0, "attack");
 					this.SetAnimationSync(prepare, this.attackTimers.repeat);
 					this.StartTimer(prepare, this.attackTimers.repeat);
@@ -1306,14 +1403,14 @@ var UnitFsmSpec = {
 					if (this.TargetIsAlive(target) && this.CanAttack(target, this.order.data.forceResponse || null))
 					{
 						// Check we can still reach the target
-						if (this.CheckTargetRange(target, IID_Attack, this.attackType))
+						if (this.CheckTargetRange(target, IID_Attack, this.order.data.attackType))
 						{
 							var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 							this.lastAttacked = cmpTimer.GetTime() - msg.lateness;
 
 							this.FaceTowardsTarget(target);
 							var cmpAttack = Engine.QueryInterface(this.entity, IID_Attack);
-							cmpAttack.PerformAttack(this.attackType, target);
+							cmpAttack.PerformAttack(this.order.data.attackType, target);
 
 							if (this.resyncAnimation)
 							{
@@ -1326,7 +1423,7 @@ var UnitFsmSpec = {
 						// Can't reach it - try to chase after it
 						if (this.ShouldChaseTargetedEntity(target, this.order.data.force))
 						{
-							if (this.MoveToTargetRange(target, IID_Attack, this.attackType))
+							if (this.MoveToTargetRange(target, IID_Attack, this.order.data.attackType))
 							{
 								this.SetNextState("COMBAT.CHASING");
 								return;
@@ -1335,8 +1432,13 @@ var UnitFsmSpec = {
 					}
 
 					// Can't reach it, no longer owned by enemy, or it doesn't exist any more - give up
+					// Except if in WalkAndFight mode where we look for more ennemies around before moving again
 					if (this.FinishOrder())
+					{
+						if (this.orderQueue.length > 0 && this.orderQueue[0].type == "WalkAndFight")
+	    						this.FindNewTargets();
 						return;
+					}
 
 					// See if we can switch to a new nearby enemy
 					if (this.FindNewTargets())
@@ -1410,12 +1512,72 @@ var UnitFsmSpec = {
 			"APPROACHING": {
 				"enter": function() {
 					this.SelectAnimation("move");
+					
+					this.gatheringTarget = this.order.data.target;	// temporary, deleted in "leave".
+
+					// check that we can gather from the resource we're supposed to gather from.
+					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+					if (!cmpSupply || !cmpSupply.AddGatherer(this.entity))
+					{
+						// Save the current order's data in case we need it later
+						var oldType = this.order.data.type;
+						var oldTarget = this.order.data.target;
+						var oldTemplate = this.order.data.template;
+
+						// Try the next queued order if there is any
+						if (this.FinishOrder())
+							return true;
+						
+						// Try to find another nearby target of the same specific type
+						// Also don't switch to a different type of huntable animal
+						var nearby = this.FindNearbyResource(function (ent, type, template) {
+							return (
+								ent != oldTarget
+								 && ((type.generic == "treasure" && oldType.generic == "treasure")
+								 || (type.specific == oldType.specific
+								 && (type.specific != "meat" || oldTemplate == template)))
+							);
+						});
+						if (nearby)
+						{
+							this.PerformGather(nearby, false, false);
+							return true;
+						}
+						else
+						{
+							// It's probably better in this case, to avoid units getting stuck around a dropsite
+							// in a "Target is far away, full, nearby are no good resources, return to dropsite" loop
+							// to order it to GatherNear the resource position.
+							var cmpPosition = Engine.QueryInterface(this.gatheringTarget, IID_Position);
+							if (cmpPosition)
+							{
+								var pos = cmpPosition.GetPosition();
+								this.GatherNearPosition(pos.x, pos.z, oldType, oldTemplate);
+								return true;
+							} else {
+								// we're kind of stuck here. Return resource.
+								var nearby = this.FindNearestDropsite(oldType.generic);
+								if (nearby)
+								{
+									this.PushOrderFront("ReturnResource", { "target": nearby, "force": false });
+									return true;
+								}
+							}
+						}
+						return true;
+					}
+					return false;
 				},
 
 				"MoveCompleted": function(msg) {
 					if (msg.data.error)
 					{
 						// We failed to reach the target
+
+						// remove us from the list of entities gathering from Resource.
+						var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+						if (cmpSupply)
+							cmpSupply.RemoveGatherer(this.entity);
 
 						// Save the current order's data in case we need it later
 						var oldType = this.order.data.type;
@@ -1450,6 +1612,13 @@ var UnitFsmSpec = {
 
 					// We reached the target - start gathering from it now
 					this.SetNextState("GATHERING");
+				},
+				
+				"leave": function() {
+					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+					if (cmpSupply)
+						cmpSupply.RemoveGatherer(this.entity);
+					delete this.gatheringTarget;
 				},
 			},
 			
@@ -1487,8 +1656,18 @@ var UnitFsmSpec = {
 
 			"GATHERING": {
 				"enter": function() {
-					var target = this.order.data.target;
+					this.gatheringTarget = this.order.data.target;	// deleted in "leave".
 
+					if (this.gatheringTarget) {
+						// Check that we can gather from the resource we're supposed to gather from.
+						// Will only be added if we're not already in.
+						var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+						if (!cmpSupply || !cmpSupply.AddGatherer(this.entity))
+						{
+							this.StartTimer(0);
+							return false;
+						}
+					}
 					// If this order was forced, the player probably gave it, but now we've reached the target
 					//	switch to an unforced order (can be interrupted by attacks)
 					this.order.data.force = false;
@@ -1497,12 +1676,12 @@ var UnitFsmSpec = {
 					// Calculate timing based on gather rates
 					// This allows the gather rate to control how often we gather, instead of how much.
 					var cmpResourceGatherer = Engine.QueryInterface(this.entity, IID_ResourceGatherer);
-					var rate = cmpResourceGatherer.GetTargetGatherRate(target);
+					var rate = cmpResourceGatherer.GetTargetGatherRate(this.gatheringTarget);
 
 					if (!rate)
 					{
 						// Try to find another target if the current one stopped existing
-						if (!Engine.QueryInterface(target, IID_Identity))
+						if (!Engine.QueryInterface(this.gatheringTarget, IID_Identity))
 						{
 							// Let the Timer logic handle this
 							this.StartTimer(0);
@@ -1525,7 +1704,7 @@ var UnitFsmSpec = {
 					// (else it'll look like we're chopping empty air).
 					// (If it's not alive, the Timer handler will deal with sending us
 					// off to a different target.)
-					if (this.CheckTargetRange(target, IID_ResourceGatherer))
+					if (this.CheckTargetRange(this.gatheringTarget, IID_ResourceGatherer))
 					{
 						var typename = "gather_" + this.order.data.type.specific;
 						this.SelectAnimation(typename, false, 1.0, typename);
@@ -1535,24 +1714,31 @@ var UnitFsmSpec = {
 
 				"leave": function() {
 					this.StopTimer();
-
+					
+					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+					if (cmpSupply)
+						cmpSupply.RemoveGatherer(this.entity);
+					delete this.gatheringTarget;
+					
 					// Show the carried resource, if we've gathered anything.
 					this.SetGathererAnimationOverride();
 				},
 
 				"Timer": function(msg) {
-					var target = this.order.data.target;
 					var resourceTemplate = this.order.data.template;
 					var resourceType = this.order.data.type;
+					
+					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
+						
 					// Check we can still reach and gather from the target
-					if (this.CheckTargetRange(target, IID_ResourceGatherer) && this.CanGather(target))
+					if (this.CheckTargetRange(this.gatheringTarget, IID_ResourceGatherer) && this.CanGather(this.gatheringTarget) && cmpSupply && cmpSupply.IsAvailable(this.entity))
 					{
 						// Gather the resources:
 
 						var cmpResourceGatherer = Engine.QueryInterface(this.entity, IID_ResourceGatherer);
 
 						// Try to gather treasure
-						if (cmpResourceGatherer.TryInstantGather(target)) 
+						if (cmpResourceGatherer.TryInstantGather(this.gatheringTarget))
 							return;
 						
 						// If we've already got some resources but they're the wrong type,
@@ -1561,7 +1747,7 @@ var UnitFsmSpec = {
 							cmpResourceGatherer.DropResources();
 
 						// Collect from the target
-						var status = cmpResourceGatherer.PerformGather(target);
+						var status = cmpResourceGatherer.PerformGather(this.gatheringTarget);
 
 						// If we've collected as many resources as possible,
 						// return to the nearest dropsite
@@ -1585,10 +1771,10 @@ var UnitFsmSpec = {
 						if (!status.exhausted)
 							return;
 					}
-					else
+					else if (cmpSupply && cmpSupply.IsAvailable(this.entity))
 					{
 						// Try to follow the target
-						if (this.MoveToTargetRange(target, IID_ResourceGatherer))
+						if (this.MoveToTargetRange(this.gatheringTarget, IID_ResourceGatherer))
 						{
 							this.SetNextState("APPROACHING");
 							return;
@@ -1650,11 +1836,6 @@ var UnitFsmSpec = {
 		},
 
 		"HEAL": {
-			"EntityRenamed": function(msg) {
-				if (this.order.data.target == msg.entity)
-					this.order.data.target = msg.newentity;
-			},
-
 			"Attacked": function(msg) {
 				// If we stand ground we will rather die than flee
 				if (!this.GetStance().respondStandGround && !this.order.data.force)
@@ -1890,20 +2071,28 @@ var UnitFsmSpec = {
 
 					this.order.data.force = false;
 
-					var target = this.order.data.target;
+					this.repairTarget = this.order.data.target;	// temporary, deleted in "leave".
 					// Check we can still reach and repair the target
-					if (!this.CheckTargetRange(target, IID_Builder) || !this.CanRepair(target))
+					if (!this.CheckTargetRange(this.repairTarget, IID_Builder) || !this.CanRepair(this.repairTarget))
 					{
 						// Can't reach it, no longer owned by ally, or it doesn't exist any more
 						this.FinishOrder();
 						return true;
 					}
-					else
+
+					// Check if the target is still repairable
+					var cmpHealth = Engine.QueryInterface(this.repairTarget, IID_Health);
+					if (cmpHealth && cmpHealth.GetHitpoints() >= cmpHealth.GetMaxHitpoints())
 					{
-						var cmpFoundation = Engine.QueryInterface(target, IID_Foundation);
-						if (cmpFoundation)
-							cmpFoundation.AddBuilder(this.entity);
+						// The building was already finished/fully repaired before we arrived;
+						// let the ConstructionFinished handler handle this.
+						this.OnGlobalConstructionFinished({"entity": this.repairTarget, "newentity": this.repairTarget});
+						return true;
 					}
+
+					var cmpFoundation = Engine.QueryInterface(this.repairTarget, IID_Foundation);
+					if (cmpFoundation)
+						cmpFoundation.AddBuilder(this.entity);
 
 					this.SelectAnimation("build", false, 1.0, "build");
 					this.StartTimer(1000, 1000);
@@ -1911,13 +2100,16 @@ var UnitFsmSpec = {
 				},
 
 				"leave": function() {
+					var cmpFoundation = Engine.QueryInterface(this.repairTarget, IID_Foundation);
+					if (cmpFoundation)
+						cmpFoundation.RemoveBuilder(this.entity);
+					delete this.repairTarget;
 					this.StopTimer();
 				},
 
 				"Timer": function(msg) {
-					var target = this.order.data.target;
 					// Check we can still reach and repair the target
-					if (!this.CheckTargetRange(target, IID_Builder) || !this.CanRepair(target))
+					if (!this.CheckTargetRange(this.repairTarget, IID_Builder) || !this.CanRepair(this.repairTarget))
 					{
 						// Can't reach it, no longer owned by ally, or it doesn't exist any more
 						this.FinishOrder();
@@ -1925,7 +2117,7 @@ var UnitFsmSpec = {
 					}
 					
 					var cmpBuilder = Engine.QueryInterface(this.entity, IID_Builder);
-					cmpBuilder.PerformBuilding(target);
+					cmpBuilder.PerformBuilding(this.repairTarget);
 				},
 			},
 
@@ -2104,6 +2296,10 @@ var UnitFsmSpec = {
 
 			"leave": function() {
 			},
+
+			"Attacked": function(msg) {
+				// Ignore attacks while packing
+			},
 		},
 
 		"UNPACKING": {
@@ -2117,6 +2313,10 @@ var UnitFsmSpec = {
 			},
 
 			"leave": function() {
+			},
+
+			"Attacked": function(msg) {
+				// Ignore attacks while unpacking
 			},
 		},
 	},
@@ -2368,8 +2568,8 @@ UnitAI.prototype.OnOwnershipChanged = function(msg)
 
 UnitAI.prototype.OnDestroy = function()
 {
-	// Clean up any timers that are now obsolete
-	this.StopTimer();
+	// Switch to an empty state to let states execute their leave handlers.
+	UnitFsm.SwitchToNextState(this, "");
 
 	// Clean up range queries
 	var rangeMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
@@ -2694,7 +2894,7 @@ UnitAI.prototype.AddOrders = function(orders)
 UnitAI.prototype.GetOrderData = function()
 {
 	var orders = [];
-	for (i in this.orderQueue) {
+	for (var i in this.orderQueue) {
 		if (this.orderQueue[i].data)
 			orders.push(deepcopy(this.orderQueue[i].data));
 		}
@@ -2768,7 +2968,9 @@ UnitAI.prototype.OnGlobalConstructionFinished = function(msg)
 
 UnitAI.prototype.OnGlobalEntityRenamed = function(msg)
 {
-	UnitFsm.ProcessMessage(this, {"type": "EntityRenamed", "entity": msg.entity, "newentity": msg.newentity});
+	for each (var order in this.orderQueue)
+		if (order.data && order.data.target && order.data.target == msg.entity)
+			order.data.target = msg.newentity;
 };
 
 UnitAI.prototype.OnAttacked = function(msg)
@@ -2868,7 +3070,7 @@ UnitAI.prototype.FindNearbyResource = function(filter)
 		if (template.indexOf("resource|") != -1)
 			template = template.slice(9);
 
-		if (amount > 0 && filter(ent, type, template))
+		if (amount > 0 && cmpResourceSupply.IsAvailable(this.entity) && filter(ent, type, template))
 			return ent;
 	}
 
@@ -3213,6 +3415,14 @@ UnitAI.prototype.GetBestAttackAgainst = function(target)
 	return cmpAttack.GetBestAttackAgainst(target);
 };
 
+UnitAI.prototype.GetAttackBonus = function(type, target)
+{
+	var cmpAttack = Engine.QueryInterface(this.entity, IID_Attack);
+	if (!cmpAttack)
+		return 1;
+	return cmpAttack.GetAttackBonus(type, target);
+};
+
 /**
  * Try to find one of the given entities which can be attacked,
  * and start attacking it.
@@ -3241,7 +3451,8 @@ UnitAI.prototype.AttackEntityInZone = function(ents, forceResponse)
 	for each (var target in ents)
 	{
 		var type = this.GetBestAttackAgainst(target);
-		if (this.CanAttack(target, forceResponse) && this.CheckTargetDistanceFromHeldPosition(target, IID_Attack, type))
+		if (this.CanAttack(target, forceResponse) && this.CheckTargetDistanceFromHeldPosition(target, IID_Attack, type)
+		    && (this.GetStance().respondChaseBeyondVision || this.CheckTargetIsInVisionRange(target)))
 		{
 			this.PushOrderFront("Attack", { "target": target, "force": false, "forceResponse": forceResponse });
 			return true;
@@ -3311,7 +3522,7 @@ UnitAI.prototype.ShouldAbandonChase = function(target, force, iid)
 	// Stop if we're in hold-ground mode and it's too far from the holding point
 	if (this.GetStance().respondHoldGround)
 	{
-		if (!this.CheckTargetDistanceFromHeldPosition(target, iid, this.attackType))
+		if (!this.CheckTargetDistanceFromHeldPosition(target, iid, this.order.data.attackType))
 			return true;
 	}
 
@@ -3425,6 +3636,7 @@ UnitAI.prototype.ComputeWalkingDistance = function()
 		switch (order.type)
 		{
 		case "Walk":
+		case "WalkAndFight":
 		case "WalkToPointRange":
 		case "MoveIntoFormation":
 		case "GatherNearPosition":
@@ -3508,6 +3720,15 @@ UnitAI.prototype.Stop = function(queued)
 UnitAI.prototype.WalkToTarget = function(target, queued)
 {
 	this.AddOrder("WalkToTarget", { "target": target, "force": true }, queued);
+};
+
+/**
+ * Adds walk-and-fight order to queue, this only occurs in response
+ * to a player order, and so is forced.
+ */
+UnitAI.prototype.WalkAndFight = function(x, z, queued)
+{
+	this.AddOrder("WalkAndFight", { "x": x, "z": z, "force": true }, queued);
 };
 
 /**
@@ -3995,9 +4216,9 @@ UnitAI.prototype.CanGarrison = function(target)
 	if (!cmpGarrisonHolder)
 		return false;
 
-	// Verify that the target is owned by this entity's player
+	// Verify that the target is owned by this entity's player or a mutual ally of this player
 	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
-	if (!cmpOwnership || !IsOwnedByPlayer(cmpOwnership.GetOwner(), target))
+	if (!cmpOwnership || !(IsOwnedByPlayer(cmpOwnership.GetOwner(), target) || IsOwnedByMutualAllyOfPlayer(cmpOwnership.GetOwner(), target)))
 		return false;
 
 	// Don't let animals garrison for now
@@ -4032,7 +4253,9 @@ UnitAI.prototype.CanGather = function(target)
 
 	// No need to verify ownership as we should be able to gather from
 	// a target regardless of ownership.
-
+	// No need to call "cmpResourceSupply.IsAvailable()" either because that
+	// would cause units to walk to full entities instead of choosing another one
+	// nearby to gather from, which is undesirable.
 	return true;
 };
 

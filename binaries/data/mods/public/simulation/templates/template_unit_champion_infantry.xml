@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_champion">
-  <Armour>
-    <Hack>9.0</Hack>
-    <Pierce>6.0</Pierce>
-    <Crush>8.0</Crush>
-  </Armour>
   <Attack>
     <Melee>
       <Hack>23.0</Hack>
@@ -43,6 +38,7 @@
   </Identity>
   <Sound>
     <SoundGroups>
+      <trained>interface/alarm/alarm_create_infantry.xml</trained>
       <select>voice/hellenes/civ/civ_male_select.xml</select>
       <order_walk>voice/hellenes/civ/civ_male_ack.xml</order_walk>
       <order_attack>voice/hellenes/civ/civ_male_attack.xml</order_attack>

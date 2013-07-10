@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -22,20 +22,42 @@
 
 #if CONFIG2_AUDIO
 
+#include "lib/external_libraries/openal.h"
+
+
 #include "lib/file/vfs/vfs_path.h"
+#include "soundmanager/ISoundManager.h"
 #include "soundmanager/items/ISoundItem.h"
+#include "simulation2/system/Entity.h"
+#include "soundmanager/data/SoundData.h"
+#include "soundmanager/items/ISoundItem.h"
+#include "soundmanager/scripting/SoundGroup.h"
+#include "ps/Profiler2.h"
 
 #include <vector>
 #include <map>
 
 #define AL_CHECK CSoundManager::al_check(__func__, __LINE__);
 
+struct ALSourceHolder
+{
+	/// Title of the column
+	ALuint 		ALSource;
+	ISoundItem*	SourceItem;
+};
+
+typedef std::vector<VfsPath> PlayList;
 typedef std::vector<ISoundItem*> ItemsList;
+typedef std::map<entity_id_t, ISoundItem*> ItemsMap;
+typedef	std::map<std::wstring, CSoundGroup*> SoundGroupMap;
 
 class CSoundManagerWorker;
 
-class CSoundManager
+
+class CSoundManager : public ISoundManager
 {
+	NONCOPYABLE(CSoundManager);
+
 protected:
 
 	ALuint m_ALEnvironment;
@@ -44,21 +66,45 @@ protected:
 	ISoundItem* m_CurrentTune;
 	ISoundItem* m_CurrentEnvirons;
 	CSoundManagerWorker* m_Worker;
+	CMutex m_DistressMutex;
+	PlayList* m_PlayListItems;
+	SoundGroupMap m_SoundGroups;
+
 	float m_Gain;
 	float m_MusicGain;
 	float m_AmbientGain;
 	float m_ActionGain;
+	float m_UIGain;
 	bool m_Enabled;
 	long m_BufferSize;
 	int m_BufferCount;
 	bool m_MusicEnabled;
 	bool m_SoundEnabled;
 
+	bool m_MusicPaused;
+	bool m_AmbientPaused;
+	bool m_ActionPaused;
+	bool m_RunningPlaylist;
+ 	bool m_PlayingPlaylist;
+  bool m_LoopingPlaylist;
+
+	long m_PlaylistGap;
+	long m_DistressErrCount;
+	long m_DistressTime;
+
+	ALSourceHolder* m_ALSourceBuffer;
+
 public:
 	CSoundManager();
 	virtual ~CSoundManager();
 
 	ISoundItem* LoadItem(const VfsPath& itemPath);
+	ISoundItem* ItemForData(CSoundData* itemData);
+	ISoundItem* ItemForEntity( entity_id_t source, CSoundData* sndData);
+
+	void ClearPlayListItems();
+	void StartPlayList( bool doLoop );
+	void AddPlayListItem( const VfsPath* itemPath);
 
 	static void ScriptingInit();
 	static void CreateSoundManager();
@@ -70,47 +116,57 @@ public:
 	void SetMusicEnabled (bool isEnabled);
 	void setSoundEnabled( bool enabled );
 
+	ALuint GetALSource(ISoundItem* anItem);
+	void ReleaseALSource(ALuint theSource);
+	ISoundItem* ItemFromData(CSoundData* itemData);
+
 	ISoundItem* ItemFromWAV(VfsPath& fname);
 	ISoundItem* ItemFromOgg(VfsPath& fname);
 
 	ISoundItem* GetSoundItem(unsigned long itemRow);
 	unsigned long Count();
 	void IdleTask();
-	void DeleteItem(long itemNum);
 	
 	void SetMemoryUsage(long bufferSize, int bufferCount);
 	long GetBufferCount();
 	long GetBufferSize();
 
-	void SetMusicItem(ISoundItem* anItem);
-	void SetAmbientItem(ISoundItem* anItem);
-	void PlayActionItem(ISoundItem* anItem);
+	void PlayAsMusic( const VfsPath& itemPath, bool looping );
+	void PlayAsAmbient( const VfsPath& itemPath, bool looping );
+	void PlayAsUI(const VfsPath& itemPath, bool looping);
+	void PlayAsGroup(const VfsPath& groupPath, CVector3D sourcePos, entity_id_t source, bool ownedSound);
+
 	void PlayGroupItem(ISoundItem* anItem, ALfloat groupGain);
 
+	bool InDistress();
+	void SetDistressThroughShortage();
+	void SetDistressThroughError();
+
+	void Pause(bool pauseIt);
+	void PauseMusic (bool pauseIt);
+	void PauseAmbient (bool pauseIt);
+	void PauseAction (bool pauseIt);
+
+protected:
+	void InitListener();
+	Status AlcInit();
+	void SetMusicItem(ISoundItem* anItem);
+	void SetAmbientItem(ISoundItem* anItem);
 	void SetMasterGain(float gain);
 	void SetMusicGain(float gain);
 	void SetAmbientGain(float gain);
 	void SetActionGain(float gain);
-	
-protected:
-	void InitListener();
-	virtual Status AlcInit();
+	void SetUIGain(float gain);
 
+private:
+	CSoundManager(CSoundManager* UNUSED(other)){};
 };
 
 #else // !CONFIG2_AUDIO
 
 #define AL_CHECK
 
-class CSoundManager
-{
-public:
-	static void ScriptingInit();
-};
 #endif // !CONFIG2_AUDIO
-
-
-extern CSoundManager*  g_SoundManager;
 
 #endif // INCLUDED_SOUNDMANAGER_H
 

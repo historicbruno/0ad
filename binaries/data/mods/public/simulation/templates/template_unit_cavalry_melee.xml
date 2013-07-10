@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_cavalry">
+  <Armour>
+    <Hack>1</Hack>
+    <Pierce>5</Pierce>
+    <Crush>2</Crush>
+  </Armour>
   <Attack>
     <Melee>
-      <Hack>5.0</Hack>
-      <Pierce>10.0</Pierce>
+      <Hack>10.0</Hack>
+      <Pierce>0.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>6.0</MaxRange>
       <RepeatTime>1000</RepeatTime>
@@ -21,12 +26,12 @@
 		  <Multiplier>2.0</Multiplier>
 		</BonusSiege>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Melee>
     <Charge>
-      <Hack>15.0</Hack>
-      <Pierce>30.0</Pierce>
+      <Hack>30.0</Hack>
+      <Pierce>0.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>6.0</MaxRange>
       <MinRange>0.0</MinRange>
@@ -40,7 +45,7 @@
 		  <Multiplier>0.5</Multiplier>
 		</CamelStench>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Charge>
   </Attack>

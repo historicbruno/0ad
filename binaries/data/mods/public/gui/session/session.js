@@ -6,6 +6,9 @@ var g_Players = [];
 // Cache the useful civ data
 var g_CivData = {};
 
+var g_GameSpeeds = {};
+var g_CurrentSpeed;
+
 var g_PlayerAssignments = { "local": { "name": "You", "player": 1 } };
 
 // Cache dev-mode settings that are frequently or widely used
@@ -20,15 +23,30 @@ var g_ShowAllStatusBars = false;
 // (this is used to support population counter blinking)
 var g_IsTrainingBlocked = false;
 
+// Cache simulation state (updated on every simulation update)
+var g_SimState;
+
 // Cache EntityStates
 var g_EntityStates = {}; // {id:entState}
 
 // Whether the player has lost/won and reached the end of their game
 var g_GameEnded = false;
 
+var g_Disconnected = false; // Lost connection to server
+
 // Colors to flash when pop limit reached
 const DEFAULT_POPULATION_COLOR = "white";
 const POPULATION_ALERT_COLOR = "orange";
+
+function GetSimState()
+{
+	if (!g_SimState)
+	{
+		g_SimState = Engine.GuiInterfaceCall("GetSimulationState");
+	}
+
+	return g_SimState;
+}
 
 function GetEntityState(entId)
 {
@@ -83,9 +101,9 @@ function init(initData, hotloadData)
 		g_Players = getPlayerData(g_PlayerAssignments);
 
 		if (initData.savedGUIData)
-		{
 			restoreSavedGameData(initData.savedGUIData);
-		}
+
+		getGUIObjectByName("gameSpeedButton").hidden = g_IsNetworked;
 	}
 	else // Needed for autostart loading option
 	{
@@ -95,6 +113,15 @@ function init(initData, hotloadData)
 	// Cache civ data
 	g_CivData = loadCivData();
 	g_CivData["gaia"] = { "Code": "gaia", "Name": "Gaia" };
+
+	g_GameSpeeds = initGameSpeeds();
+	g_CurrentSpeed = Engine.GetSimRate();
+	var gameSpeed = getGUIObjectByName("gameSpeed");
+	gameSpeed.list = g_GameSpeeds.names;
+	gameSpeed.list_data = g_GameSpeeds.speeds;
+	var idx = g_GameSpeeds.speeds.indexOf(g_CurrentSpeed);
+	gameSpeed.selected = idx != -1 ? idx : g_GameSpeeds["default"];
+	gameSpeed.onSelectionChange = function() { changeGameSpeed(+this.list_data[this.selected]); }
 
 	getGUIObjectByName("civIcon").sprite = "stretched:" + g_CivData[g_Players[Engine.GetPlayerID()].civ].Emblem;
 	getGUIObjectByName("civIcon").tooltip = g_CivData[g_Players[Engine.GetPlayerID()].civ].Name;
@@ -145,10 +172,10 @@ function reportPerformance(time)
 
 function resignGame()
 {
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 
-	// Players can't resign if they've already won or lost.	
-	if (simState.players[Engine.GetPlayerID()].state != "active")
+	// Players can't resign if they've already won or lost.
+	if (simState.players[Engine.GetPlayerID()].state != "active" || g_Disconnected)
 		return;
 
 	// Tell other players that we have given up and been defeated
@@ -167,7 +194,11 @@ function leaveGame()
 	var playerState = extendedSimState.players[Engine.GetPlayerID()];
 
 	var gameResult;
-	if (playerState.state == "won")
+	if (g_Disconnected)
+	{
+		gameResult = "You have been disconnected."
+	}
+	else if (playerState.state == "won")
 	{
 		gameResult = "You have won the battle!";
 	}
@@ -221,7 +252,7 @@ function getSavedGameData()
 function restoreSavedGameData(data)
 {
 	// Restore control groups
-	for (groupNumber in data.groups)
+	for (var groupNumber in data.groups)
 	{
 		g_Groups.groups[groupNumber].groups = data.groups[groupNumber].groups;
 		g_Groups.groups[groupNumber].ents = data.groups[groupNumber].ents;
@@ -268,9 +299,6 @@ function onTick()
 	// Animate menu
 	updateMenuPosition(tickLength);
 
-	// Update music state
-	global.music.updateTimer();
-
 	// When training is blocked, flash population (alternates colour every 500msec)
 	if (g_IsTrainingBlocked && (Date.now() % 1000) < 500)
 		getGUIObjectByName("resourcePop").textcolor = POPULATION_ALERT_COLOR;
@@ -283,7 +311,7 @@ function onTick()
 
 function checkPlayerState()
 {
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 
 	if (!g_GameEnded)
@@ -347,6 +375,16 @@ function checkPlayerState()
 	}
 }
 
+function changeGameSpeed(speed)
+{
+	// For non-networked games only
+	if (!g_IsNetworked)
+	{
+		Engine.SetSimRate(speed);
+		g_CurrentSpeed = speed;
+	}
+}
+
 /**
  * Recomputes GUI state that depends on simulation state or selection state. Called directly every simulation
  * update (see session.xml), or from onTick when the selection has changed.
@@ -358,10 +396,10 @@ function onSimulationUpdate()
 	g_TemplateData = {};
 	g_TechnologyData = {};
 
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	g_SimState = Engine.GuiInterfaceCall("GetSimulationState");
 
 	// If we're called during init when the game is first loading, there will be no simulation yet, so do nothing
-	if (!simState)
+	if (!g_SimState)
 		return;
 
 	handleNotifications();
@@ -369,19 +407,56 @@ function onSimulationUpdate()
 	if (g_ShowAllStatusBars)
 		recalculateStatusBarDisplay();
 
+	updateHero();
 	updateGroups();
-	updateDebug(simState);
-	updatePlayerDisplay(simState);
+	updateDebug();
+	updatePlayerDisplay();
 	updateSelectionDetails();
 	updateResearchDisplay();
 	updateBuildingPlacementPreview();
-	updateTimeElapsedCounter(simState);
+	updateTimeElapsedCounter();
 
 	// Update music state on basis of battle state.
 	var battleState = Engine.GuiInterfaceCall("GetBattleState", Engine.GetPlayerID());
 	if (battleState)
 		global.music.setState(global.music.states[battleState]);
 }
+
+function updateHero()
+{
+	var simState = GetSimState();
+	var playerState = simState.players[Engine.GetPlayerID()];
+	var heroButton = getGUIObjectByName("unitHeroButton");
+
+	if (!playerState || playerState.heroes.length <= 0)
+	{
+		heroButton.hidden = true;
+		return;
+	}
+
+	var heroImage = getGUIObjectByName("unitHeroImage");
+	var heroState = GetEntityState(playerState.heroes[0]);
+	var template = GetTemplateData(heroState.template);
+	heroImage.sprite = "stretched:session/portraits/" + template.icon;
+
+	heroButton.onpress = (function(e) { return function() { if (!Engine.HotkeyIsPressed("selection.add")) g_Selection.reset(); g_Selection.addList([e]); } })(playerState.heroes[0]);
+	heroButton.ondoublepress = (function(e) { return function() { selectAndMoveTo(e) }; })(playerState.heroes[0]);
+	heroButton.hidden = false;
+
+	// Setup tooltip
+	var tooltip = "[font=\"serif-bold-16\"]" + template.name.specific + "[/font]";
+	tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + heroState.hitpoints + "/" + heroState.maxHitpoints;
+	tooltip += "\n[font=\"serif-bold-13\"]" + (heroState.attack ? heroState.attack.type + " " : "")
+	           + "Attack:[/font] " + damageTypeDetails(heroState.attack);
+	// Show max attack range if ranged attack, also convert to tiles (4m per tile)
+	if (heroState.attack && heroState.attack.type == "Ranged")
+		tooltip += ", [font=\"serif-bold-13\"]Range:[/font] " + Math.round(heroState.attack.maxRange/4);
+
+	tooltip += "\n[font=\"serif-bold-13\"]Armor:[/font] " + damageTypeDetails(heroState.armour);
+	tooltip += "\n" + template.tooltip;
+
+	heroButton.tooltip = tooltip;
+};
 
 function updateGroups()
 {
@@ -407,8 +482,9 @@ function updateGroups()
 		layoutButtonRow(i, guiName, buttonSideLength, buttonSpacer, rowLength*i, rowLength*(i+1) );
 }
 
-function updateDebug(simState)
+function updateDebug()
 {
+	var simState = GetSimState();
 	var debug = getGUIObjectByName("debug");
 
 	if (getGUIObjectByName("devDisplayState").checked)
@@ -442,8 +518,9 @@ function updateDebug(simState)
 	debug.caption = text;
 }
 
-function updatePlayerDisplay(simState)
+function updatePlayerDisplay()
 {
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 	if (!playerState)
 		return;
@@ -460,7 +537,7 @@ function updatePlayerDisplay(simState)
 function selectAndMoveTo(ent)
 {
 	var entState = GetEntityState(ent);
-	if (!entState)
+	if (!entState || !entState.position)
 		return;
 
 	g_Selection.reset();
@@ -518,10 +595,12 @@ function updateResearchDisplay()
 		getGUIObjectByName("researchStartedButton[" + i + "]").hidden = true;
 }
 
-function updateTimeElapsedCounter(simState)
+function updateTimeElapsedCounter()
 {
+	var simState = GetSimState();
+	var speed = g_CurrentSpeed != 1.0 ? " (" + g_CurrentSpeed + "x)" : "";
 	var timeElapsedCounter = getGUIObjectByName("timeElapsedCounter");
-	timeElapsedCounter.caption = timeToString(simState.timeElapsed);
+	timeElapsedCounter.caption = timeToString(simState.timeElapsed) + speed;
 }
 
 // Toggles the display of status bars for all of the player's entities.
@@ -557,12 +636,7 @@ function playRandomAmbient(type)
 //			currentAmbient = newRandomSound("ambient", "temperate_", "dayscape");
 
 			const AMBIENT = "audio/ambient/dayscape/day_temperate_gen_03.ogg";
-			currentAmbient = new AmbientSound(AMBIENT);
-
-			if (currentAmbient)
-			{
-				currentAmbient.loop();
-			}
+			Engine.PlayAmbientSound( AMBIENT, true );
 			break;
 
 		default:

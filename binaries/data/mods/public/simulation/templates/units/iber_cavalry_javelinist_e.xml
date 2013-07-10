@@ -10,17 +10,6 @@
   <Health>
     <Max>170</Max>
   </Health>
-  <Armour>
-    <Hack>4.0</Hack>
-    <Pierce>6.0</Pierce>
-    <Crush>4.0</Crush>
-  </Armour>
-  <UnitMotion>
-    <WalkSpeed>11.0</WalkSpeed>
-    <Run>
-      <Speed>26.0</Speed>
-    </Run>
-  </UnitMotion>
   <Attack>
     <Ranged>
       <Spread>1.0</Spread>

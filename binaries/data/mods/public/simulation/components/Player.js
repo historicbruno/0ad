@@ -14,12 +14,12 @@ Player.prototype.Init = function()
 	this.maxPop = 300; // maximum population
 	this.trainingBlocked = false; // indicates whether any training queue is currently blocked
 	this.resourceCount = {
-		"food": 300,	
-		"wood": 300,	
-		"metal": 300,	
-		"stone": 300	
+		"food": 300,
+		"wood": 300,
+		"metal": 300,
+		"stone": 300
 	};
-
+	
 	this.team = -1;	// team number of the player, players on the same team will always have ally diplomatic status - also this is useful for team emblems, scoring, etc.
 	this.teamsLocked = false;
 	this.state = "active"; // game state - one of "active", "defeated", "won"
@@ -30,8 +30,10 @@ Player.prototype.Init = function()
 	this.startCam = undefined;
 	this.controlAllUnits = false;
 	this.isAI = false;
+	this.gatherRateMultiplier = 1;
 	this.cheatsEnabled = true;
 	this.cheatTimeMultiplier = 1;
+	this.heroes = [];
 };
 
 Player.prototype.SetPlayerID = function(id)
@@ -74,13 +76,14 @@ Player.prototype.GetColour = function()
 	return this.colour;
 };
 
+// Try reserving num population slots. Returns 0 on success or number of missing slots otherwise.
 Player.prototype.TryReservePopulationSlots = function(num)
 {
 	if (num != 0 && num > (this.GetPopulationLimit() - this.GetPopulationCount()))
-		return false;
+		return num - (this.GetPopulationLimit() - this.GetPopulationCount());
 
 	this.popUsed += num;
-	return true;
+	return 0;
 };
 
 Player.prototype.UnReservePopulationSlots = function(num)
@@ -106,6 +109,21 @@ Player.prototype.SetMaxPopulation = function(max)
 Player.prototype.GetMaxPopulation = function()
 {
 	return Math.round(ApplyTechModificationsToPlayer("Player/MaxPopulation", this.maxPop, this.entity));
+};
+
+Player.prototype.SetGatherRateMultiplier = function(value)
+{
+	this.gatherRateMultiplier = value;
+};
+
+Player.prototype.GetGatherRateMultiplier = function()
+{
+	return this.gatherRateMultiplier;
+};
+
+Player.prototype.GetHeroes = function()
+{
+	return this.heroes;
 };
 
 Player.prototype.IsTrainingBlocked = function()
@@ -143,7 +161,7 @@ Player.prototype.GetResourceCounts = function()
 /**
  * Add resource of specified type to player
  * @param type Generic type of resource (string)
- * @param amount Amount of resource, whick should be added (integer)
+ * @param amount Amount of resource, which should be added (integer)
  */
 Player.prototype.AddResource = function(type, amount)
 {
@@ -174,7 +192,7 @@ Player.prototype.GetNeededResources = function(amounts)
 	return amountsNeeded;
 };
 
-Player.prototype.TrySubtractResources = function(amounts)
+Player.prototype.SubtractResourcesOrNotify = function(amounts)
 {
 	var amountsNeeded = this.GetNeededResources(amounts);
 
@@ -189,17 +207,23 @@ Player.prototype.TrySubtractResources = function(amounts)
 		cmpGUIInterface.PushNotification(notification);
 		return false;
 	}
-	else
-	{
-		// Subtract the resources
-		var cmpStatisticsTracker = QueryPlayerIDInterface(this.playerID, IID_StatisticsTracker);
+
+	// Subtract the resources
+	for (var type in amounts)
+		this.resourceCount[type] -= amounts[type];
+
+	return true;
+};
+
+Player.prototype.TrySubtractResources = function(amounts)
+{
+	if (!this.SubtractResourcesOrNotify(amounts))
+		return false;
+
+	var cmpStatisticsTracker = QueryPlayerIDInterface(this.playerID, IID_StatisticsTracker);
+	if (cmpStatisticsTracker)
 		for (var type in amounts)
-		{
-			this.resourceCount[type] -= amounts[type];
-			if (cmpStatisticsTracker)
-				cmpStatisticsTracker.IncreaseResourceUsedCounter(type, amounts[type]);
-		}
-	}
+			cmpStatisticsTracker.IncreaseResourceUsedCounter(type, amounts[type]);
 
 	return true;
 };
@@ -333,12 +357,8 @@ Player.prototype.UpdateSharedLos = function()
 
 	var sharedLos = [];
 	for (var i = 0; i < cmpPlayerManager.GetNumPlayers(); ++i)
-		if (this.IsAlly(i))
-		{
-			var cmpPlayer = Engine.QueryInterface(cmpPlayerManager.GetPlayerByID(i), IID_Player);
-			if (cmpPlayer && cmpPlayer.IsAlly(this.playerID))
-				sharedLos.push(i);
-		}
+		if (this.IsMutualAlly(i))
+			sharedLos.push(i);
 
 	cmpRangeManager.SetSharedLos(this.playerID, sharedLos);
 };
@@ -406,6 +426,19 @@ Player.prototype.IsAlly = function(id)
 	return this.diplomacy[id] > 0;
 };
 
+/**
+ * Check if given player is our ally, and we are its ally
+ */
+Player.prototype.IsMutualAlly = function(id)
+{
+	var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+	if (!cmpPlayerManager)
+		return false;
+
+	var cmpPlayer = Engine.QueryInterface(cmpPlayerManager.GetPlayerByID(id), IID_Player);
+	return this.IsAlly(id) && cmpPlayer && cmpPlayer.IsAlly(this.playerID);
+};
+
 Player.prototype.SetEnemy = function(id)
 {
 	this.SetDiplomacyIndex(id, -1);
@@ -438,37 +471,44 @@ Player.prototype.IsNeutral = function(id)
  */
 Player.prototype.OnGlobalOwnershipChanged = function(msg)
 {
-	var isConquestCritical = false;
-	// Load class list only if we're going to need it
-	if (msg.from == this.playerID || msg.to == this.playerID)
-	{
-		var cmpIdentity = Engine.QueryInterface(msg.entity, IID_Identity);
-		if (cmpIdentity)
-		{
-			isConquestCritical = cmpIdentity.HasClass("ConquestCritical");
-		}
-	}
+	if (msg.from != this.playerID && msg.to != this.playerID)
+		return;
+
+	var cmpIdentity = Engine.QueryInterface(msg.entity, IID_Identity);
+	var cmpCost = Engine.QueryInterface(msg.entity, IID_Cost);
+
 	if (msg.from == this.playerID)
 	{
-		if (isConquestCritical)
+		if (cmpIdentity && cmpIdentity.HasClass("ConquestCritical"))
 			this.conquestCriticalEntitiesCount--;
-		var cost = Engine.QueryInterface(msg.entity, IID_Cost);
-		if (cost)
+
+		if (cmpCost)
 		{
-			this.popUsed -= cost.GetPopCost();
-			this.popBonuses -= cost.GetPopBonus();
+			this.popUsed -= cmpCost.GetPopCost();
+			this.popBonuses -= cmpCost.GetPopBonus();
+		}
+
+		if (cmpIdentity && cmpIdentity.HasClass("Hero"))
+		{
+			//Remove from Heroes list
+			var index = this.heroes.indexOf(msg.entity);
+			if (index >= 0)
+				this.heroes.splice(index, 1);
 		}
 	}
 	if (msg.to == this.playerID)
 	{
-		if (isConquestCritical)
+		if (cmpIdentity && cmpIdentity.HasClass("ConquestCritical"))
 			this.conquestCriticalEntitiesCount++;
-		var cost = Engine.QueryInterface(msg.entity, IID_Cost);
-		if (cost)
+
+		if (cmpCost)
 		{
-			this.popUsed += cost.GetPopCost();
-			this.popBonuses += cost.GetPopBonus();
+			this.popUsed += cmpCost.GetPopCost();
+			this.popBonuses += cmpCost.GetPopBonus();
 		}
+
+		if (cmpIdentity && cmpIdentity.HasClass("Hero"))
+			this.heroes.push(msg.entity);
 	}
 };
 
@@ -515,9 +555,19 @@ Player.prototype.SetCheatEnabled = function(flag)
 	this.cheatsEnabled = flag;
 };
 
-Player.prototype.GetCheatEnabled = function(flag)
+Player.prototype.GetCheatEnabled = function()
 {
 	return this.cheatsEnabled;
+};
+
+Player.prototype.SetCheatTimeMultiplier = function(time)
+{
+	this.cheatTimeMultiplier = time;
+};
+
+Player.prototype.GetCheatTimeMultiplier = function()
+{
+	return this.cheatTimeMultiplier;
 };
 
 Player.prototype.TributeResource = function(player, amounts)
@@ -533,15 +583,23 @@ Player.prototype.TributeResource = function(player, amounts)
 	if (this.state != "active" || cmpPlayer.state != "active")
 		return;
 
-	if (!this.GetNeededResources(amounts))
-	{
-		for (var type in amounts)
-			this.resourceCount[type] -= amounts[type];
+	if (!this.SubtractResourcesOrNotify(amounts))
+		return;
 
-		cmpPlayer.AddResources(amounts);
-		// TODO: notify the receiver
-	}
-	// else not enough resources... TODO: send gui notification
+	cmpPlayer.AddResources(amounts);
+
+	var total = Object.keys(amounts).reduce(function (sum, type){ return sum + amounts[type]; }, 0);
+	var cmpOurStatisticsTracker = QueryPlayerIDInterface(this.playerID, IID_StatisticsTracker);
+	if (cmpOurStatisticsTracker)
+		cmpOurStatisticsTracker.IncreaseTributesSentCounter(total);
+	var cmpTheirStatisticsTracker = QueryPlayerIDInterface(player, IID_StatisticsTracker);
+	if (cmpTheirStatisticsTracker)
+		cmpTheirStatisticsTracker.IncreaseTributesReceivedCounter(total);
+
+	var notification = {"type": "tribute", "player": player, "player1": this.playerID, "amounts": amounts};
+	var cmpGUIInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
+	if (cmpGUIInterface)
+		cmpGUIInterface.PushNotification(notification);
 };
 
 Engine.RegisterComponentType(IID_Player, "Player", Player);

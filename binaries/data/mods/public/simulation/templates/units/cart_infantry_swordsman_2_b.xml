@@ -6,6 +6,7 @@
       structures/cart_embassy_celtic
       structures/cart_embassy_iberian
       structures/cart_embassy_italiote
+      structures/{civ}_wonder
     </Entities>
   </Builder>
   <Cost>
@@ -17,8 +18,9 @@
   <Identity>
     <Civ>cart</Civ>
     <SelectionGroupName>units/cart_infantry_swordsman_2_b</SelectionGroupName>
-    <GenericName>Italian Allied Swordsman</GenericName>
-    <SpecificName>/Italian Allied Swordsman/</SpecificName>
+    <GenericName>Samnite Swordsman</GenericName>
+    <SpecificName>Samnite Swordsman</SpecificName>
+    <Classes datatype="tokens">Italian Mercenary</Classes>
     <History>TBD.</History>
     <Icon>units/cart_infantry_swordsman_2.png</Icon>
   </Identity>

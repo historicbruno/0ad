@@ -28,13 +28,12 @@
 class CSoundItem : public CSoundBase
 {
 public:
-	CSoundItem();
-	CSoundItem(CSoundData* sndData);
-	
-	virtual ~CSoundItem();
-	void Attach(CSoundData* itemData);
-	bool IdleTask();
+  CSoundItem();
+  CSoundItem(CSoundData* sndData);
+  virtual ~CSoundItem();
 
+  void Attach(CSoundData* itemData);
+  bool IdleTask();
 };
 
 #endif // CONFIG2_AUDIO

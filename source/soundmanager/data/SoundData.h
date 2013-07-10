@@ -22,7 +22,6 @@
 
 #if CONFIG2_AUDIO
 
-#include "lib/external_libraries/openal.h"
 #include "lib/file/vfs/vfs_path.h"
 #include "ps/CStr.h"
 
@@ -41,28 +40,28 @@ public:
 	static void ReleaseSoundData(CSoundData* theData);
 
 	CSoundData();
-	CSoundData(ALuint dataSource);
 	virtual ~CSoundData();
 	
 	CSoundData* IncrementCount();
 	bool DecrementCount();
 	void InitProperties();
 	virtual bool IsOneShot();
+	virtual bool IsStereo();
 
 	
-	virtual ALuint GetBuffer();
-	virtual ALsizei GetBufferCount();
-	virtual CStrW* GetFileName();
+	virtual unsigned int GetBuffer();
+	virtual int GetBufferCount();
+	virtual Path* GetFileName();
 	virtual void SetFileName(const Path& aName);
 
-	virtual ALuint* GetBufferPtr();
+	virtual unsigned int* GetBufferPtr();
 
 protected:
-	static DataMap* sSoundData;
+	static DataMap sSoundData;
 
-	ALuint m_ALBuffer;
+	unsigned int m_ALBuffer;
 	int m_RetentionCount;
-	CStrW* m_FileName;
+	Path* m_FileName;
 
 };
 

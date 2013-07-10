@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -36,53 +36,67 @@ CBufferItem::CBufferItem(CSoundData* sndData)
 
 CBufferItem::~CBufferItem()
 {
-	AL_CHECK
-
 	Stop();
-	if (m_ALSource != 0)
-	{
-		int num_processed;
-		alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-		
-		if (num_processed > 0)
-		{
-			ALuint* al_buf = new ALuint[num_processed];
-			alSourceUnqueueBuffers(m_ALSource, num_processed, al_buf);
-			
-			AL_CHECK
-			delete[] al_buf;
-		}
-	}
+	ReleaseOpenALBuffer();
 }
 
 
+void CBufferItem::ReleaseOpenALBuffer()
+{
+	if ( m_ALSource == 0 )
+		return;
+
+	int num_processed;
+	AL_CHECK
+	alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
+	AL_CHECK
+
+	if (num_processed > 0)
+	{
+		ALuint* al_buf = new ALuint[num_processed];
+		alSourceUnqueueBuffers(m_ALSource, num_processed, al_buf);
+		
+		AL_CHECK
+		delete[] al_buf;
+	}
+	alSourcei(m_ALSource, AL_BUFFER, 0);
+	((CSoundManager*)g_SoundManager)->ReleaseALSource(m_ALSource);
+	AL_CHECK
+
+	m_ALSource = 0;
+}
+
 bool CBufferItem::IdleTask()
 {
+	if ( m_ALSource == 0 )
+		return false;
+
 	HandleFade();
-	if (m_ALSource != 0)
+	
+	if (m_LastPlay)
 	{
-		if (m_LastPlay)
-		{
-			int proc_state;
-			alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
-			AL_CHECK
-			
-			return (proc_state != AL_STOPPED);
-		}
+		CScopeLock lock(m_ItemMutex);
+		int proc_state;
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		AL_CHECK
+		m_ShouldBePlaying = (proc_state != AL_STOPPED);
+		return (proc_state != AL_STOPPED);
+	}
+	
+	if (GetLooping())
+	{
+		int num_processed;
+		AL_CHECK
+		alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
 		
-		if (GetLooping())
+		AL_CHECK
+		for (int i = 0; i < num_processed; i++)
 		{
-			int num_processed;
-			alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-			
-			for (int i = 0; i < num_processed; i++)
-			{
-				ALuint al_buf;
-				alSourceUnqueueBuffers(m_ALSource, 1, &al_buf);
-				AL_CHECK
-				alSourceQueueBuffers(m_ALSource, 1, &al_buf);
-				AL_CHECK
-			}
+			ALuint al_buf;
+			alSourceUnqueueBuffers(m_ALSource, 1, &al_buf);
+			AL_CHECK
+			alSourceQueueBuffers(m_ALSource, 1, &al_buf);
+			AL_CHECK
 		}
 	}
 
@@ -91,8 +105,17 @@ bool CBufferItem::IdleTask()
 
 void CBufferItem::Attach(CSoundData* itemData)
 {
+	if ( m_ALSource == 0 )
+		return;
+	
 	AL_CHECK
-	if ( (itemData != NULL) && (m_ALSource != 0) )
+	if (m_SoundData != NULL)
+	{
+		CSoundData::ReleaseSoundData(m_SoundData);
+		m_SoundData = 0;
+	}
+	AL_CHECK
+	if (itemData != NULL)
 	{
 		m_SoundData = itemData->IncrementCount();
 		alSourceQueueBuffers(m_ALSource, m_SoundData->GetBufferCount(),(const ALuint *) m_SoundData->GetBufferPtr());

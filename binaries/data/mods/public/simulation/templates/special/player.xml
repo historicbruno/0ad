@@ -6,11 +6,21 @@
       <CivilCentre/>
       <DefenseTower>25</DefenseTower>
       <Fortress>10</Fortress>
+      <Wonder>1</Wonder>
       <Hero>1</Hero>
+      <Apadana>1</Apadana>
+      <Embassy>1</Embassy>
     </Limits>
   </EntityLimits>
   <Player/>
   <StatisticsTracker/>
   <TechnologyManager/>
-  <BattleDetection/>
+  <BattleDetection>
+    <TimerInterval>200</TimerInterval>
+    <RecordLength>12</RecordLength>
+    <DamageRateThreshold>0.04</DamageRateThreshold>
+    <AlertnessBattleThreshold>4</AlertnessBattleThreshold>
+    <AlertnessPeaceThreshold>0</AlertnessPeaceThreshold>
+    <AlertnessMax>8</AlertnessMax>
+  </BattleDetection>
 </Entity>

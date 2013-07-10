@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_champion_cavalry_archer">
   <Armour>
-    <Hack>4.0</Hack>
-    <Pierce>8.0</Pierce>
-    <Crush>10.0</Crush>
+    <Hack>6.0</Hack>
   </Armour>
   <Attack>
     <Ranged>
@@ -15,8 +13,8 @@
     <BuildTime>19</BuildTime>
     <Resources>
       <food>200</food>
-      <wood>100</wood>
-      <metal>100</metal>
+      <wood>200</wood>
+      <metal>0</metal>
     </Resources>
   </Cost>
   <Footprint replace="">
@@ -31,7 +29,7 @@
     <Classes datatype="tokens">Champion Chariot</Classes>
 	<GenericName>War Chariot</GenericName>
     <SpecificName>Rath</SpecificName>
-    <History>Champion Cavalry Archer</History>
+    <History>Champion Cavalry Archer.</History>
 	<Icon>units/maur_champion_chariot.png</Icon>
     <Tooltip>Counters Spearmen and Swordsmen. Countered by Skirmishers. Trample Damage Aura.</Tooltip>
   </Identity>

@@ -54,7 +54,7 @@ function displaySingle(entState, template)
 		healthSize.rright = 100*Math.max(0, Math.min(1, entState.hitpoints / entState.maxHitpoints));
 		unitHealthBar.size = healthSize;
 
-		var hitpoints = entState.hitpoints + " / " + entState.maxHitpoints;
+		var hitpoints = Math.ceil(entState.hitpoints) + " / " + entState.maxHitpoints;
 		getGUIObjectByName("healthStats").caption = hitpoints;
 		getGUIObjectByName("healthSection").hidden = false;
 	}
@@ -131,6 +131,7 @@ function displaySingle(entState, template)
 		getGUIObjectByName("resourceCarryingText").hidden = false;
 		getGUIObjectByName("resourceCarryingIcon").sprite = "stretched:session/icons/resources/"+carried.type+".png";
 		getGUIObjectByName("resourceCarryingText").caption = carried.amount + " / " + carried.max;
+		getGUIObjectByName("resourceCarryingIcon").tooltip = "";
 	}
 	// Use the same indicators for traders
 	else if (entState.trader && entState.trader.goods.amount > 0)
@@ -139,6 +140,24 @@ function displaySingle(entState, template)
 		getGUIObjectByName("resourceCarryingText").hidden = false;
 		getGUIObjectByName("resourceCarryingIcon").sprite = "stretched:session/icons/resources/"+entState.trader.goods.type+".png";
 		getGUIObjectByName("resourceCarryingText").caption = entState.trader.goods.amount;
+		getGUIObjectByName("resourceCarryingIcon").tooltip = "";
+	}
+	// And for number of workers
+	else if (entState.foundation)
+	{
+		getGUIObjectByName("resourceCarryingIcon").hidden = false;
+		getGUIObjectByName("resourceCarryingText").hidden = false;
+		getGUIObjectByName("resourceCarryingIcon").sprite = "stretched:session/icons/repair.png";
+		getGUIObjectByName("resourceCarryingText").caption = entState.foundation.numBuilders + "    ";
+		getGUIObjectByName("resourceCarryingIcon").tooltip = "Number of builders";
+	}
+	else if (entState.resourceSupply && (!entState.resourceSupply.killBeforeGather || !entState.hitpoints))
+	{
+		getGUIObjectByName("resourceCarryingIcon").hidden = false;
+		getGUIObjectByName("resourceCarryingText").hidden = false;
+		getGUIObjectByName("resourceCarryingIcon").sprite = "stretched:session/icons/repair.png";
+		getGUIObjectByName("resourceCarryingText").caption = entState.resourceSupply.gatherers.length + " / " + entState.resourceSupply.maxGatherers + "    ";
+		getGUIObjectByName("resourceCarryingIcon").tooltip = "Current/max gatherers";
 	}
 	else
 	{
@@ -148,7 +167,7 @@ function displaySingle(entState, template)
 
 	// Set Player details
 	getGUIObjectByName("specific").caption = specificName;
-		getGUIObjectByName("player").caption = playerName;
+	getGUIObjectByName("player").caption = playerName;
 	getGUIObjectByName("playerColorBackground").sprite = "colour: " + playerColor;
 	
 	if (genericName)
@@ -192,7 +211,7 @@ function displaySingle(entState, template)
 	// Show max attack range if ranged attack, also convert to tiles (4m per tile)
 	if (entState.attack && entState.attack.type == "Ranged")
 		attack += ", [font=\"serif-bold-13\"]Range:[/font] " + Math.round(entState.attack.maxRange/4);
-	getGUIObjectByName("attackAndArmorStats").tooltip = attack + "\n[font=\"serif-bold-13\"]Armor:[/font] " + damageTypeDetails(entState.armour);
+	getGUIObjectByName("attackAndArmorStats").tooltip = attack + "\n[font=\"serif-bold-13\"]Armor:[/font] " + armorTypeDetails(entState.armour);
 
 	// Icon Tooltip
 	var iconTooltip = "";

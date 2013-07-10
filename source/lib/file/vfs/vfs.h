@@ -1,4 +1,4 @@
-/* Copyright (c) 2012 Wildfire Games
+/* Copyright (c) 2013 Wildfire Games
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -65,7 +65,16 @@ enum VfsMountFlags
 	 * ".DELETED" suffix will still apply.
 	 * (the default behavior is to hide both the suffixed and unsuffixed files)
 	 **/
-	VFS_MOUNT_KEEP_DELETED = 8
+	VFS_MOUNT_KEEP_DELETED = 8,
+
+	/**
+	 * mark a directory replaceable, so that when writing a file to this path
+	 * new real directories will be created instead of reusing already existing
+	 * ones mounted at a subpath of the VFS path.
+	 * (the default behaviour is to write to the real directory associated
+	 * with the VFS directory that was last mounted to this path (or subpath))
+	 **/
+	VFS_MOUNT_REPLACEABLE = 16
 };
 
 // (member functions are thread-safe after the instance has been
@@ -136,6 +145,17 @@ struct IVFS
 	 * (we need only invalidate cached data when closing a newly written file).
 	 **/
 	virtual Status CreateFile(const VfsPath& pathname, const shared_ptr<u8>& fileContents, size_t size) = 0;
+
+	/**
+	 * Replace a file with the given contents.
+	 * 
+	 * @see CreateFile
+	 * 
+	 * Used to replace a file if it is already present (even if the file is not
+	 * in the attached vfs directory). Calls CreateFile if the file doesn't yet
+	 * exist.
+	  **/
+	virtual Status ReplaceFile(const VfsPath& pathname, const shared_ptr<u8>& fileContents, size_t size) = 0;
 
 	/**
 	 * Read an entire file into memory.

@@ -128,7 +128,9 @@ ResourceGatherer.prototype.GetLastCarriedType = function()
 ResourceGatherer.prototype.GetGatherRates = function()
 {
 	var ret = {};
-	var baseSpeed = ApplyTechModificationsToEntity("ResourceGatherer/BaseSpeed", +this.template.BaseSpeed, this.entity);
+	var cmpPlayer = QueryOwnerInterface(this.entity, IID_Player);
+	
+	var baseSpeed = ApplyTechModificationsToEntity("ResourceGatherer/BaseSpeed", +this.template.BaseSpeed, this.entity) * cmpPlayer.GetGatherRateMultiplier();
 
 	for (var r in this.template.Rates)
 	{
@@ -248,11 +250,11 @@ ResourceGatherer.prototype.GetTargetGatherRate = function(target)
 	var rate;
 	if (type.specific && rates[type.generic+"."+type.specific])
 	{
-		rate = rates[type.generic+"."+type.specific] / cmpPlayer.cheatTimeMultiplier;
+		rate = rates[type.generic+"."+type.specific] / cmpPlayer.GetCheatTimeMultiplier();
 	}
 	else if (type.generic && rates[type.generic])
 	{
-		rate = rates[type.generic] / cmpPlayer.cheatTimeMultiplier;
+		rate = rates[type.generic] / cmpPlayer.GetCheatTimeMultiplier();
 	}
 	
 	return (rate || 0);

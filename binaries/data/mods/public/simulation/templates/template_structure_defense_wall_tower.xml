@@ -1,19 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Entity parent="template_structure_civic">
-  <Armour>
-    <Hack>20.0</Hack>
-    <Pierce>40.0</Pierce>
-    <Crush>15.0</Crush>
-    <Foundation>
-      <Hack>5.0</Hack>
-      <Pierce>8.0</Pierce>
-      <Crush>4.0</Crush>
-    </Foundation>
-  </Armour>
+<Entity parent="template_structure_defense">
   <Attack>
     <Ranged>
       <Hack>0.0</Hack>
-      <Pierce>25.0</Pierce>
+      <Pierce>20.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>50.0</MaxRange>
       <MinRange>12.0</MinRange>
@@ -28,12 +18,13 @@
     <GarrisonArrowMultiplier>1</GarrisonArrowMultiplier>
   </BuildingAI>
   <BuildRestrictions>
+    <PlacementType>land-shore</PlacementType>
     <Category>Wall</Category>
   </BuildRestrictions>
   <Cost>
     <BuildTime>20</BuildTime>
     <Resources>
-      <stone>60</stone>
+      <stone>100</stone>
     </Resources>
   </Cost>
   <Footprint>
@@ -48,7 +39,7 @@
     <LoadingRange>2</LoadingRange>
   </GarrisonHolder>
   <Health>
-    <Max>4000</Max>
+    <Max>5000</Max>
     <SpawnEntityOnDeath>rubble/rubble_stone_wall_tower</SpawnEntityOnDeath>
   </Health>
   <Identity>
@@ -69,6 +60,12 @@
     <Static width="6.0" depth="6.0"/>
     <ControlPersist/>
   </Obstruction>
+  <ProductionQueue>
+    <BatchTimeModifier>0.8</BatchTimeModifier>
+    <Technologies datatype="tokens">
+      pair_walls_01
+    </Technologies>
+  </ProductionQueue>
   <Sound>
     <SoundGroups>
       <select>interface/select/building/sel_tower.xml</select>

@@ -40,26 +40,24 @@ CSoundItem::CSoundItem(CSoundData* sndData)
 
 CSoundItem::~CSoundItem()
 {
-	AL_CHECK
-	
 	Stop();
-
-	if (m_ALSource != 0)
-	{
-		alSourcei(m_ALSource, AL_BUFFER, 0);
-		AL_CHECK
-	}	
+	ReleaseOpenAL();
 }
 
 bool CSoundItem::IdleTask()
 {
+	if ( m_ALSource == 0 )
+		return false;
+
 	HandleFade();
 
-	if (m_LastPlay && (m_ALSource != 0) )
+	if (m_LastPlay && m_ALSource)
 	{
+		CScopeLock lock(m_ItemMutex);
 		int proc_state;
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
 		AL_CHECK
+		m_ShouldBePlaying = (proc_state != AL_STOPPED);
 		return (proc_state != AL_STOPPED);
 	}
 	return true;
@@ -67,8 +65,17 @@ bool CSoundItem::IdleTask()
 
 void CSoundItem::Attach(CSoundData* itemData)
 {
-	if (itemData != NULL && (m_ALSource != 0) )
+	if (m_SoundData != NULL)
 	{
+		CSoundData::ReleaseSoundData(m_SoundData);
+		m_SoundData = 0;
+	}
+
+	if (itemData != NULL)
+	{
+		AL_CHECK
+		alSourcei(m_ALSource, AL_BUFFER, 0);
+		AL_CHECK
 		m_SoundData = itemData->IncrementCount();
 		alSourcei(m_ALSource, AL_BUFFER, m_SoundData->GetBuffer());
 		

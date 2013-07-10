@@ -8,11 +8,11 @@ Health.prototype.Schema =
 		"<DeathType>corpse</DeathType>" +
 	"</a:example>" +
 	"<element name='Max' a:help='Maximum hitpoints'>" +
-		"<data type='positiveInteger'/>" +
+		"<ref name='nonNegativeDecimal'/>" +
 	"</element>" +
 	"<optional>" +
 		"<element name='Initial' a:help='Initial hitpoints. Default if unspecified is equal to Max'>" +
-			"<data type='positiveInteger'/>" +
+			"<ref name='nonNegativeDecimal'/>" +
 		"</element>" +
 	"</optional>" +
 	"<optional>" +
@@ -100,6 +100,10 @@ Health.prototype.Kill = function()
 	this.Reduce(this.hitpoints);
 };
 
+/**
+ * Reduces entity's health by amount HP.
+ * Returns object of the form { "killed": false, "change": -12 }
+ */
 Health.prototype.Reduce = function(amount)
 {
 	var state = { "killed": false };
@@ -109,6 +113,7 @@ Health.prototype.Reduce = function(amount)
 		if (cmpRangeManager)
 			cmpRangeManager.SetEntityFlag(this.entity, "injured", true);
 	}
+	var oldHitpoints = this.hitpoints;
 	if (amount >= this.hitpoints)
 	{
 		// If this is the first time we reached 0, then die.
@@ -141,21 +146,19 @@ Health.prototype.Reduce = function(amount)
 				Engine.DestroyEntity(this.entity);
 			}
 
-			var old = this.hitpoints;
 			this.hitpoints = 0;
 
-			Engine.PostMessage(this.entity, MT_HealthChanged, { "from": old, "to": this.hitpoints });
+			Engine.PostMessage(this.entity, MT_HealthChanged, { "from": oldHitpoints, "to": this.hitpoints });
 		}
 
 	}
 	else
 	{
-		var old = this.hitpoints;
 		this.hitpoints -= amount;
 
-		Engine.PostMessage(this.entity, MT_HealthChanged, { "from": old, "to": this.hitpoints });
+		Engine.PostMessage(this.entity, MT_HealthChanged, { "from": oldHitpoints, "to": this.hitpoints });
 	}
-	state.change = this.hitpoints - old;
+	state.change = this.hitpoints - oldHitpoints;
 	return state;
 };
 
@@ -213,8 +216,11 @@ Health.prototype.CreateCorpse = function(leaveResources)
 	var cmpCorpseOwnership = Engine.QueryInterface(corpse, IID_Ownership);
 	cmpCorpseOwnership.SetOwner(cmpOwnership.GetOwner());
 
-	// Make it fall over
+	var cmpVisual = Engine.QueryInterface(this.entity, IID_Visual);
 	var cmpCorpseVisual = Engine.QueryInterface(corpse, IID_Visual);
+	cmpCorpseVisual.SetActorSeed(cmpVisual.GetActorSeed());
+
+	// Make it fall over
 	cmpCorpseVisual.SelectAnimation("death", true, 1.0, "");
 
 	return corpse;
@@ -238,6 +244,11 @@ Health.prototype.CreateDeathSpawnedEntity = function()
 	var rot = cmpPosition.GetRotation();
 	cmpSpawnedPosition.SetYRotation(rot.y);
 	cmpSpawnedPosition.SetXZRotation(rot.x, rot.z);
+
+	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
+	var cmpSpawnedOwnership = Engine.QueryInterface(spawnedEntity, IID_Ownership);
+	if (cmpOwnership && cmpSpawnedOwnership)
+		cmpSpawnedOwnership.SetOwner(cmpOwnership.GetOwner());
 
 	return spawnedEntity;
 };

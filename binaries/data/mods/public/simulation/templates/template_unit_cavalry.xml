@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit">
   <Armour>
-    <Hack>0.0</Hack>
-    <Pierce>0.0</Pierce>
-    <Crush>2.0</Crush>
+    <Hack>1</Hack>
+    <Pierce>5</Pierce>
+    <Crush>2</Crush>
   </Armour>
   <Attack>
     <Slaughter>
-      <Hack>1000.0</Hack>
+      <Hack>100.0</Hack>
       <Pierce>0.0</Pierce>
       <Crush>0.0</Crush>
       <MaxRange>4.0</MaxRange>
@@ -90,14 +90,14 @@
     <HeightOffset>6.5</HeightOffset>
   </StatusBars>
   <UnitMotion>
-    <WalkSpeed>11.0</WalkSpeed>
+    <WalkSpeed>13.0</WalkSpeed>
     <Run>
-      <Speed>27.5</Speed>
+      <Speed>26.0</Speed>
       <Range>600.0</Range>
       <RangeMin>5.0</RangeMin>
     </Run>
   </UnitMotion>
   <Vision>
-    <Range>70</Range>
+    <Range>60</Range>
   </Vision>
 </Entity>

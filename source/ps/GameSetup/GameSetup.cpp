@@ -84,10 +84,12 @@
 #include "renderer/ModelRenderer.h"
 #include "scripting/ScriptingHost.h"
 #include "scripting/ScriptGlue.h"
+#include "scriptinterface/DebuggingServer.h"
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
-#include "soundmanager/SoundManager.h"
+#include "soundmanager/scripting/JSInterface_Sound.h"
+#include "soundmanager/ISoundManager.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
 #include "tools/atlas/GameInterface/View.h"
 
@@ -191,21 +193,14 @@ void Render()
 {
 	PROFILE3("render");
 
-#if CONFIG2_AUDIO
 	if (g_SoundManager)
 		g_SoundManager->IdleTask();
-#endif
+
 	ogl_WarnIfError();
 
 	g_Profiler2.RecordGPUFrameStart();
 
 	ogl_WarnIfError();
-
-	CStr skystring = "255 0 255";
-	CFG_GET_VAL("skycolor", String, skystring);
-	CColor skycol;
-	GUI<CColor>::ParseString(skystring.FromUTF8(), skycol);
-	g_Renderer.SetClearColor(skycol.AsSColor4ub());
 
 	// prepare before starting the renderer frame
 	if (g_Game && g_Game->IsGameStarted())
@@ -326,9 +321,6 @@ static void RegisterJavascriptInterfaces()
 	// maths
 	JSI_Vector3D::init();
 
-	// sound
-	CSoundManager::ScriptingInit();
-
 	// graphics
 	CGameView::ScriptingInit();
 
@@ -342,6 +334,7 @@ static void RegisterJavascriptInterfaces()
 	CGUI::ScriptingInit();
 
 	GuiScriptingInit(g_ScriptingHost.GetScriptInterface());
+	JSI_Sound::RegisterScriptFunctions(g_ScriptingHost.GetScriptInterface());
 }
 
 
@@ -427,6 +420,20 @@ ErrorReactionInternal psDisplayError(const wchar_t* UNUSED(text), size_t UNUSED(
 	return ERI_NOT_IMPLEMENTED;
 }
 
+static std::vector<CStr> GetMods(const CmdLineArgs& args, bool dev)
+{
+	std::vector<CStr> mods = args.GetMultiple("mod");
+	// TODO: It would be nice to remove this hard-coding
+	mods.insert(mods.begin(), "public");
+
+	// Add the user mod if not explicitly disabled or we have a dev copy so
+	// that saved files end up in version control and not in the user mod.
+	if (!dev && !args.Has("noUserMod"))
+		mods.push_back("user");
+
+	return mods;
+}
+
 static void InitVfs(const CmdLineArgs& args)
 {
 	TIMER(L"InitVfs");
@@ -447,30 +454,50 @@ static void InitVfs(const CmdLineArgs& args)
 
 	const size_t cacheSize = ChooseCacheSize();
 	g_VFS = CreateVfs(cacheSize);
-
-	g_VFS->Mount(L"screenshots/", paths.UserData()/"screenshots"/"");
-	g_VFS->Mount(L"saves/", paths.UserData()/"saves"/"", VFS_MOUNT_WATCH);
+	
+	// Work out whether we are a dev version to make sure saved files
+	// (maps, etc) end up in version control.
 	const OsPath readonlyConfig = paths.RData()/"config"/"";
 	g_VFS->Mount(L"config/", readonlyConfig);
-	if(readonlyConfig != paths.Config())
-		g_VFS->Mount(L"config/", paths.Config());
-	g_VFS->Mount(L"cache/", paths.Cache(), VFS_MOUNT_ARCHIVABLE);	// (adding XMBs to archive speeds up subsequent reads)
+	bool dev = (g_VFS->GetFileInfo(L"config/dev.cfg", NULL) == INFO::OK);
 
-	std::vector<CStr> mods = args.GetMultiple("mod");
-	mods.push_back("public");
-	if(!args.Has("onlyPublicFiles"))
-		mods.push_back("internal");
+	const std::vector<CStr> mods = GetMods(args, dev);
 
-	OsPath modArchivePath = paths.Cache()/"mods";
-	OsPath modLoosePath = paths.RData()/"mods";
+	OsPath modPath = paths.RData()/"mods";
+	OsPath modUserPath = paths.UserData()/"mods";
 	for (size_t i = 0; i < mods.size(); ++i)
 	{
-		size_t priority = i+1;	// mods are higher priority than regular mountings, which default to priority 0
-		size_t flags = VFS_MOUNT_WATCH|VFS_MOUNT_ARCHIVABLE|VFS_MOUNT_MUST_EXIST;
+		size_t priority = (i+1)*2;	// mods are higher priority than regular mountings, which default to priority 0
+		size_t userFlags = VFS_MOUNT_WATCH|VFS_MOUNT_ARCHIVABLE|VFS_MOUNT_REPLACEABLE;
+		size_t flags = userFlags|VFS_MOUNT_MUST_EXIST;
+		
 		OsPath modName(mods[i]);
-		g_VFS->Mount(L"", modLoosePath / modName/"", flags, priority);
-		g_VFS->Mount(L"", modArchivePath / modName/"", flags, priority);
+		if (dev)
+		{
+			// We are running a dev copy, so only mount mods in the user mod path
+			// if the mod does not exist in the data path.
+			if (DirectoryExists(modPath / modName/""))
+				g_VFS->Mount(L"", modPath / modName/"", flags, priority);
+			else
+				g_VFS->Mount(L"", modUserPath / modName/"", userFlags, priority);
+		}
+		else
+		{
+			g_VFS->Mount(L"", modPath / modName/"", flags, priority);
+			// Ensure that user modified files are loaded, if they are present
+			g_VFS->Mount(L"", modUserPath / modName/"", userFlags, priority+1);
+		}
 	}
+
+	// We mount these dirs last as otherwise writing could result in files being placed in a mod's dir.
+	g_VFS->Mount(L"screenshots/", paths.UserData()/"screenshots"/"");
+	g_VFS->Mount(L"saves/", paths.UserData()/"saves"/"", VFS_MOUNT_WATCH);
+	// Mounting with highest priority, so that a mod supplied user.cfg is harmless
+	g_VFS->Mount(L"config/", readonlyConfig, 0, (size_t)-1);
+	if(readonlyConfig != paths.Config())
+		g_VFS->Mount(L"config/", paths.Config(), 0, (size_t)-1);
+
+	g_VFS->Mount(L"cache/", paths.Cache(), VFS_MOUNT_ARCHIVABLE);	// (adding XMBs to archive speeds up subsequent reads)
 
 	// note: don't bother with g_VFS->TextRepresentation - directories
 	// haven't yet been populated and are empty.
@@ -694,6 +721,7 @@ void Shutdown(int UNUSED(flags))
 
 	TIMER_BEGIN(L"shutdown ScriptingHost");
 	delete &g_ScriptingHost;
+	delete g_DebuggingServer;
 	TIMER_END(L"shutdown ScriptingHost");
 
 	TIMER_BEGIN(L"shutdown ConfigDB");
@@ -703,10 +731,8 @@ void Shutdown(int UNUSED(flags))
 	// resource
 	// first shut down all resource owners, and then the handle manager.
 	TIMER_BEGIN(L"resource modules");
-#if CONFIG2_AUDIO
-		if (g_SoundManager)
-			delete g_SoundManager;
-#endif
+
+		ISoundManager::SetEnabled(false);
 
 		g_VFS.reset();
 
@@ -885,13 +911,19 @@ void Init(const CmdLineArgs& args, int UNUSED(flags))
 
 
 #if CONFIG2_AUDIO
-	CSoundManager::CreateSoundManager();
+	ISoundManager::CreateSoundManager();
 #endif
-
-	InitScripting();	// before GUI
 
 	// g_ConfigDB, command line args, globals
 	CONFIG_Init(args);
+
+	// before scripting 
+	if (g_JSDebuggerEnabled)
+		g_DebuggingServer = new CDebuggingServer();
+
+	InitScripting();	// before GUI
+
+	g_ConfigDB.RegisterJSConfigDB(); 	// after scripting 
 
 	// Optionally start profiler HTTP output automatically
 	// (By default it's only enabled by a hotkey, for security/performance)
@@ -946,18 +978,23 @@ void InitGraphics(const CmdLineArgs& args, int flags)
 	}
 
 	if(g_DisableAudio)
-	{
-		// speed up startup by disabling all sound
-		// (OpenAL init will be skipped).
-		// must be called before first snd_open.
-#if CONFIG2_AUDIO
-		CSoundManager::SetEnabled(false);
-#endif
-	}
+		ISoundManager::SetEnabled(false);
 
 	g_GUI = new CGUIManager(g_ScriptingHost.GetScriptInterface());
 
 	// (must come after SetVideoMode, since it calls ogl_Init)
+	if (ogl_HaveExtensions(0, "GL_ARB_vertex_program", "GL_ARB_fragment_program", NULL) != 0 // ARB
+		&& ogl_HaveExtensions(0, "GL_ARB_vertex_shader", "GL_ARB_fragment_shader", NULL) != 0) // GLSL
+	{
+		DEBUG_DISPLAY_ERROR(
+			L"Your graphics card doesn't appear to be fully compatible with OpenGL shaders."
+			L" In the future, the game will not support pre-shader graphics cards."
+			L" You are advised to try installing newer drivers and/or upgrade your graphics card."
+			L" For more information, please see http://www.wildfiregames.com/forum/index.php?showtopic=16734"
+		);
+		// TODO: actually quit once fixed function support is dropped
+	}
+
 	const char* missing = ogl_HaveExtensions(0,
 		"GL_ARB_multitexture",
 		"GL_EXT_draw_range_elements",
@@ -1009,7 +1046,7 @@ void InitGraphics(const CmdLineArgs& args, int flags)
 			InitPs(setup_gui, L"page_pregame.xml", data.get());
 		}
 	}
-	catch (PSERROR_Game_World_MapLoadFailed e)
+	catch (PSERROR_Game_World_MapLoadFailed& e)
 	{
 		// Map Loading failed
 
@@ -1175,6 +1212,47 @@ bool Autostart(const CmdLineArgs& args)
 			CStr name = aiArgs[i].AfterFirst(":");
 
 			scriptInterface.SetProperty(player.get(), "AI", std::string(name));
+			scriptInterface.SetProperty(player.get(), "AIDiff", 1);
+			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
+		}
+	}
+	// Set AI difficulty
+	if (args.Has("autostart-aidiff"))
+	{
+		std::vector<CStr> civArgs = args.GetMultiple("autostart-aidiff");
+		for (size_t i = 0; i < civArgs.size(); ++i)
+		{
+			// Instead of overwriting existing player data, modify the array
+			CScriptVal player;
+			if (!scriptInterface.GetPropertyInt(playerData.get(), i, player) || player.undefined())
+			{
+				scriptInterface.Eval("({})", player);
+			}
+			
+			int playerID = civArgs[i].BeforeFirst(":").ToInt();
+			int difficulty = civArgs[i].AfterFirst(":").ToInt();
+			
+			scriptInterface.SetProperty(player.get(), "AIDiff", difficulty);
+			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
+		}
+	}
+	// Set player data for Civs
+	if (args.Has("autostart-civ"))
+	{
+		std::vector<CStr> civArgs = args.GetMultiple("autostart-civ");
+		for (size_t i = 0; i < civArgs.size(); ++i)
+		{
+			// Instead of overwriting existing player data, modify the array
+			CScriptVal player;
+			if (!scriptInterface.GetPropertyInt(playerData.get(), i, player) || player.undefined())
+			{
+				scriptInterface.Eval("({})", player);
+			}
+			
+			int playerID = civArgs[i].BeforeFirst(":").ToInt();
+			CStr name = civArgs[i].AfterFirst(":");
+			
+			scriptInterface.SetProperty(player.get(), "Civ", std::string(name));
 			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
 		}
 	}

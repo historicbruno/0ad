@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_structure_special">
+  <BuildRestrictions>
+    <Category>Embassy</Category>
+  </BuildRestrictions>
   <Cost>
     <PopulationBonus>0</PopulationBonus>
     <Resources>
@@ -14,11 +17,14 @@
   <GarrisonHolder disable=""/>
   <Health>
     <Max>2000</Max>
-    <SpawnEntityOnDeath>rubble/rubble_3x3</SpawnEntityOnDeath>
+    <SpawnEntityOnDeath>rubble/rubble_stone_3x3</SpawnEntityOnDeath>
   </Health>
   <Identity>
     <Civ>cart</Civ>
-    <Classes datatype="tokens">Town Embassy</Classes>
+    <Classes datatype="tokens">
+	  Town
+	  Embassy
+	</Classes>
     <GenericName>Embassy</GenericName>
     <RequiredTechnology>phase_town</RequiredTechnology>
   </Identity>
@@ -33,8 +39,15 @@
     <Static width="16.0" depth="16.0"/>
   </Obstruction>
   <ProductionQueue>
-    <BatchTimeModifier>0.7</BatchTimeModifier>
+    <BatchTimeModifier>0.8</BatchTimeModifier>
   </ProductionQueue>
+  <Sound>
+    <SoundGroups>
+      <select>interface/select/building/sel_gymnasium.xml</select>
+      <constructed>interface/complete/building/complete_gymnasium.xml</constructed>
+      <death>attack/destruction/building_collapse_large.xml</death>
+    </SoundGroups>
+  </Sound>
   <TerritoryInfluence>
     <Radius>25</Radius>
   </TerritoryInfluence>

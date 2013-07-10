@@ -8,16 +8,21 @@ function ProcessCommand(player, cmd)
 	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
 	if (!cmpPlayerMan || player < 0)
 		return;
-	
+
 	var playerEnt = cmpPlayerMan.GetPlayerByID(player);
 	if (playerEnt == INVALID_ENTITY)
 		return;
-	
+
 	var cmpPlayer = Engine.QueryInterface(playerEnt, IID_Player);
 	if (!cmpPlayer)
 		return;
-	
+
 	var controlAllUnits = cmpPlayer.CanControlAllUnits();
+
+	var entities;
+	if (cmd.entities)
+		entities = FilterEntityList(cmd.entities, player, controlAllUnits);
+
 
 	// Note: checks of UnitAI targets are not robust enough here, as ownership
 	//	can change after the order is issued, they should be checked by UnitAI
@@ -82,9 +87,14 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "walk":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Walk(cmd.x, cmd.z, cmd.queued);
+		});
+		break;
+
+	case "attack-walk":
+		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
+			cmpUnitAI.WalkAndFight(cmd.x, cmd.z, cmd.queued);
 		});
 		break;
 
@@ -96,7 +106,6 @@ function ProcessCommand(player, cmd)
 		}
 
 		// See UnitAI.CanAttack for target checks
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Attack(cmd.target, cmd.queued);
 		});
@@ -110,7 +119,6 @@ function ProcessCommand(player, cmd)
 		}
 
 		// See UnitAI.CanHeal for target checks
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Heal(cmd.target, cmd.queued);
 		});
@@ -125,7 +133,6 @@ function ProcessCommand(player, cmd)
 		}
 
 		// See UnitAI.CanRepair for target checks
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Repair(cmd.target, cmd.autocontinue, cmd.queued);
 		});
@@ -139,14 +146,12 @@ function ProcessCommand(player, cmd)
 		}
 
 		// See UnitAI.CanGather for target checks
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Gather(cmd.target, cmd.queued);
 		});
 		break;
 		
 	case "gather-near-position":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.GatherNearPosition(cmd.x, cmd.z, cmd.resourceType, cmd.resourceTemplate, cmd.queued);
 		});
@@ -161,15 +166,12 @@ function ProcessCommand(player, cmd)
 		}
 
 		// See UnitAI.CanReturnResource for target checks
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.ReturnResource(cmd.target, cmd.queued);
 		});
 		break;
 
 	case "train":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
-		
 		// Check entity limits
 		var cmpTempMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_TemplateManager);
 		var template = cmpTempMan.GetTemplate(cmd.template);
@@ -195,14 +197,14 @@ function ProcessCommand(player, cmd)
 
 				var cmpTechnologyManager = QueryOwnerInterface(ent, IID_TechnologyManager);
 				// TODO: Enable this check once the AI gets technology support
-				if (cmpTechnologyManager.CanProduce(cmd.template) || true)
+				if (cmpTechnologyManager.CanProduce(cmd.template) || cmpPlayer.IsAI())
 				{
 					var queue = Engine.QueryInterface(ent, IID_ProductionQueue);
 					// Check if the building can train the unit
 					if (queue && queue.GetEntitiesList().indexOf(cmd.template) != -1)
 						queue.AddBatch(cmd.template, "unit", +cmd.count, cmd.metadata);
 				}
-				else
+				else if (g_DebugCommands)
 				{
 					warn("Invalid command: training requires unresearched technology: " + uneval(cmd));
 				}
@@ -260,7 +262,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "delete-entities":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpHealth = Engine.QueryInterface(ent, IID_Health);
@@ -276,7 +277,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "set-rallypoint":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpRallyPoint = Engine.QueryInterface(ent, IID_RallyPoint);
@@ -292,7 +292,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "unset-rallypoint":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpRallyPoint = Engine.QueryInterface(ent, IID_RallyPoint);
@@ -307,34 +306,37 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "garrison":
-		// Verify that the building can be controlled by the player
-		if (CanControlUnit(cmd.target, player, controlAllUnits))
+		// Verify that the building can be controlled by the player or is mutualAlly
+		if (CanControlUnitOrIsAlly(cmd.target, player, controlAllUnits))
 		{
-			var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 			GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 				cmpUnitAI.Garrison(cmd.target, cmd.queued);
 			});
 		}
 		else if (g_DebugCommands)
 		{
-			warn("Invalid command: garrison target cannot be controlled by player "+player+": "+uneval(cmd));
+			warn("Invalid command: garrison target cannot be controlled by player "+player+" (or ally): "+uneval(cmd));
 		}
 		break;
 
 	case "stop":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
 			cmpUnitAI.Stop(cmd.queued);
 		});
 		break;
 
 	case "unload":
-		// Verify that the building can be controlled by the player
-		if (CanControlUnit(cmd.garrisonHolder, player, controlAllUnits))
+		// Verify that the building can be controlled by the player or is mutualAlly
+		if (CanControlUnitOrIsAlly(cmd.garrisonHolder, player, controlAllUnits))
 		{
 			var cmpGarrisonHolder = Engine.QueryInterface(cmd.garrisonHolder, IID_GarrisonHolder);
 			var notUngarrisoned = 0;
-			for each (ent in cmd.entities)
+
+			// The owner can ungarrison every garrisoned unit
+			if (IsOwnedByPlayer(player, cmd.garrisonHolder))
+				entities = cmd.entities;
+
+			for each (var ent in entities)
 				if (!cmpGarrisonHolder || !cmpGarrisonHolder.Unload(ent))
 					notUngarrisoned++;
 
@@ -343,23 +345,45 @@ function ProcessCommand(player, cmd)
 		}
 		else if (g_DebugCommands)
 		{
-			warn("Invalid command: unload target cannot be controlled by player "+player+": "+uneval(cmd));
+			warn("Invalid command: unload target cannot be controlled by player "+player+" (or ally): "+uneval(cmd));
 		}
 		break;
 
 	case "unload-template":
-		var selected = FilterEntityList(cmd.garrisonHolders, player, controlAllUnits);
-		for each (var garrisonHolder in selected)
+		var index = cmd.template.indexOf("&");  // Templates for garrisoned units are extended
+		if (index == -1)
+			break;
+
+		var entities = FilterEntityListWithAllies(cmd.garrisonHolders, player, controlAllUnits);
+		for each (var garrisonHolder in entities)
 		{
 			var cmpGarrisonHolder = Engine.QueryInterface(garrisonHolder, IID_GarrisonHolder);
-			if (!cmpGarrisonHolder || !cmpGarrisonHolder.UnloadTemplate(cmd.template, cmd.all))
+			if (cmpGarrisonHolder)
+			{
+				// Only the owner of the garrisonHolder may unload entities from any owners
+				if (!IsOwnedByPlayer(player, garrisonHolder) && !controlAllUnits
+				    && player != +cmd.template.slice(1,index))
+						continue;
+
+				if (!cmpGarrisonHolder.UnloadTemplate(cmd.template, cmd.all))
+					notifyUnloadFailure(player, garrisonHolder);
+			}
+		}
+		break;
+
+	case "unload-all-own":
+		var entities = FilterEntityList(cmd.garrisonHolders, player, controlAllUnits);
+		for each (var garrisonHolder in entities)
+		{
+			var cmpGarrisonHolder = Engine.QueryInterface(garrisonHolder, IID_GarrisonHolder);
+			if (!cmpGarrisonHolder || !cmpGarrisonHolder.UnloadAllOwn())
 				notifyUnloadFailure(player, garrisonHolder)
 		}
 		break;
 
 	case "unload-all":
-		var selected = FilterEntityList(cmd.garrisonHolders, player, controlAllUnits);
-		for each (var garrisonHolder in selected)
+		var entities = FilterEntityList(cmd.garrisonHolders, player, controlAllUnits);
+		for each (var garrisonHolder in entities)
 		{
 			var cmpGarrisonHolder = Engine.QueryInterface(garrisonHolder, IID_GarrisonHolder);
 			if (!cmpGarrisonHolder || !cmpGarrisonHolder.UnloadAll())
@@ -368,7 +392,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "formation":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		GetFormationUnitAIs(entities, player, cmd.name).forEach(function(cmpUnitAI) {
 			cmpUnitAI.MoveIntoFormation(cmd);
 		});
@@ -388,7 +411,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "stance":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpUnitAI = Engine.QueryInterface(ent, IID_UnitAI);
@@ -398,7 +420,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "wall-to-gate":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			TryTransformWallToGate(ent, cmpPlayer, cmd.template);
@@ -406,7 +427,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "lock-gate":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpGate = Engine.QueryInterface(ent, IID_Gate);
@@ -421,7 +441,7 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "setup-trade-route":
-		for each (var ent in cmd.entities)
+		for each (var ent in entities)
 		{
 			var cmpUnitAI = Engine.QueryInterface(ent, IID_UnitAI);
 			if (cmpUnitAI)
@@ -430,7 +450,7 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "select-trading-goods":
-		for each (var ent in cmd.entities)
+		for each (var ent in entities)
 		{
 			var cmpTrader = Engine.QueryInterface(ent, IID_Trader);
 			if (cmpTrader)
@@ -454,7 +474,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "pack":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpUnitAI = Engine.QueryInterface(ent, IID_UnitAI);
@@ -469,7 +488,6 @@ function ProcessCommand(player, cmd)
 		break;
 
 	case "cancel-pack":
-		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
 		for each (var ent in entities)
 		{
 			var cmpUnitAI = Engine.QueryInterface(ent, IID_UnitAI);
@@ -526,6 +544,99 @@ function ExtractFormations(ents)
 }
 
 /**
+ * Tries to find the best angle to put a dock at a given position
+ * Taken from GuiInterface.js
+ */
+function GetDockAngle(templateName,x,y)
+{
+	var cmpTemplateMgr = Engine.QueryInterface(SYSTEM_ENTITY, IID_TemplateManager);
+	var template = cmpTemplateMgr.GetTemplate(templateName);
+
+	if (template.BuildRestrictions.Category !== "Dock")
+		return undefined;
+
+	var cmpTerrain = Engine.QueryInterface(SYSTEM_ENTITY, IID_Terrain);
+	var cmpWaterManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_WaterManager);
+	if (!cmpTerrain || !cmpWaterManager)
+	{
+		return undefined;
+	}
+	
+	// Get footprint size
+	var halfSize = 0;
+	if (template.Footprint.Square)
+	{
+		halfSize = Math.max(template.Footprint.Square["@depth"], template.Footprint.Square["@width"])/2;
+	}
+	else if (template.Footprint.Circle)
+	{
+		halfSize = template.Footprint.Circle["@radius"];
+	}
+	
+	/* Find direction of most open water, algorithm:
+	 *	1. Pick points in a circle around dock
+	 *	2. If point is in water, add to array
+	 *	3. Scan array looking for consecutive points
+	 *	4. Find longest sequence of consecutive points
+	 *	5. If sequence equals all points, no direction can be determined,
+	 *		expand search outward and try (1) again
+	 *	6. Calculate angle using average of sequence
+	 */
+	const numPoints = 16;
+	for (var dist = 0; dist < 4; ++dist)
+	{
+		var waterPoints = [];
+		for (var i = 0; i < numPoints; ++i)
+		{
+			var angle = (i/numPoints)*2*Math.PI;
+			var d = halfSize*(dist+1);
+			var nx = x - d*Math.sin(angle);
+			var nz = y + d*Math.cos(angle);
+			
+			if (cmpTerrain.GetGroundLevel(nx, nz) < cmpWaterManager.GetWaterLevel(nx, nz))
+			{
+				waterPoints.push(i);
+			}
+		}
+		var consec = [];
+		var length = waterPoints.length;
+		for (var i = 0; i < length; ++i)
+		{
+			var count = 0;
+			for (var j = 0; j < (length-1); ++j)
+			{
+				if (((waterPoints[(i + j) % length]+1) % numPoints) == waterPoints[(i + j + 1) % length])
+				{
+					++count;
+				}
+				else
+				{
+					break;
+				}
+			}
+			consec[i] = count;
+		}
+		var start = 0;
+		var count = 0;
+		for (var c in consec)
+		{
+			if (consec[c] > count)
+			{
+				start = c;
+				count = consec[c];
+			}
+		}
+		
+		// If we've found a shoreline, stop searching
+		if (count != numPoints-1)
+		{
+			return -(((waterPoints[start] + consec[start]/2) % numPoints)/numPoints*2*Math.PI);
+		}
+	}
+	return undefined;
+}
+
+/**
  * Attempts to construct a building using the specified parameters.
  * Returns true on success, false on failure.
  */
@@ -574,6 +685,11 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		return false;
 	}
 	
+	// If it's a dock, get the right angle.
+	var angle = GetDockAngle(cmd.template,cmd.x,cmd.z);
+	if (angle !== undefined)
+		cmd.angle = angle;
+	
 	// Move the foundation to the right place
 	var cmpPosition = Engine.QueryInterface(ent, IID_Position);
 	cmpPosition.JumpTo(cmd.x, cmd.z);
@@ -601,22 +717,28 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 	var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
 	cmpOwnership.SetOwner(player);
 	
-	// Check whether it's obstructed by other entities or invalid terrain
+	// Check whether building placement is valid
 	var cmpBuildRestrictions = Engine.QueryInterface(ent, IID_BuildRestrictions);
-	if (!cmpBuildRestrictions || !cmpBuildRestrictions.CheckPlacement())
+	if (cmpBuildRestrictions)
 	{
-		if (g_DebugCommands)
+		var ret = cmpBuildRestrictions.CheckPlacement();
+		if (!ret.success)
 		{
-			warn("Invalid command: build restrictions check failed for player "+player+": "+uneval(cmd));
+			if (g_DebugCommands)
+			{
+				warn("Invalid command: build restrictions check failed for player "+player+": "+uneval(cmd));
+			}
+
+			var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
+			cmpGuiInterface.PushNotification({ "player": player, "message": ret.message });
+			
+			// Remove the foundation because the construction was aborted
+			Engine.DestroyEntity(ent);
+			return false;
 		}
-		
-		var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
-		cmpGuiInterface.PushNotification({ "player": player, "message": "Building site was obstructed" });
-		
-		// Remove the foundation because the construction was aborted
-		Engine.DestroyEntity(ent);
-		return false;
 	}
+	else
+		error("cmpBuildRestrictions not defined");
 	
 	// Check entity limits
 	var cmpEntityLimits = QueryPlayerIDInterface(player, IID_EntityLimits);
@@ -647,29 +769,6 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		
 		// Remove the foundation because the construction was aborted 
 		Engine.DestroyEntity(ent); 
-	} 
-	
-	// TODO: AI has no visibility info
-	if (!cmpPlayer.IsAI())
-	{
-		// Check whether it's in a visible or fogged region
-		//	tell GetLosVisibility to force RetainInFog because preview entities set this to false,
-		//	which would show them as hidden instead of fogged
-		var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
-		var visible = (cmpRangeManager && cmpRangeManager.GetLosVisibility(ent, player, true) != "hidden");
-		if (!visible)
-		{
-			if (g_DebugCommands)
-			{
-				warn("Invalid command: foundation visibility check failed for player "+player+": "+uneval(cmd));
-			}
-			
-			var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
-			cmpGuiInterface.PushNotification({ "player": player, "message": "Building site was not visible" });
-			
-			Engine.DestroyEntity(ent);
-			return false;
-		}
 	}
 	
 	// We need the cost after tech modifications
@@ -1184,12 +1283,23 @@ function CanMoveEntsIntoFormation(ents, formationName)
 
 /**
  * Check if player can control this entity
- * returns: true if the entity is valid and owned by the player if
- *		or control all units is activated for the player, else false
+ * returns: true if the entity is valid and owned by the player
+ *          or control all units is activated, else false
  */
 function CanControlUnit(entity, player, controlAll)
 {
 	return (IsOwnedByPlayer(player, entity) || controlAll);
+}
+
+/**
+ * Check if player can control this entity
+ * returns: true if the entity is valid and owned by the player
+ *          or the entity is owned by an mutualAlly
+ *          or control all units is activated, else false
+ */
+function CanControlUnitOrIsAlly(entity, player, controlAll)
+{
+	return (IsOwnedByPlayer(player, entity) || IsOwnedByMutualAllyOfPlayer(player, entity) || controlAll);
 }
 
 /**
@@ -1198,6 +1308,14 @@ function CanControlUnit(entity, player, controlAll)
 function FilterEntityList(entities, player, controlAll)
 {
 	return entities.filter(function(ent) { return CanControlUnit(ent, player, controlAll);} );
+}
+
+/**
+ * Filter entities which the player can control or are mutualAlly
+ */
+function FilterEntityListWithAllies(entities, player, controlAll)
+{
+	return entities.filter(function(ent) { return CanControlUnitOrIsAlly(ent, player, controlAll);} );
 }
 
 /**

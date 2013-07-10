@@ -6,7 +6,6 @@ const background = "hellenes1"; // Background type. Currently: 'hellenes1', 'per
 function init(initData)
 {
 	initMusic();
-
 	// Play main menu music
 	global.music.setState(global.music.states.MENU);
 
@@ -17,9 +16,24 @@ function init(initData)
 
 	EnableUserReport(Engine.IsUserReportEnabled());
 
-	// Only show splash screen once
-	if (initData && initData.isStartup && Engine.IsSplashScreenEnabled())
-		Engine.PushGuiPage("page_splashscreen.xml", { "page": "splashscreen" } );
+	// Only show splash screen(s) once
+	if (initData && initData.isStartup)
+	{
+		if (Engine.IsSplashScreenEnabled())
+			Engine.PushGuiPage("page_splashscreen.xml", { "page": "splashscreen" } );
+
+		// Warn about removing fixed render path
+		if (renderer.renderpath == "fixed")
+			messageBox(
+				600,
+				300,
+				"[font=\"serif-bold-16\"][color=\"200 20 20\"]Warning:[/color] You appear to be using non-shader (fixed function) graphics. This option will be removed in a future 0 A.D. release, to allow for more advanced graphics features. We advise upgrading your graphics card to a more recent, shader-compatible model.\n\nPlease press \"Read More\" for more information or \"Ok\" to continue.",
+				"WARNING!",
+				0,
+				["Ok", "Read More"],
+				[null, function() { Engine.OpenURL("http://www.wildfiregames.com/forum/index.php?showtopic=16734"); }]
+			);
+	}
 }
 
 var t0 = new Date;
@@ -141,9 +155,6 @@ function onTick()
 	// Animate submenu
 	updateMenuPosition(tickLength);
 
-	// Update music state
-	global.music.updateTimer();
-
 	if (Engine.IsUserReportEnabled())
 	{
 		getGUIObjectByName("userReportEnabledText").caption = 
@@ -249,7 +260,7 @@ function blendSubmenuIntoMain(topPosition, bottomPosition)
 //function openOptionsTab(tabName)
 //{
 //	// Hide the other tabs.
-//	for (i = 1; i <= 3; i++)
+//	for (var i = 1; i <= 3; i++)
 //	{
 //		switch (i)
 //		{

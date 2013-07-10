@@ -1,20 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Entity parent="template_structure_civic">
+<Entity parent="template_structure_defense">
   <Armour>
-    <Hack>15.0</Hack>
-    <Pierce>40.0</Pierce>
-    <Crush>10.0</Crush>
-    <Foundation>
-      <Hack>4.0</Hack>
-      <Pierce>8.0</Pierce>
-      <Crush>3.0</Crush>
-    </Foundation>
+    <Hack>5.0</Hack>
   </Armour>
   <BuildRestrictions>
     <Category>Wall</Category>
   </BuildRestrictions>
   <Cost>
-    <BuildTime>20</BuildTime>
+    <BuildTime>0</BuildTime>
     <Resources>
       <stone>60</stone>
     </Resources>
@@ -27,7 +20,7 @@
     <PassRange>20</PassRange>
   </Gate>
   <Health>
-    <Max>2000</Max>
+    <Max>3000</Max>
     <SpawnEntityOnDeath>rubble/rubble_stone_wall_long</SpawnEntityOnDeath>
   </Health>
   <Identity>
@@ -57,8 +50,8 @@
       <select>interface/select/building/sel_gate.xml</select>
       <constructed>interface/complete/building/complete_gate.xml</constructed>
       <death>attack/destruction/building_collapse_large.xml</death>
-      <gate_closing>interface/select/building/sel_gate.xml</gate_closing>
-      <gate_opening>interface/select/building/sel_gate.xml</gate_opening>
+      <gate_closing>actor/gate/stonegate_close.xml</gate_closing>
+      <gate_opening>actor/gate/stonegate_open.xml</gate_opening>
       <gate_locked>interface/select/building/sel_gate.xml</gate_locked>
       <gate_unlocked>interface/select/building/sel_gate.xml</gate_unlocked>
     </SoundGroups>

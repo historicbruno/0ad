@@ -22,11 +22,22 @@ function handleNotifications()
 	// Handle chat notifications specially
 	if (notification.type == "chat")
 	{
-		addChatMessage({
-			"type": "message",
-			"guid": findGuidForPlayerID(g_PlayerAssignments, notification.player),
-			"text": notification.message
-		});
+		var guid = findGuidForPlayerID(g_PlayerAssignments, notification.player);
+		if (guid == undefined)
+		{
+			addChatMessage({
+				"type": "message",
+				"guid": -1,
+				"player": notification.player,
+				"text": notification.message
+			});
+		} else {
+			addChatMessage({
+				"type": "message",
+				"guid": findGuidForPlayerID(g_PlayerAssignments, notification.player),
+				"text": notification.message
+			});
+		}
 	}
 	else if (notification.type == "defeat")
 	{
@@ -57,6 +68,15 @@ function handleNotifications()
 	{
 		// Used for AI testing
 		exit();
+	}
+	else if (notification.type == "tribute")
+	{
+		addChatMessage({
+			"type": "tribute",
+			"player": notification.player,
+			"player1": notification.player1,
+			"amounts": notification.amounts
+		});
 	}
 	else
 	{
@@ -98,6 +118,10 @@ function handleNetMessage(message)
 	switch (message.type)
 	{
 	case "netstatus":
+		// If we lost connection, further netstatus messages are useless
+		if (g_Disconnected)
+			return;
+
 		var obj = getGUIObjectByName("netStatus");
 		switch (message.status)
 		{
@@ -122,9 +146,9 @@ function handleNetMessage(message)
 			obj.hidden = false;
 			break;
 		case "disconnected":
+			g_Disconnected = true;
 			obj.caption = "Connection to the server has been lost.\n\nThe game has ended.";
 			obj.hidden = false;
-			getGUIObjectByName("disconnectedExitButton").hidden = false;
 			break;
 		default:
 			error("Unrecognised netstatus type "+message.status);
@@ -214,7 +238,14 @@ function submitChatInput()
 						number = cheat.DefaultNumber;
 				}
 
-				Engine.PostNetworkCommand({"type": "cheat", "action": cheat.Action, "number": number, "selected": g_Selection.toList(), "templates": cheat.Templates, "player": Engine.GetPlayerID()});
+				Engine.PostNetworkCommand({
+					"type": "cheat",
+					"action": cheat.Action,
+					"number": number,
+					"text": cheat.Type,
+					"selected": g_Selection.toList(),
+					"templates": cheat.Templates,
+					"player": Engine.GetPlayerID()});
 				isCheat = true;
 				break;
 			}
@@ -265,6 +296,12 @@ function addChatMessage(msg, playerAssignments)
 		// This case is hit for AIs, whose names don't exist in playerAssignments.
 		playerColor = g_Players[msg.player].color.r + " " + g_Players[msg.player].color.g + " " + g_Players[msg.player].color.b;
 		username = escapeText(g_Players[msg.player].name);
+	} else if (msg.type == "message")
+	{
+		// This case is hit for AIs, whose names don't exist in playerAssignments.
+		playerColor = g_Players[msg.player].color.r + " " + g_Players[msg.player].color.g + " " + g_Players[msg.player].color.b;
+		username = escapeText(g_Players[msg.player].name);
+		parseChatCommands(msg, playerAssignments);
 	}
 	else
 	{
@@ -305,6 +342,26 @@ function addChatMessage(msg, playerAssignments)
 		}
 		else // No need for other players to know of this.
 			return;
+		break;
+	case "tribute":
+		if (msg.player != Engine.GetPlayerID()) 
+			return;
+
+		username = escapeText(g_Players[msg.player1].name);
+		playerColor = g_Players[msg.player1].color.r + " " + g_Players[msg.player1].color.g + " " + g_Players[msg.player1].color.b;
+
+		// Format the amounts to proper English: 200 food, 100 wood, and 300 metal; 100 food; 400 wood and 200 stone
+		var amounts = Object.keys(msg.amounts)
+			.filter(function (type) { return msg.amounts[type] > 0; })
+			.map(function (type) { return msg.amounts[type] + " " + type; });
+
+		if (amounts.length > 1)
+		{
+			var lastAmount = amounts.pop();
+			amounts = amounts.join(", ") + " and " + lastAmount;
+		}
+
+		formatted = "[color=\"" + playerColor + "\"]" + username + "[/color] has sent you " + amounts + ".";
 		break;
 	case "message":
 		// May have been hidden by the 'team' command.
@@ -351,7 +408,12 @@ function parseChatCommands(msg, playerAssignments)
 	if (!msg.text || msg.text[0] != '/')
 		return;
 
-	var sender = playerAssignments[msg.guid].player;
+	var sender;
+	if (playerAssignments[msg.guid])
+		sender = playerAssignments[msg.guid].player;
+	else
+		sender = msg.player;
+	
 	var recurse = false;
 	var split = msg.text.split(/\s/);
 
@@ -372,6 +434,8 @@ function parseChatCommands(msg, playerAssignments)
 					msg.hide = true;
 				else
 					msg.prefix = "(Team) ";
+			} else {
+				msg.hide = true;
 			}
 			recurse = true;
 			break;

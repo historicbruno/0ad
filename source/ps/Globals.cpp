@@ -19,7 +19,9 @@
 #include "Globals.h"
 
 #include "lib/external_libraries/libsdl.h"
-
+#include "network/NetClient.h"
+#include "ps/GameSetup/Config.h"
+#include "soundmanager/ISoundManager.h"
 
 bool g_app_minimized = false;
 bool g_app_has_focus = true;
@@ -68,9 +70,19 @@ InReaction GlobalsInputHandler(const SDL_Event_* ev)
 #else
 	case SDL_ACTIVEEVENT:
 		if(ev->ev.active.state & SDL_APPACTIVE)
+		{
 			g_app_minimized = (ev->ev.active.gain == 0);	// negated
+
+			if ( g_SoundManager )
+				g_SoundManager->Pause( g_app_minimized && g_PauseOnFocusLoss && !g_NetClient );
+		}
 		if(ev->ev.active.state & SDL_APPINPUTFOCUS)
+		{
 			g_app_has_focus = (ev->ev.active.gain != 0);
+
+			if ( g_SoundManager )
+				g_SoundManager->Pause( !g_app_has_focus && g_PauseOnFocusLoss && !g_NetClient );
+		}
 		if(ev->ev.active.state & SDL_APPMOUSEFOCUS)
 			g_mouse_active = (ev->ev.active.gain != 0);
 		return IN_PASS;

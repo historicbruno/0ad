@@ -40,6 +40,7 @@ public:
 	virtual bool InitOggFile(const VfsPath& itemPath);
 	virtual bool IsFileFinished();
 	virtual bool IsOneShot();
+	virtual bool IsStereo();
 
 	virtual int FetchDataIntoBuffer(int count, ALuint* buffers);
 	virtual void ResetFile();
@@ -54,9 +55,9 @@ protected:
 
 	bool AddDataBuffer(char* data, long length);
 	void SetFormatAndFreq(int form, ALsizei freq);
-	ALsizei  GetBufferCount();
-	ALuint GetBuffer();
-	ALuint* GetBufferPtr();
+	int  GetBufferCount();
+	unsigned int GetBuffer();
+	unsigned int* GetBufferPtr();
 };
 
 #endif // CONFIG2_AUDIO
