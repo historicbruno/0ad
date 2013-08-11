@@ -1109,13 +1109,15 @@ function onGameAttributesChange()
 function updateGameAttributes()
 {
 	if (g_IsNetworked)
-	{
+    {
 		Engine.SetNetworkGameAttributes(g_GameAttributes);
 		if (g_IsController && g_LoadingState >= 2)
 			sendRegisterGameStanza();
 	}
 	else
+    {
 		onGameAttributesChange();
+    }
 }
 
 function updatePlayerList()

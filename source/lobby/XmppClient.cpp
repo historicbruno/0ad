@@ -216,13 +216,11 @@ void XmppClient::handleMUCParticipantPresence(gloox::MUCRoom*, const gloox::MUCR
 void XmppClient::handleMUCMessage( MUCRoom*, const Message& msg, bool )
 {
 	DbgXMPP(msg.from().resource() << " said " << msg.body());
-	std::string nick = msg.from().resource();
-	std::string body = msg.body();
 
 	CScriptValRooted message;
 	GetScriptInterface().Eval("({ 'type':'mucmessage'})", message);
-	GetScriptInterface().SetProperty(message.get(), "from", nick);
-	GetScriptInterface().SetProperty(message.get(), "text", body);
+	GetScriptInterface().SetProperty(message.get(), "from", msg.from().resource());
+	GetScriptInterface().SetProperty(message.get(), "text", msg.body());
 	PushGuiMessage(message);
 }
 
