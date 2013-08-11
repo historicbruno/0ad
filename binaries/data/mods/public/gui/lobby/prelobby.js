@@ -27,6 +27,7 @@ function lobbyStart()
 
 	var username = getGUIObjectByName("connectUsername").caption;
 	var password = getGUIObjectByName("connectPassword").caption;
+	var playername = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
 	var feedback = getGUIObjectByName("connectFeedback");
 
 	if (!username || !password)
@@ -36,7 +37,7 @@ function lobbyStart()
 	}
 
 	feedback.caption = "Connecting..";
-	Engine.StartXmppClient(username, Engine.EncryptPassword(password, username), "arena", sanitisePlayerName(username));
+	Engine.StartXmppClient(username, Engine.EncryptPassword(password, username), "arena", playername);
 	g_LobbyIsConnecting=true;
 	Engine.ConnectXmppClient();
 }
@@ -96,7 +97,8 @@ function onTick()
 			Engine.PopGuiPage();
 			var username = getGUIObjectByName("connectUsername").caption;
 			var password = getGUIObjectByName("connectPassword").caption;
-			Engine.SwitchGuiPage("page_lobby.xml", { name: sanitisePlayerName(username) } );
+			var nick = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
+			Engine.SwitchGuiPage("page_lobby.xml", { name: nick } );
 
 			// Store latest player name
 			Engine.SaveMPConfig(sanitisePlayerName(username), Engine.GetDefaultMPServer());
