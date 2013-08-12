@@ -355,7 +355,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 	pItemData->m_nbp = nbp;
 	pItemData->m_tnbp = tnbp;
 	pItemData->m_players = players;
-	g->m_gameList.push_back( pItemData );
+	g->m_IQGameList.push_back( pItemData );
 
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
@@ -371,7 +371,7 @@ void XmppClient::SendIqUnregisterGame()
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_command = "unregister";
-	g->m_gameList.push_back( new GameItemData() );
+	g->m_IQGameList.push_back( new GameItemData() );
 
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
@@ -391,7 +391,7 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 	GameItemData *pItemData = new GameItemData();
 	pItemData->m_nbp = nbp;
 	pItemData->m_players = players;
-	g->m_gameList.push_back( pItemData );
+	g->m_IQGameList.push_back( pItemData );
 
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
@@ -627,13 +627,13 @@ GameListQuery::GameListQuery( const Tag* tag )
 	pItem->m_##param = param;
 		ITEMS
 #undef ITEM
-		m_gameList.push_back( pItem );
+		m_IQGameList.push_back( pItem );
 	}
 }
 
 GameListQuery::~GameListQuery()
 {
-	util::clearList( m_gameList );
+	util::clearList( m_IQGameList );
 }
 
 const std::string& GameListQuery::filterString() const
@@ -656,8 +656,8 @@ Tag* GameListQuery::tag() const
 	if(!m_command.empty())
 		t->addChild(new Tag("command", m_command));
 
-	std::list<GameItemData*>::const_iterator it = m_gameList.begin();
-	for( ; it != m_gameList.end(); ++it )
+	std::list<GameItemData*>::const_iterator it = m_IQGameList.begin();
+	for( ; it != m_IQGameList.end(); ++it )
 		t->addChild( (*it)->tag() );
 
 	return t;
@@ -672,5 +672,5 @@ StanzaExtension* GameListQuery::clone() const
 
 const std::list<GameItemData*>& GameListQuery::gameList() const
 {
-	return m_gameList;
+	return m_IQGameList;
 }

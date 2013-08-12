@@ -208,7 +208,7 @@ public:
 
 private:
 	std::string m_command;
-	std::list<GameItemData*> m_gameList;
+	std::list<GameItemData*> m_IQGameList;
 };
 
 extern XmppClient *g_XmppClient;
