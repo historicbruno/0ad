@@ -691,7 +691,7 @@ BoardListQuery::~BoardListQuery()
 
 const std::string& BoardListQuery::filterString() const
 {
-	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_GAMELIST + "']";
+	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_BOARDLIST + "']";
 	return filter;
 }
 
