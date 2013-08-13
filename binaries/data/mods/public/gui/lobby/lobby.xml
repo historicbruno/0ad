@@ -228,13 +228,13 @@
 			<object name="leaderboardBox"
 				style="StoneList"
 				type="olist"
-				size="20 20 100%-20 100%-50"
+				size="19 19 100%-19 100%-58"
 				tooltip_style="pgFloatingToolTip"
 				sprite_heading="colour:0 0 0 170">
 				<def id="rank" heading="Rank" color="255 255 255" width="50"/>
 				<def id="name" heading="Name" color="255 255 255" width="250"/>
 			</object>
-			<object type="button" style="StoneButton" size="50%-50 100%-45 50%+50 100%-25">
+			<object type="button" style="StoneButton" size="50%-64 100%-53 50%+64 100%-25">
 				Back
 				<action on="Press">getGUIObjectByName("leaderboard").hidden = true;getGUIObjectByName("leaderboardFade").hidden = true;</action>
 			</object>
