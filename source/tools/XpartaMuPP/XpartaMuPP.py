@@ -93,6 +93,12 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     # Board collection
     self.m_boardList = {}
 
+    # Some Fake leaderboard figures for testing
+    self.m_boardList["666.666.666.666"] = {"name":"badmadblacksad", "rank":"1"}
+    self.m_boardList["666.666.666.665"] = {"name":"Josh", "rank":"2"}
+    self.m_boardList["666.666.666.664"] = {"name":"leper", "rank":"3"}
+    self.m_boardList["666.666.666.663"] = {"name":"alpha123", "rank":"4"}
+
     # Store mapping of nicks and XmppIDs
     self.m_xmppIdToNick = {}
 

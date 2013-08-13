@@ -1,7 +1,6 @@
 var g_ChatMessages = [];
 var g_Name = "unknown Bob";
 var g_GameList = {};
-var g_BoardList = {};
 var g_specialKey = Math.random();
 var g_spamMonitor = {};
 var g_spammers = {};
@@ -114,14 +113,29 @@ function updateBoardList()
 {
 	// Get list from C++
 	var boardList = Engine.GetBoardList();
-	g_BoardList = boardList;
-	/* Debug Code **Remove when the rest of updateBoardList is implemented**
-	warn("updateBoardList Called")
-	for each (r in boardList)
+	// Get GUI leaderboard object
+	var leaderboard = getGUIObjectByName("leaderboardBox");
+	// Sort list in decending order by rank
+	boardList.sort(function(a,b){return a.rank - b.rank});
+
+	var list = [];
+	var list_name = [];
+	var list_rank = [];
+
+	// Push changes
+	for (var i = 0; i < boardList.length; i++)
 	{
-		warn(r.name+" is at rank "+r.rank);
+		list_rank.push(boardList[i].rank);
+		list_name.push(boardList[i].name);
+		list.push(boardList[i].name);
 	}
-	*/
+
+	leaderboard.list_rank = list_rank;
+	leaderboard.list_name = list_name;
+	leaderboard.list = list;
+
+	if (leaderboard.selected >= leaderboard.list.length)
+		leaderboard.selected = -1;
 }
 
 // Update game listing

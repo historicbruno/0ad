@@ -93,7 +93,7 @@
 			</object>
 
 			<!-- START Filter panel -->
-			<object name="filterPanel" size="375 100%-140 700 100%-10" type="image" sprite="BackgroundIndentFillDark" hidden="true">
+			<object name="filterPanel" size="480 100%-140 805 100%-10" type="image" sprite="BackgroundIndentFillDark" hidden="true">
 				<object type="text" size="10 10 110 30" text_align="left" textcolor="white">Map size :</object>
 				<object name="mapSizeFilter"
 					type="dropdown"
@@ -136,7 +136,11 @@
 			<!-- END Filter panel -->
 
 			<object name="gamesBar" size="345 100%-30 100% 100%">
-				<object type="button" style="StoneButton" size="0 0 25 20">
+				<object type="button" style="StoneButton" size="0 0 100 20">
+					Leaderboards
+					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
+				</object>
+				<object type="button" style="StoneButton" size="105 0 130 20">
 					>>
 					<action on="Press"><![CDATA[
 						if(this.caption == ">>")
@@ -184,9 +188,9 @@
 		<!-- END Lower part of the gui containing the chat and the list of players -->
 
 		<!-- START Navigation bar containing the 'Main menu' button -->
-		<object name="navBar" size="20 25 100%-20 45">
-			<object name="updateStatusText" size="100%-440 0 100%-240 20" type="text" style="RightLabelText"/>
-			<object name="hostButton" type="button" style="StoneButton" size="100%-220 0 100%-120 20">
+		<object name="navBar" size="20 25 100%-25 45">
+			<object name="updateStatusText" size="100%-410 0 100%-210 20" type="text" style="RightLabelText"/>
+			<object name="hostButton" type="button" style="StoneButton" size="100%-205 0 100%-105 20">
 				Host Game
 				<action on="Press">
 					// Open Multiplayer connection window with host option.
@@ -216,5 +220,25 @@
 		</object>
 		<!-- END Navigation bar containing the 'Main menu' button -->
 
+		<!-- START Window for leaderboard stats -->		
+		<!-- Add a translucent black background to fade out the menu page -->
+		<object hidden="true" name="leaderboardFade" type="image" z="100" sprite="bkTranslucent"/>
+		<object hidden="true" name="leaderboard" type="image" style="StoneDialog" size="50%-175 50%-125 50%+175 50%+125" z="101">
+			<object style="TitleText" type="text" size="50%-128 0%-16 50%+128 16">Leaderboards</object>
+			<object name="leaderboardBox"
+				style="StoneList"
+				type="olist"
+				size="20 20 100%-20 100%-50"
+				tooltip_style="pgFloatingToolTip"
+				sprite_heading="colour:0 0 0 170">
+				<def id="rank" heading="Rank" color="255 255 255" width="50"/>
+				<def id="name" heading="Name" color="255 255 255" width="250"/>
+			</object>
+			<object type="button" style="StoneButton" size="50%-50 100%-45 50%+50 100%-25">
+				Back
+				<action on="Press">getGUIObjectByName("leaderboard").hidden = true;getGUIObjectByName("leaderboardFade").hidden = true;</action>
+			</object>
+		</object>
+		<!-- END Window for leaderboard stats -->
 	</object>
 </objects>
