@@ -690,6 +690,13 @@ void SendGetGameList(void* UNUSED(cbdata))
 	g_XmppClient->SendIqGetGameList();
 }
 
+void SendGetBoardList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqGetBoardList();
+}
+
 void SendRegisterGame(void* UNUSED(cbdata), CScriptVal data)
 {
 	if (!g_XmppClient)
@@ -729,6 +736,16 @@ CScriptVal GetGameList(void* UNUSED(cbdata))
 	CScriptValRooted gameList = g_XmppClient->GUIGetGameList();
 
 	return gameList.get();
+}
+
+CScriptVal GetBoardList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return CScriptVal();
+
+	CScriptValRooted boardList = g_XmppClient->GUIGetBoardList();
+
+	return boardList.get();
 }
 
 CScriptVal LobbyGuiPollMessage(void* UNUSED(cbdata))
@@ -966,11 +983,13 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, &DisconnectXmppClient>("DisconnectXmppClient");
 	scriptInterface.RegisterFunction<void, &RecvXmppClient>("RecvXmppClient");
 	scriptInterface.RegisterFunction<void, &SendGetGameList>("SendGetGameList");
+	scriptInterface.RegisterFunction<void, &SendGetBoardList>("SendGetBoardList");
 	scriptInterface.RegisterFunction<void, CScriptVal, &SendRegisterGame>("SendRegisterGame");
 	scriptInterface.RegisterFunction<void, &SendUnregisterGame>("SendUnregisterGame");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &SendChangeStateGame>("SendChangeStateGame");
 	scriptInterface.RegisterFunction<CScriptVal, &GetPlayerList>("GetPlayerList");
 	scriptInterface.RegisterFunction<CScriptVal, &GetGameList>("GetGameList");
+	scriptInterface.RegisterFunction<CScriptVal, &GetBoardList>("GetBoardList");
 	scriptInterface.RegisterFunction<CScriptVal, &LobbyGuiPollMessage>("LobbyGuiPollMessage");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySendMessage>("LobbySendMessage");
 	scriptInterface.RegisterFunction<std::string, &GetDefaultLobbyPlayerUsername>("GetDefaultLobbyPlayerUsername");

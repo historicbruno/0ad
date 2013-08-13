@@ -1,6 +1,7 @@
 var g_ChatMessages = [];
 var g_Name = "unknown Bob";
 var g_GameList = {};
+var g_BoardList = {};
 var g_specialKey = Math.random();
 var g_spamMonitor = {};
 var g_spammers = {};
@@ -108,6 +109,22 @@ function displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilt
 	return true;
 }
 
+// Update leaderboard listing
+function updateBoardList()
+{
+	// Get list from C++
+	var boardList = Engine.GetBoardList();
+	g_BoardList = boardList;
+	/* Debug Code **Remove when the rest of updateBoardList is implemented**
+	warn("updateBoardList Called")
+	for each (r in boardList)
+	{
+		warn(r.name+" is at rank "+r.rank);
+	}
+	*/
+}
+
+// Update game listing
 function updateGameList()
 {
 	var gamesBox = getGUIObjectByName("gamesBox");
@@ -430,6 +447,9 @@ function onTick()
 					var t = new Date(Date.now());
 					var time = t.getHours() % 12 + ":" + twoDigits(t.getMinutes()) + ":" + twoDigits(t.getSeconds());
 					getGUIObjectByName("updateStatusText").caption = "Updated at " + time;
+					break;
+				case "boardlist updated":
+					updateBoardList();
 					break;
 				}
 				break

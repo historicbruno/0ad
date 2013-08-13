@@ -84,9 +84,14 @@ typedef void *PVOID;
 #define ExtGameListQuery 1403
 const std::string XMLNS_GAMELIST = "jabber:iq:gamelist";
 
+//Global Boardlist Extension
+#define ExtBoardListQuery 1404
+const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
+
 //Game - script
 class ScriptInterface;
 class GameItemData;
+class BoardItemData;
 
 class XmppClient : public gloox::ConnectionListener, public gloox::MUCRoomHandler, public gloox::IqHandler, public gloox::LogHandler, public gloox::RegistrationHandler, public gloox::MessageHandler
 {
@@ -113,6 +118,7 @@ public:
 	void disconnect();
 	void recv();
 	void SendIqGetGameList();
+	void SendIqGetBoardList();
 	void SendIqRegisterGame(CScriptVal data);
 	void SendIqUnregisterGame();
 	void SendIqChangeStateGame(std::string nbp, std::string players);
@@ -124,6 +130,7 @@ public:
 
 	CScriptValRooted GUIGetPlayerList();
 	CScriptValRooted GUIGetGameList();
+	CScriptValRooted GUIGetBoardList();
 
 	//Script
 	ScriptInterface& GetScriptInterface();
@@ -177,6 +184,8 @@ private:
 	std::map<std::string, gloox::Presence::PresenceType> m_PlayerMap;
 	/// List of games
 	std::list< GameItemData > m_GameList;
+	/// List of rankings
+	std::list< BoardItemData > m_BoardList;
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
 };
@@ -209,6 +218,36 @@ public:
 private:
 	std::string m_command;
 	std::list<GameItemData*> m_IQGameList;
+};
+
+class BoardListQuery : public gloox::StanzaExtension
+{
+	friend class XmppClient;
+public:
+	BoardListQuery(const gloox::Tag* tag = 0);
+
+	~BoardListQuery();
+
+	// reimplemented from StanzaExtension
+	virtual const std::string& filterString() const;
+
+	// reimplemented from StanzaExtension
+	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
+	{
+		return new BoardListQuery( tag );
+	}
+
+	// reimplemented from StanzaExtension
+	virtual gloox::Tag* tag() const;
+
+	// reimplemented from StanzaExtension
+	virtual gloox::StanzaExtension* clone() const;
+
+	const std::list<BoardItemData*>& boardList() const;
+
+private:
+	std::string m_command;
+	std::list<BoardItemData*> m_IQBoardList;
 };
 
 extern XmppClient *g_XmppClient;

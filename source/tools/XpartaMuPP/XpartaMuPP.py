@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-    XpartaMuPP by :
-	Badmadblacksad
-	..
-    For : 0ad
-    License : GPL
+"""Copyright (C) 2013 Wildfire Games.
+ * This file is part of 0 A.D.
+ *
+ * 0 A.D. is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * 0 A.D. is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with 0 A.D.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import sys
@@ -27,6 +36,7 @@ from xml.dom.minidom import Document
 configDEMOModOn = False
 ## !Configuration ##
 
+## Class for games in gamelist ##
 class BasicGameList(ElementBase):
   name = 'query'
   namespace = 'jabber:iq:gamelist'
@@ -46,7 +56,25 @@ class BasicGameList(ElementBase):
     command = self.xml.find('{%s}command' % self.namespace)
     return command
 
+## Class for leaderboard data ##
+class BasicBoardList(ElementBase):
+  name = 'query'
+  namespace = 'jabber:iq:boardlist'
+  interfaces = set(('board', 'command'))
+  sub_interfaces = interfaces
+  plugin_attrib = 'boardlist'
 
+  def addItem(self, name, rank):
+    itemXml = ET.Element("board", {"name":name, "rank":rank})
+    self.xml.append(itemXml)
+
+  def getItem(self):
+    board = self.xml.find('{%s}board' % self.namespace)
+    return board.get("name"), board.get("ip")
+
+  def getCommand(self):
+    command = self.xml.find('{%s}command' % self.namespace)
+    return command
 
 class XpartaMuPP(sleekxmpp.ClientXMPP):
   """
@@ -62,6 +90,9 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     # Game collection
     self.m_gameList = {}
 
+    # Board collection
+    self.m_boardList = {}
+
     # Store mapping of nicks and XmppIDs
     self.m_xmppIdToNick = {}
 
@@ -76,11 +107,15 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       #  self.storeGame("666.666.666."+str(i), "X"+str(i), "666.666.666."+str(i), "Oasis", "large", "conquest", "1", "4", "alice, bob")
 
     register_stanza_plugin(Iq, BasicGameList)
+    register_stanza_plugin(Iq, BasicBoardList)
     self.register_handler(Callback('Iq Gamelist',
                                        StanzaPath('iq/gamelist'),
                                        self.iqhandler,
                                        instream=True))
-
+    self.register_handler(Callback('Iq Boardlist',
+                                       StanzaPath('iq/boardlist'),
+                                       self.iqhandler,
+                                       instream=True))
     self.add_event_handler("session_start", self.start)
     self.add_event_handler("message", self.message)
     self.add_event_handler("muc::%s::got_online" % self.room, self.muc_online)
@@ -137,9 +172,10 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       #self.disconnect()
     elif iq['type'] == 'get':
       """
-      Request a gamelist
+      Request lists
       """
       self.sendGameList(iq['from'])
+      self.sendBoardList(iq['from'])
     elif iq['type'] == 'result':
       """
       Iq successfully received
@@ -191,6 +227,27 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       iq.send()
     except:
       logging.error("Failed to send game list")
+
+  def sendBoardList(self, to):
+    """
+    Send a massive stanza with the whole leaderboard list
+    """
+    if to not in self.m_xmppIdToNick:
+      logging.error("No player with the xmpp id '%s' known" % to.bare)
+      return
+
+    stz = BasicBoardList()
+    for k in self.m_boardList:
+      g = self.m_boardList[k]
+      stz.addItem(g['name'], g['rank'])
+    iq = self.Iq()
+    iq['type'] = 'result'
+    iq['to'] = to
+    iq.setPayload(stz)
+    try:
+      iq.send()
+    except:
+      logging.error("Failed to send leaderboard list")
 
   def DEMOrequestGameList(self):
     """
@@ -306,9 +363,10 @@ if __name__ == '__main__':
     xmpp.process(block=False)
     while True:
       time.sleep(5)
-      logging.debug('Send GameList')
+      logging.debug('Send Lists')
       for to in xmpp.m_xmppIdToNick:
         xmpp.sendGameList(to)
+        xmpp.sendBoardList(to)
   else:
     logging.error("Unable to connect")
 

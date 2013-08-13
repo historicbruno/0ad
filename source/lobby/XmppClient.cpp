@@ -18,6 +18,7 @@
 #include "precompiled.h"
 #include "XmppClient.h"
 #include "GameItemData.h"
+#include "BoardItemData.h"
 
 //debug
 #include <iostream>
@@ -128,6 +129,9 @@ XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, 
 
 	_client->registerStanzaExtension( new GameListQuery() );
 	_client->registerIqHandler( this, ExtGameListQuery);
+
+	_client->registerStanzaExtension( new BoardListQuery() );
+	_client->registerIqHandler( this, ExtBoardListQuery);
 
 	_client->registerMessageHandler( this );
 
@@ -247,16 +251,27 @@ bool XmppClient::handleIq( const IQ& iq )
 
 	if(iq.subtype() == gloox::IQ::Result)
 	{
-		const GameListQuery* q = iq.findExtension<GameListQuery>( ExtGameListQuery );
-		if(q)
+		const GameListQuery* gq = iq.findExtension<GameListQuery>( ExtGameListQuery );
+		const BoardListQuery* bq = iq.findExtension<BoardListQuery>( ExtBoardListQuery );
+		if(gq)
 		{
 			m_GameList.clear();
-			std::list<GameItemData*>::const_iterator it = q->gameList().begin();
-			for(; it != q->gameList().end(); ++it)
+			std::list<GameItemData*>::const_iterator it = gq->gameList().begin();
+			for(; it != gq->gameList().end(); ++it)
 			{
 				m_GameList.push_back(**it);
 			}
 			CreateSimpleMessage("system", "gamelist updated", "internal");
+		}
+		if(bq)
+		{
+			m_BoardList.clear();
+			std::list<BoardItemData*>::const_iterator it = bq->boardList().begin();
+			for(; it != bq->boardList().end(); ++it)
+			{
+				m_BoardList.push_back(**it);
+			}
+			CreateSimpleMessage("system", "boardlist updated", "internal");
 		}
 	}
 	else if(iq.subtype() == gloox::IQ::Error)
@@ -283,6 +298,7 @@ void XmppClient::onConnect()
 		CreateSimpleMessage("system", "connected");
 		_mucRoom->join();
 		SendIqGetGameList();
+		SendIqGetBoardList();
 	}
 
 	if (_registration)
@@ -303,6 +319,7 @@ void XmppClient::onDisconnect( ConnectionError e )
 
 	m_PlayerMap.clear();
 	m_GameList.clear();
+	m_BoardList.clear();
 }
 
 bool XmppClient::onTLSConnect( const CertInfo& info )
@@ -326,6 +343,18 @@ void XmppClient::SendIqGetGameList()
 	IQ iq(gloox::IQ::Get, xpartamuppJid);
 	iq.addExtension( new GameListQuery() );
 	DbgXMPP("SendIqGetGameList [" << iq.tag()->xml() << "]");
+	_client->send(iq);
+}
+
+/* Request BoardList from cloud */
+void XmppClient::SendIqGetBoardList()
+{
+	JID xpartamuppJid(_xpartamuppId);
+
+	// Send IQ
+	IQ iq(gloox::IQ::Get, xpartamuppJid);
+	iq.addExtension( new BoardListQuery() );
+	DbgXMPP("SendIqGetBoardList [" << iq.tag()->xml() << "]");
 	_client->send(iq);
 }
 
@@ -468,9 +497,10 @@ void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/
 	PushGuiMessage(message);
 }
 
-
-
-/* Requests from GUI */
+/**
+  * Requests from GUI
+  */
+/* Get list of players */
 CScriptValRooted XmppClient::GUIGetPlayerList()
 {
 	std::string presence;
@@ -490,6 +520,7 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 	return playerList;
 }
 
+/* Get game listing */
 CScriptValRooted XmppClient::GUIGetGameList()
 {
 	CScriptValRooted gameList;
@@ -509,6 +540,28 @@ CScriptValRooted XmppClient::GUIGetGameList()
 
 	return gameList;
 }
+
+/* Get leaderboard data */
+CScriptValRooted XmppClient::GUIGetBoardList()
+{
+	CScriptValRooted boardList;
+	GetScriptInterface().Eval("([])", boardList);
+	for(std::list<BoardItemData>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
+	{
+		CScriptValRooted board;
+		GetScriptInterface().Eval("({})", board);
+
+#define BITEM(param)\
+	GetScriptInterface().SetProperty(board.get(), #param, it->m_##param .c_str());
+		BOARDITEMS
+#undef BITEM
+
+		GetScriptInterface().CallFunctionVoid(boardList.get(), "push", board);
+	}
+
+	return boardList;
+}
+
 
 /* Messages */
 CScriptValRooted XmppClient::GuiPollMessage()
@@ -601,6 +654,78 @@ void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& 
 		break;
 #undef CASE
 	}
+}
+
+/*
+ *  BoardListQuery, custom IQ Stanza TODO
+ */
+
+BoardListQuery::BoardListQuery( const Tag* tag )
+: StanzaExtension( ExtBoardListQuery )
+{
+	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
+		return;
+
+	const Tag* c = tag->findTag( "query/board" );
+	if (c)
+		m_command = c->cdata();
+
+	const ConstTagList& l = tag->findTagList( "query/board" );
+	ConstTagList::const_iterator it = l.begin();
+	for( ; it != l.end(); ++it )
+	{
+		BoardItemData *pItem = new BoardItemData();
+#define BITEM(param)\
+	const std::string param = (*it)->findAttribute( #param ); \
+	pItem->m_##param = param;
+		BOARDITEMS
+#undef BITEM
+		m_IQBoardList.push_back( pItem );
+	}
+}
+
+BoardListQuery::~BoardListQuery()
+{
+	util::clearList( m_IQBoardList );
+}
+
+const std::string& BoardListQuery::filterString() const
+{
+	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_GAMELIST + "']";
+	return filter;
+}
+
+Tag* BoardListQuery::tag() const
+{
+	Tag* t = new Tag( "query" );
+	t->setXmlns( XMLNS_BOARDLIST );
+/*
+	RosterData::const_iterator it = m_roster.begin();
+	for( ; it != m_roster.end(); ++it )
+		t->addChild( (*it)->tag() );
+*/
+
+	// register / unregister command
+	if(!m_command.empty())
+		t->addChild(new Tag("command", m_command));
+
+	std::list<BoardItemData*>::const_iterator it = m_IQBoardList.begin();
+	for( ; it != m_IQBoardList.end(); ++it )
+		t->addChild( (*it)->tag() );
+
+	return t;
+}
+
+StanzaExtension* BoardListQuery::clone() const
+{
+	BoardListQuery* q = new BoardListQuery();
+
+	return q;
+}
+
+const std::list<BoardItemData*>& BoardListQuery::boardList() const
+{
+	return m_IQBoardList;
 }
 
 /*
