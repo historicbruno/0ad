@@ -516,7 +516,7 @@ function handleSpecialCommand(text)
 		Engine.LobbySetPlayerPresence("available");
 		break;
 	case "nick":
-		if (g_spammers.indexOf(g_Name) != -1)
+		if (g_spammers[g_Name] != undefined)
 			break;
 		Engine.LobbySetNick(nick);
 		g_Name = nick;
