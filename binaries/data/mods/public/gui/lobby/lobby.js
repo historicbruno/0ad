@@ -35,6 +35,7 @@ function init(attribs)
 
 	Engine.LobbySetPlayerPresence("available");
 	Engine.SendGetGameList();
+	Engine.SendGetBoardList();
 
 	resetFilters();
 	var spamMonitorTimer = setTimeout(clearSpamMonitor, 5000);

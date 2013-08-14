@@ -156,7 +156,13 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     if presence['muc']['nick'] != self.nick:
       self.send_message(mto=presence['from'], mbody="Hello %s, welcome in the 0ad alpha chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
-      self.m_xmppIdToNick[presence['from']] = presence['muc']['nick']
+      # Store player JID with server prefix
+      self.m_xmppIdToNick[str(presence['from'])] = presence['muc']['nick']
+      # Determine and store player JID with client prefix
+      From = str(presence['from'])
+      Server = From[From.index("conference.")+11 : From.index("/")] + "/0ad"
+      Address = str(presence['muc']['nick']).lower() + "@" + Server
+      self.m_xmppIdToNick[Address] = presence['muc']['nick']
       logging.debug("Player '%s (%s - %s)' connected" %(presence['muc']['nick'], presence['muc']['jid'], presence['muc']['jid'].bare))
       self.sendGameList(presence['from'])
 
@@ -214,7 +220,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Send a massive stanza with the whole game list
     """
-    if to not in self.m_xmppIdToNick:
+    if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -238,7 +244,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Send a massive stanza with the whole leaderboard list
     """
-    if to not in self.m_xmppIdToNick:
+    if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -372,7 +378,6 @@ if __name__ == '__main__':
       logging.debug('Send Lists')
       for to in xmpp.m_xmppIdToNick:
         xmpp.sendGameList(to)
-        xmpp.sendBoardList(to)
   else:
     logging.error("Unable to connect")
 
