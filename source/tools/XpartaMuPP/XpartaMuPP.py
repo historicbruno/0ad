@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
@@ -30,14 +29,11 @@ from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
+## Don't think this is needed (???)
 from xml.dom.minidom import Document
 
-## Configuration ##
-configDEMOModOn = False
-## !Configuration ##
-
-## Class for games in gamelist ##
-class BasicGameList(ElementBase):
+## Class for custom gamelist stanza extension ##
+class GameListXmppPlugin(ElementBase):
   name = 'query'
   namespace = 'jabber:iq:gamelist'
   interfaces = set(('game', 'command'))
@@ -52,12 +48,8 @@ class BasicGameList(ElementBase):
     game = self.xml.find('{%s}game' % self.namespace)
     return game.get("name"), game.get("ip"), game.get("state"), game.get("mapName"), game.get("mapSize"), game.get("victoryCondition"), game.get("nbp"), game.get("tnbp"), game.get("players")
 
-  def getCommand(self):
-    command = self.xml.find('{%s}command' % self.namespace)
-    return command
-
-## Class for leaderboard data ##
-class BasicBoardList(ElementBase):
+## Class for custom boardlist stanza extension ##
+class BoardListXmppPlugin(ElementBase):
   name = 'query'
   namespace = 'jabber:iq:boardlist'
   interfaces = set(('board', 'command'))
@@ -76,9 +68,10 @@ class BasicBoardList(ElementBase):
     command = self.xml.find('{%s}command' % self.namespace)
     return command
 
+## Main class which handles IQ data and sends new data ##
 class XpartaMuPP(sleekxmpp.ClientXMPP):
   """
-  A simple game list provider
+  A simple list provider
   """
 
   def __init__(self, sjid, password, room, nick):
@@ -102,18 +95,8 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     # Store mapping of nicks and XmppIDs
     self.m_xmppIdToNick = {}
 
-    #DEMO
-    if configDEMOModOn:
-      self.storeGame("666.666.666.666", "Unplayable map", "666.666.666.666", "Serengeti", "128", "gold rush", "4", "4", "alice, bob")
-      self.storeGame("666.666.666.667", "Unreachale liberty", "666.666.666.667", "oasis", "256", "conquest", "2", "4", "alice, bob")
-      self.storeGame("666.666.666.700", "No map preview", "666.666.666.700", "Bridge demo", "256", "conquest", "1", "4", "alice")
-      self.storeGame("666.666.666.668", "Waiting.. (your nickname must be 'alice' or 'bob') ", "666.666.666.668", "oasis", "256", "conquest", "2", "4", "alice, bob", "waiting")
-      self.storeGame("666.666.666.669", "Running.. (this game should not be sent)", "666.666.666.669", "oasis", "256", "conquest", "2", "4", "alice, bob", "running")
-      #for i in range(50):
-      #  self.storeGame("666.666.666."+str(i), "X"+str(i), "666.666.666."+str(i), "Oasis", "large", "conquest", "1", "4", "alice, bob")
-
-    register_stanza_plugin(Iq, BasicGameList)
-    register_stanza_plugin(Iq, BasicBoardList)
+    register_stanza_plugin(Iq, GameListXmppPlugin)
+    register_stanza_plugin(Iq, BoardListXmppPlugin)
     self.register_handler(Callback('Iq Gamelist',
                                        StanzaPath('iq/gamelist'),
                                        self.iqhandler,
@@ -132,15 +115,9 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Process the session_start event
     """
     self.plugin['xep_0045'].joinMUC(self.room, self.nick)
-
     self.send_presence()
     self.get_roster()
     logging.info("xpartamupp started")
-
-    #DEMO
-    #self.DEMOregisterGame()
-    #self.DEMOchangeStateGame()
-    #self.DEMOrequestGameList()
 
   def message(self, msg):
     """
@@ -156,8 +133,15 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     if presence['muc']['nick'] != self.nick:
       self.send_message(mto=presence['from'], mbody="Hello %s, welcome in the 0ad alpha chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
-      self.m_xmppIdToNick[presence['from']] = presence['muc']['nick']
+      # Store player JID with server prefix
+      self.m_xmppIdToNick[str(presence['from'])] = presence['muc']['nick']
+      # Determine and store player JID with client prefix
+      From = str(presence['from'])
+      Server = From[From.index("conference.")+11 : From.index("/")] + "/0ad"
+      Address = str(presence['muc']['nick']).lower() + "@" + Server
+      self.m_xmppIdToNick[Address] = presence['muc']['nick']
       logging.debug("Player '%s (%s - %s)' connected" %(presence['muc']['nick'], presence['muc']['jid'], presence['muc']['jid'].bare))
+      # Send Gamelist to new player
       self.sendGameList(presence['from'])
 
   def muc_offline(self, presence):
@@ -169,7 +153,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
 
   def iqhandler(self, iq):
     """
-    Handle the custom <gamelist> stanza
+    Handle the custom stanzas
     TODO: This method should be very robust because
     we could receive anything
     """
@@ -191,7 +175,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       Register-update / unregister a game
       """
-      command = iq['gamelist']['command'].text
+      command = iq['gamelist']['command']
       if command == 'register':
         try:
           name, ip, state, mapName, mapSize, victoryCondition, nbp, tnbp, players = iq['gamelist']['game']
@@ -214,11 +198,11 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Send a massive stanza with the whole game list
     """
-    if to not in self.m_xmppIdToNick:
+    if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
-    stz = BasicGameList()
+    stz = GameListXmppPlugin()
     for k in self.m_gameList:
       g = self.m_gameList[k]
       # Only send the game that are in the 'init' state and games
@@ -238,11 +222,11 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Send a massive stanza with the whole leaderboard list
     """
-    if to not in self.m_xmppIdToNick:
+    if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
-    stz = BasicBoardList()
+    stz = BoardListXmppPlugin()
     for k in self.m_boardList:
       g = self.m_boardList[k]
       stz.addItem(g['name'], g['rank'])
@@ -254,45 +238,6 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       iq.send()
     except:
       logging.error("Failed to send leaderboard list")
-
-  def DEMOrequestGameList(self):
-    """
-    Test function
-    """
-    iq = self.Iq()
-    iq['type'] = 'get'
-    iq['gamelist']['field'] = 'x'
-    iq['to'] = self.boundjid.full
-    iq.send(now=True, block=False)
-    return True
-
-  def DEMOregisterGame(self):
-    """
-    Test function
-    """
-    stz = BasicGameList()
-    stz.addGame("DEMOregister","DEMOip","garbage","DEMOmap","","","2","2","bob charlie")
-    stz['command'] = 'register'
-    iq = self.Iq()
-    iq['type'] = 'set'
-    iq['to'] = self.boundjid.full
-    iq.setPayload(stz)
-    iq.send(now=True, block=False)
-    return True
-
-  def DEMOchangeStateGame(self):
-    """
-    Test function
-    """
-    stz = BasicGameList()
-    stz.addGame("","","running","","","","1","","")
-    stz['command'] = 'changestate'
-    iq = self.Iq()
-    iq['type'] = 'set'
-    iq['to'] = self.boundjid.full
-    iq.setPayload(stz)
-    iq.send(now=True, block=False)
-    return True
 
   # Game management
 
@@ -344,14 +289,8 @@ if __name__ == '__main__':
   optp.add_option('-n', '--nickname', help='set xpartamupp nickname',
                   action='store', dest='xnickname',
                   default="XpartaMuCC")
-  optp.add_option('-D', '--demo', help='set xpartamupp in DEMO mode (add a few fake games)',
-                  action='store_true', dest='xdemomode',
-                  default=False)
 
   opts, args = optp.parse_args()
-
-  # Set DEMO mode
-  configDEMOModOn = opts.xdemomode
 
   # Setup logging.
   logging.basicConfig(level=opts.loglevel,
@@ -372,7 +311,6 @@ if __name__ == '__main__':
       logging.debug('Send Lists')
       for to in xmpp.m_xmppIdToNick:
         xmpp.sendGameList(to)
-        xmpp.sendBoardList(to)
   else:
     logging.error("Unable to connect")
 

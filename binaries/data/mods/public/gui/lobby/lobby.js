@@ -35,6 +35,8 @@ function init(attribs)
 
 	Engine.LobbySetPlayerPresence("available");
 	Engine.SendGetGameList();
+	Engine.SendGetBoardList();
+	updatePlayerList();
 
 	resetFilters();
 	var spamMonitorTimer = setTimeout(clearSpamMonitor, 5000);
@@ -106,6 +108,26 @@ function displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilt
 	if(hideFullFilter && g.tnbp == g.nbp) return false;
 
 	return true;
+}
+
+// Do a full update of the player listing **Only call on init**
+function updatePlayerList()
+{
+	var playersBox = getGUIObjectByName("playersBox");
+	[playerList, presenceList, nickList] = [[],[],[]];
+	for each (p in Engine.GetPlayerList())
+	{
+		var [name, status] = formatPlayerListEntry(p.name, p.presence);
+		playerList.push(name);
+		presenceList.push(status);
+		nickList.push(p.name);
+	}
+	playersBox.list_name = playerList;
+	playersBox.list_status = presenceList;
+	playersBox.list = nickList;
+	if (playersBox.selected >= playersBox.list.length)
+		playersBox.selected = -1;
+	return [playerList, presenceList, nickList];
 }
 
 // Update leaderboard listing
@@ -374,14 +396,7 @@ function onTick()
 				if (nick == g_Name)
 				{
 					// We just joined, we need to get the full player list
-					[playerList, presenceList, nickList] = [[],[],[]];
-					for each (p in Engine.GetPlayerList())
-					{
-						var [name, status] = formatPlayerListEntry(p.name, p.presence);
-						playerList.push(name);
-						presenceList.push(status);
-						nickList.push(p.name);
-					}
+					[playerList, presenceList, nickList] = updatePlayerList();
 					break;
 				}
 				var [name, status] = formatPlayerListEntry(nick, presence);
@@ -501,6 +516,8 @@ function handleSpecialCommand(text)
 		Engine.LobbySetPlayerPresence("available");
 		break;
 	case "nick":
+		if (g_spammers.indexOf(g_Name) != -1)
+			break;
 		Engine.LobbySetNick(nick);
 		g_Name = nick;
 		break;

@@ -296,7 +296,7 @@
 				{
 					Engine.LobbySetPlayerPresence("available");
 					Engine.SendGetGameList();
-          				var sname = Engine.GetDefaultPlayerName();
+        			var sname = Engine.GetDefaultPlayerName();
 					Engine.SwitchGuiPage("page_lobby.xml", { name: sname } );
 				}
 				]]>
