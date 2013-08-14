@@ -175,7 +175,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       Register-update / unregister a game
       """
-      command = iq['gamelist']['command'].text
+      command = iq['gamelist']['command']
       if command == 'register':
         try:
           name, ip, state, mapName, mapSize, victoryCondition, nbp, tnbp, players = iq['gamelist']['game']
