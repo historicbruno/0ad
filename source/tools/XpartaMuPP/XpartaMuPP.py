@@ -29,9 +29,95 @@ from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
-## Don't think this is needed (???)
-from xml.dom.minidom import Document
+## Class that contains manages leaderboard data ##
+class LeaderboardList():
+  def __init__(self):
+    self.leaderboard = {}
 
+    ## Add some Fake leaderboard figures for testing
+    ## ***remove when actual user reporting works***
+    self.leaderboard["666.666.666.666"] = {"name":"badmadblacksad", "rank":"1"}
+    self.leaderboard["666.666.666.665"] = {"name":"Josh", "rank":"2"}
+    self.leaderboard["666.666.666.664"] = {"name":"leper", "rank":"3"}
+    self.leaderboard["666.666.666.663"] = {"name":"alpha123", "rank":"4"}
+    self.leaderboard["666.666.666.662"] = {"name":"scythetwirler", "rank":"5"}
+  def addPlayer(self, JID, name, rank):
+    """
+      Stores a player(JID) in the leaderboard
+    """
+    self.leaderboard[JID] = {"name":name, "rank":rank}
+  def removePlayer(self, JID):
+    """
+      Remove a player(JID) from leaderboard
+    """
+    del self.leaderboard[JID]
+  def updateRankings(self):
+    """
+      Performs a full update of the leaderboard rankings. 
+        Returns True if succesful, False otherwise.
+    """
+    ## TODO ##
+    return False
+  def updatePlayer(self, JID, gameResults):
+    """
+      Updates the data on a player(JID) from game results.
+        Returns True is successful False otherwise.
+    """
+    ## TODO ##
+    return False
+  def getBoard(self):
+    """
+      Returns full leaderboard
+    """
+    return self.leaderboard
+
+## Class to tracks all games in the lobby ##
+class GameList():
+  def __init__(self):
+    self.gameList = {}
+  def addGame(self, JID, dataTup):
+    """
+      Add a game
+    """
+    dataDic = self.TupToDic(dataTup)
+    dataDic['players-init'] = dataDic['players']
+    dataDic['nbp-init'] = dataDic['nbp']
+    dataDic['state'] = 'init'
+    self.gameList[JID] = dataDic
+  def removeGame(self, JID):
+    """
+      Remove a game attached to a JID
+    """
+    del self.gameList[JID]
+  def getAllGames(self):
+    """
+      Returns all games
+    """
+    return self.gameList
+  def changeGameState(self, JID, data):
+    """
+      Switch game state between running and waiting
+    """
+    data = self.TupToDic(data)
+    if JID in self.gameList:
+      if self.gameList[JID]['nbp-init'] > data['nbp']:
+        logging.debug("change game (%s) state from %s to %s", JID, self.gameList[JID]['state'], 'waiting')
+        self.gameList[JID]['nbp'] = data['nbp']
+        self.gameList[JID]['state'] = 'waiting'
+      else:
+        logging.debug("change game (%s) state from %s to %s", JID, self.gameList[JID]['state'], 'running')
+        self.gameList[JID]['nbp'] = data['nbp']
+        self.gameList[JID]['state'] = 'running'
+  def TupToDic(self, Tuple):
+    """
+      Converts game recived as a tuple and converts it to a dictionary
+    """
+    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'victoryCondition':Tuple[5], 'nbp':Tuple[6], 'tnbp':Tuple[7], 'players':Tuple[8]} 
+  def DicToTup(self, Dict):
+    """
+      Converts game saved as a dictionary to a tuple formatted for sending
+    """
+    return Dict['name'], Dict['ip'], Dict['state'], Dict['nbp'], Dict['tnbp'], Dict['players'], Dict['mapName'], Dict['mapSize'], Dict['victoryCondition']
 ## Class for custom gamelist stanza extension ##
 class GameListXmppPlugin(ElementBase):
   name = 'query'
@@ -40,8 +126,8 @@ class GameListXmppPlugin(ElementBase):
   sub_interfaces = interfaces
   plugin_attrib = 'gamelist'
 
-  def addGame(self, name, ip, state, mapName, mapSize, victoryCondition, nbp, tnbp, players):
-    itemXml = ET.Element("game", {"name":name, "ip":ip, "state": state, "nbp":nbp, "tnbp":tnbp, "players":players, "mapName":mapName, "mapSize":mapSize, "victoryCondition":victoryCondition})
+  def addGame(self, data):
+    itemXml = ET.Element("game", {"name":data["name"], "ip":data["ip"], "state":data["state"], "nbp":data["nbp"], "tnbp":data["tnbp"], "players":data["players"], "mapName":data["mapName"], "mapSize":data["mapSize"], "victoryCondition":data["victoryCondition"]})
     self.xml.append(itemXml)
 
   def getGame(self):
@@ -81,16 +167,10 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.nick = nick
 
     # Game collection
-    self.m_gameList = {}
+    self.gameList = GameList()
 
-    # Board collection
-    self.m_boardList = {}
-
-    # Some Fake leaderboard figures for testing
-    self.m_boardList["666.666.666.666"] = {"name":"badmadblacksad", "rank":"1"}
-    self.m_boardList["666.666.666.665"] = {"name":"Josh", "rank":"2"}
-    self.m_boardList["666.666.666.664"] = {"name":"leper", "rank":"3"}
-    self.m_boardList["666.666.666.663"] = {"name":"alpha123", "rank":"4"}
+    # Init leaderboard object
+    self.leaderboard = LeaderboardList()
 
     # Store mapping of nicks and XmppIDs
     self.m_xmppIdToNick = {}
@@ -149,7 +229,9 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Process presence stanza from a chat room.
     """
     if presence['muc']['nick'] != self.nick:
-      self.removeGame(presence['muc']['jid'].bare)
+      for JID in self.gameList.getAllGames():
+        if JID == str(presence['from']):
+          self.gameList.removeGame(presence['from'].bare)
 
   def iqhandler(self, iq):
     """
@@ -177,42 +259,62 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       command = iq['gamelist']['command']
       if command == 'register':
-        try:
-          name, ip, state, mapName, mapSize, victoryCondition, nbp, tnbp, players = iq['gamelist']['game']
-          logging.debug("ip " + ip)
-          self.storeGame(iq['from'].bare,name,ip,mapName,mapSize,victoryCondition,nbp,tnbp,players)
-        except:
-          logging.error("Failed to process register data")
+        # Add game
+        #try:
+        #  logging.debug("ip " + ip)
+        self.gameList.addGame(iq['from'].bare, iq['gamelist']['game'])
+        #except:
+        #  logging.error("Failed to process game registration data")
       elif command == 'unregister':
-        self.removeGame(iq['from'].bare)
+        # Remove game
+        #try:        
+        self.gameList.removeGame(iq['from'].bare)
+        #except:
+        #  logging.error("Failed to process game unregistration data")
+
       elif command == 'changestate':
-        try:
-          name, ip, state, mapName, mapSize, victoryCondition, nbp, tnbp, players = iq['gamelist']['game']
-          self.changeGameState(iq['from'].bare, nbp)
-        except:
-          logging.error("Failed to process changestate data")
+        # Change game status (waiting/running)
+        #try:
+        self.gameList.changeGameState(iq['from'].bare, iq['gamelist']['game'])
+        #except:
+        #  logging.error("Failed to process changestate data")
       else:
         logging.error("Failed to process command '%s' received from %s" % command, iq['from'].bare)
+    elif iq['type'] == 'endGame':
+       """
+         Client is reporting end of game statistics
+       """
+       self.leaderboard.updatePlayer(iq['from'], iq['statlist']['board'])
+    else:
+       logging.error("Failed to process type '%s' received from %s" % iq['type'], iq['from'].bare)
 
   def sendGameList(self, to):
     """
     Send a massive stanza with the whole game list
     """
+    ## Check recipiant exists
     if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
     stz = GameListXmppPlugin()
-    for k in self.m_gameList:
-      g = self.m_gameList[k]
+
+    ## Pull games and add each to the stanza
+    games = self.gameList.getAllGames()
+    for JID in games:
+      g = games[JID]
       # Only send the game that are in the 'init' state and games
       # and games that have to.bare in the list of players and are in the 'waiting' state.
       if g['state'] == 'init' or (g['state'] == 'waiting' and self.m_xmppIdToNick[to] in g['players-init']):
-        stz.addGame(g['name'], g['ip'], g['state'], g['mapName'], g['mapSize'], g['victoryCondition'], g['nbp'], g['tnbp'], ', '.join(g['players']))
+        stz.addGame(g)
+
+    ## Set additional IQ attibutes
     iq = self.Iq()
     iq['type'] = 'result'
     iq['to'] = to
     iq.setPayload(stz)
+
+    ## Try sending the stanze
     try:
       iq.send()
     except:
@@ -220,47 +322,33 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
 
   def sendBoardList(self, to):
     """
-    Send a massive stanza with the whole leaderboard list
+    Send the whole leaderboard list
     """
+    ## Check recipiant exists
     if str(to) not in self.m_xmppIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
     stz = BoardListXmppPlugin()
-    for k in self.m_boardList:
-      g = self.m_boardList[k]
-      stz.addItem(g['name'], g['rank'])
+
+    ## Pull leaderboard data and add it to the stanza
+    board = self.leaderboard.getBoard()
+    for i in board:
+      stz.addItem(board[i]['name'], board[i]['rank'])
+
+    ## Set aditional IQ attributes
     iq = self.Iq()
     iq['type'] = 'result'
     iq['to'] = to
     iq.setPayload(stz)
+
+    ## Try sending the stanza
     try:
       iq.send()
     except:
       logging.error("Failed to send leaderboard list")
 
-  # Game management
-
-  def storeGame(self, sid, name, ip, mapName, mapSize, victoryCondition, nbp, tnbp, players, state='init'):
-    game = { 'name':name, 'ip':ip, 'state':state, 'nbp':nbp, 'nbp-init':nbp, 'tnbp':tnbp, 'players':players.split(', '), 'players-init':players.split(', '), 'mapName':mapName, 'mapSize':mapSize, 'victoryCondition':victoryCondition }
-    self.m_gameList[sid] = game
-
-  def removeGame(self, sid):
-    if sid in self.m_gameList:
-      del self.m_gameList[sid]
-
-  def changeGameState(self, sid, nbp):
-    if sid in self.m_gameList:
-      if self.m_gameList[sid]['nbp-init'] > nbp:
-        logging.debug("change game (%s) state from %s to %s", sid, self.m_gameList[sid]['state'], 'waiting')
-        self.m_gameList[sid]['nbp'] = nbp
-        self.m_gameList[sid]['state'] = 'waiting'
-      else:
-        logging.debug("change game (%s) state from %s to %s", sid, self.m_gameList[sid]['state'], 'running')
-        self.m_gameList[sid]['nbp'] = nbp
-        self.m_gameList[sid]['state'] = 'running'
-
-
+## Main Program ##
 if __name__ == '__main__':
   # Setup the command line arguments.
   optp = OptionParser()
