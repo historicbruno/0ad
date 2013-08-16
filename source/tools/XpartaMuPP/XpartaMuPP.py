@@ -172,8 +172,10 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     # Init leaderboard object
     self.leaderboard = LeaderboardList()
 
-    # Store mapping of nicks and XmppIDs
-    self.m_xmppIdToNick = {}
+    # Store mapping of nicks and XmppIDs, attached via presence stanza
+    self.xmppRoomIdToNick = {}
+    # Store client JIDs, a JID is only attached if the client sends a message which we receive
+    self.JIDs = []
 
     register_stanza_plugin(Iq, GameListXmppPlugin)
     register_stanza_plugin(Iq, BoardListXmppPlugin)
@@ -186,7 +188,6 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
                                        self.iqhandler,
                                        instream=True))
     self.add_event_handler("session_start", self.start)
-    self.add_event_handler("message", self.message)
     self.add_event_handler("muc::%s::got_online" % self.room, self.muc_online)
     self.add_event_handler("muc::%s::got_offline" % self.room, self.muc_offline)
 
@@ -197,29 +198,17 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.plugin['xep_0045'].joinMUC(self.room, self.nick)
     self.send_presence()
     self.get_roster()
-    logging.info("xpartamupp started")
-
-  def message(self, msg):
-    """
-    Process incoming message stanzas
-    """
-    if msg['type'] == 'chat':
-      msg.reply("Thanks for sending\n%(body)s" % msg).send()
-      logging.comm("receive message"+msg['body'])
+    logging.info("XpartaMuPP started")
 
   def muc_online(self, presence):
     """
     Process presence stanza from a chat room.
     """
+    print(presence['from'])
     if presence['muc']['nick'] != self.nick:
       self.send_message(mto=presence['from'], mbody="Hello %s, welcome in the 0ad alpha chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
-      # Store player JID with server prefix
-      self.m_xmppIdToNick[str(presence['from'])] = presence['muc']['nick']
-      # Determine and store player JID with client prefix
-      From = str(presence['from'])
-      Server = From[From.index("conference.")+11 : From.index("/")] + "/0ad"
-      Address = str(presence['muc']['nick']).lower() + "@" + Server
-      self.m_xmppIdToNick[Address] = presence['muc']['nick']
+      # Store player JID with room prefix
+      self.xmppRoomIdToNick[str(presence['from'])] = presence['muc']['nick']
       logging.debug("Player '%s (%s - %s)' connected" %(presence['muc']['nick'], presence['muc']['jid'], presence['muc']['jid'].bare))
       # Send Gamelist to new player
       self.sendGameList(presence['from'])
@@ -228,10 +217,14 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Process presence stanza from a chat room.
     """
+    # Clean up after a player leaves 
     if presence['muc']['nick'] != self.nick:
       for JID in self.gameList.getAllGames():
-        if JID == str(presence['from']):
-          self.gameList.removeGame(presence['from'].bare)
+        for player in self.gameList.getAllGames()[JID]['players'].split(','):
+          if player == presence['muc']['nick']:
+            self.gameList.removeGame(JID)
+            self.JIDs.remove(JID)
+            del self.xmppClientIdToNick[presence['from'].bare]
 
   def iqhandler(self, iq):
     """
@@ -239,12 +232,14 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     TODO: This method should be very robust because
     we could receive anything
     """
+    if iq['from'].bare not in self.JIDs:
+      self.JIDs.append(iq['from'].bare)
     if iq['type'] == 'error':
       logging.error('iqhandler error' + iq['error']['condition'])
       #self.disconnect()
     elif iq['type'] == 'get':
       """
-      Request lists
+      Request lists. TOFIX
       """
       self.sendGameList(iq['from'])
       self.sendBoardList(iq['from'])
@@ -259,7 +254,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       command = iq['gamelist']['command']
       if command == 'register':
-        # Add game
+        # Add game 
         #try:
         #  logging.debug("ip " + ip)
         self.gameList.addGame(iq['from'].bare, iq['gamelist']['game'])
@@ -293,7 +288,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Send a massive stanza with the whole game list
     """
     ## Check recipiant exists
-    if str(to) not in self.m_xmppIdToNick:
+    if str(to) not in self.xmppRoomIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -305,7 +300,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       g = games[JID]
       # Only send the game that are in the 'init' state and games
       # and games that have to.bare in the list of players and are in the 'waiting' state.
-      if g['state'] == 'init' or (g['state'] == 'waiting' and self.m_xmppIdToNick[to] in g['players-init']):
+      if g['state'] == 'init' or (g['state'] == 'waiting' and self.xmppRoomIdToNick[to] in g['players-init']):
         stz.addGame(g)
 
     ## Set additional IQ attibutes
@@ -325,7 +320,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Send the whole leaderboard list
     """
     ## Check recipiant exists
-    if str(to) not in self.m_xmppIdToNick:
+    if str(to) not in self.xmppRoomIdToNick:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -397,7 +392,7 @@ if __name__ == '__main__':
     while True:
       time.sleep(5)
       logging.debug('Send Lists')
-      for to in xmpp.m_xmppIdToNick:
+      for to in xmpp.xmppRoomIdToNick:
         xmpp.sendGameList(to)
   else:
     logging.error("Unable to connect")
