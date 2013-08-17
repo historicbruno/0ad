@@ -96,6 +96,7 @@ class GameList():
     """
       Switch game state between running and waiting
     """
+    JID = str(JID)
     data = self.TupToDic(data)
     if JID in self.gameList:
       if self.gameList[JID]['nbp-init'] > data['nbp']:
