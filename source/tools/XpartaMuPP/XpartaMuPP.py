@@ -17,14 +17,12 @@
  * along with 0 A.D.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import sys
 import logging
 import time
 from optparse import OptionParser
 
 import sleekxmpp
 from sleekxmpp.stanza import Iq
-from sleekxmpp.stanza import *
 from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
@@ -53,7 +51,7 @@ class LeaderboardList():
     del self.leaderboard[JID]
   def updateRankings(self):
     """
-      Performs a full update of the leaderboard rankings. 
+      Performs a full update of the leaderboard rankings.
         Returns True if succesful, False otherwise.
     """
     ## TODO ##
@@ -67,7 +65,7 @@ class LeaderboardList():
     return False
   def getBoard(self):
     """
-      Returns full leaderboard
+      Returns full leaderboard for sending
     """
     return self.leaderboard
 
@@ -83,12 +81,12 @@ class GameList():
     dataDic['players-init'] = dataDic['players']
     dataDic['nbp-init'] = dataDic['nbp']
     dataDic['state'] = 'init'
-    self.gameList[JID] = dataDic
+    self.gameList[str(JID)] = dataDic
   def removeGame(self, JID):
     """
       Remove a game attached to a JID
     """
-    del self.gameList[JID]
+    del self.gameList[str(JID)]
   def getAllGames(self):
     """
       Returns all games
@@ -112,7 +110,7 @@ class GameList():
     """
       Converts game recived as a tuple and converts it to a dictionary
     """
-    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'victoryCondition':Tuple[5], 'nbp':Tuple[6], 'tnbp':Tuple[7], 'players':Tuple[8]} 
+    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'victoryCondition':Tuple[5], 'nbp':Tuple[6], 'tnbp':Tuple[7], 'players':Tuple[8]}
   def DicToTup(self, Dict):
     """
       Converts game saved as a dictionary to a tuple formatted for sending
@@ -159,7 +157,6 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
   """
   A simple list provider
   """
-
   def __init__(self, sjid, password, room, nick):
     sleekxmpp.ClientXMPP.__init__(self, sjid, password)
     self.sjid = sjid
@@ -173,7 +170,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.leaderboard = LeaderboardList()
 
     # Store mapping of nicks and XmppIDs, attached via presence stanza
-    self.xmppRoomIdToNick = {}
+    self.nicks = {}
     # Store client JIDs, a JID is only attached if the client sends a message which we receive
     self.JIDs = []
 
@@ -204,11 +201,11 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Process presence stanza from a chat room.
     """
-    print(presence['from'])
     if presence['muc']['nick'] != self.nick:
       self.send_message(mto=presence['from'], mbody="Hello %s, welcome in the 0ad alpha chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
       # Store player JID with room prefix
-      self.xmppRoomIdToNick[str(presence['from'])] = presence['muc']['nick']
+      if str(presence['from']) not in self.nicks:
+        self.nicks[str(presence['from'])] = presence['muc']['nick']
       logging.debug("Player '%s (%s - %s)' connected" %(presence['muc']['nick'], presence['muc']['jid'], presence['muc']['jid'].bare))
       # Send Gamelist to new player
       self.sendGameList(presence['from'])
@@ -217,32 +214,34 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Process presence stanza from a chat room.
     """
-    # Clean up after a player leaves 
+    # Clean up after a player leaves
     if presence['muc']['nick'] != self.nick:
       for JID in self.gameList.getAllGames():
-        for player in self.gameList.getAllGames()[JID]['players'].split(','):
-          if player == presence['muc']['nick']:
-            self.gameList.removeGame(JID)
-            self.JIDs.remove(JID)
-            del self.xmppClientIdToNick[presence['from'].bare]
+        if self.gameList.getAllGames()[JID]['players'].split(',')[0] == presence['muc']['nick']:
+          self.gameList.removeGame(JID)
+          break
+      del self.nicks[str(presence['from'])]
 
   def iqhandler(self, iq):
     """
     Handle the custom stanzas
-    TODO: This method should be very robust because
-    we could receive anything
+      This method should be very robust because we could receive anything
     """
-    if iq['from'].bare not in self.JIDs:
-      self.JIDs.append(iq['from'].bare)
     if iq['type'] == 'error':
       logging.error('iqhandler error' + iq['error']['condition'])
       #self.disconnect()
     elif iq['type'] == 'get':
       """
-      Request lists. TOFIX
+      Request lists.
       """
-      self.sendGameList(iq['from'])
-      self.sendBoardList(iq['from'])
+      # We expect each client to register for future updates by sending at least one get request.
+      try:
+        if iq['from'] not in self.JIDs:
+          self.JIDs.append(iq['from'])
+        self.sendGameList(iq['from'])
+        self.sendBoardList(iq['from'])
+      except:
+        logging.error("Failed to send data to %s" % iq['from'].bare)
     elif iq['type'] == 'result':
       """
       Iq successfully received
@@ -254,32 +253,34 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       command = iq['gamelist']['command']
       if command == 'register':
-        # Add game 
-        #try:
-        #  logging.debug("ip " + ip)
-        self.gameList.addGame(iq['from'].bare, iq['gamelist']['game'])
-        #except:
-        #  logging.error("Failed to process game registration data")
+        # Add game
+        try:
+          self.gameList.addGame(iq['from'], iq['gamelist']['game'])
+        except:
+          logging.error("Failed to process game registration data")
       elif command == 'unregister':
         # Remove game
-        #try:        
-        self.gameList.removeGame(iq['from'].bare)
-        #except:
-        #  logging.error("Failed to process game unregistration data")
+        try:
+          self.gameList.removeGame(iq['from'])
+        except:
+          logging.error("Failed to process game unregistration data")
 
       elif command == 'changestate':
         # Change game status (waiting/running)
-        #try:
-        self.gameList.changeGameState(iq['from'].bare, iq['gamelist']['game'])
-        #except:
-        #  logging.error("Failed to process changestate data")
+        try:
+          self.gameList.changeGameState(iq['from'], iq['gamelist']['game'])
+        except:
+          logging.error("Failed to process changestate data")
       else:
         logging.error("Failed to process command '%s' received from %s" % command, iq['from'].bare)
     elif iq['type'] == 'endGame':
        """
          Client is reporting end of game statistics
        """
-       self.leaderboard.updatePlayer(iq['from'], iq['statlist']['board'])
+       try:
+         self.leaderboard.updatePlayer(iq['from'], iq['statlist']['board'])
+       except:
+         logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
     else:
        logging.error("Failed to process type '%s' received from %s" % iq['type'], iq['from'].bare)
 
@@ -288,7 +289,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Send a massive stanza with the whole game list
     """
     ## Check recipiant exists
-    if str(to) not in self.xmppRoomIdToNick:
+    if to not in self.JIDs:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -300,7 +301,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       g = games[JID]
       # Only send the game that are in the 'init' state and games
       # and games that have to.bare in the list of players and are in the 'waiting' state.
-      if g['state'] == 'init' or (g['state'] == 'waiting' and self.xmppRoomIdToNick[to] in g['players-init']):
+      if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[to] in g['players-init']):
         stz.addGame(g)
 
     ## Set additional IQ attibutes
@@ -320,7 +321,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Send the whole leaderboard list
     """
     ## Check recipiant exists
-    if str(to) not in self.xmppRoomIdToNick:
+    if to not in self.JIDs:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
 
@@ -392,7 +393,7 @@ if __name__ == '__main__':
     while True:
       time.sleep(5)
       logging.debug('Send Lists')
-      for to in xmpp.xmppRoomIdToNick:
+      for to in xmpp.JIDs:
         xmpp.sendGameList(to)
   else:
     logging.error("Unable to connect")
