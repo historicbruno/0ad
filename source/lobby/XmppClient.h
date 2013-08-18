@@ -80,14 +80,6 @@ typedef void *PVOID;
 #include <deque>
 #include "scriptinterface/ScriptVal.h"
 
-//Global Gamelist Extension
-#define ExtGameListQuery 1403
-const std::string XMLNS_GAMELIST = "jabber:iq:gamelist";
-
-//Global Boardlist Extension
-#define ExtBoardListQuery 1404
-const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
-
 //Game - script
 class ScriptInterface;
 class GameItemData;
@@ -188,66 +180,6 @@ private:
 	std::list< BoardItemData > m_BoardList;
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
-};
-
-class GameListQuery : public gloox::StanzaExtension
-{
-	friend class XmppClient;
-public:
-	GameListQuery(const gloox::Tag* tag = 0);
-
-	~GameListQuery();
-
-	// reimplemented from StanzaExtension
-	virtual const std::string& filterString() const;
-
-	// reimplemented from StanzaExtension
-	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
-	{
-		return new GameListQuery( tag );
-	}
-
-	// reimplemented from StanzaExtension
-	virtual gloox::Tag* tag() const;
-
-	// reimplemented from StanzaExtension
-	virtual gloox::StanzaExtension* clone() const;
-
-	const std::list<GameItemData*>& gameList() const;
-
-private:
-	std::string m_command;
-	std::list<GameItemData*> m_IQGameList;
-};
-
-class BoardListQuery : public gloox::StanzaExtension
-{
-	friend class XmppClient;
-public:
-	BoardListQuery(const gloox::Tag* tag = 0);
-
-	~BoardListQuery();
-
-	// reimplemented from StanzaExtension
-	virtual const std::string& filterString() const;
-
-	// reimplemented from StanzaExtension
-	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
-	{
-		return new BoardListQuery( tag );
-	}
-
-	// reimplemented from StanzaExtension
-	virtual gloox::Tag* tag() const;
-
-	// reimplemented from StanzaExtension
-	virtual gloox::StanzaExtension* clone() const;
-
-	const std::list<BoardItemData*>& boardList() const;
-
-private:
-	std::string m_command;
-	std::list<BoardItemData*> m_IQBoardList;
 };
 
 extern XmppClient *g_XmppClient;
