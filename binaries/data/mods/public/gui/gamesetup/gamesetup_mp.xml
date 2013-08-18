@@ -97,15 +97,8 @@
 					var hostPlayerName = getGUIObjectByName("hostPlayerName").caption;
 					g_ConfigDB.user["playername"] = hostPlayerName;
 					g_ConfigDB.user.writeFile("config/user.cfg");
-					if (startHost(
-						hostPlayerName,
-						getGUIObjectByName("hostServerName").caption))
-					{
-						// Set player presence
-						Engine.LobbySetPlayerPresence("playing");
-
+					if (startHost(hostPlayerName, getGUIObjectByName("hostServerName").caption))
 						switchSetupPage("pageHost", "pageConnecting");
-					}
 				</action>
 			</object>
 		</object>
