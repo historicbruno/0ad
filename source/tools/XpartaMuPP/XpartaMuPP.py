@@ -52,7 +52,7 @@ class LeaderboardList():
   def updateRankings(self):
     """
       Performs a full update of the leaderboard rankings.
-        Returns True if succesful, False otherwise.
+        Returns True if successful, False otherwise.
     """
     ## TODO ##
     return False
@@ -172,7 +172,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
 
     # Store mapping of nicks and XmppIDs, attached via presence stanza
     self.nicks = {}
-    # Store client JIDs, a JID is only attached if the client sends a message which we receive
+    # Store client JIDs, attached via client request
     self.JIDs = []
 
     register_stanza_plugin(Iq, GameListXmppPlugin)
@@ -203,7 +203,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Process presence stanza from a chat room.
     """
     if presence['muc']['nick'] != self.nick:
-      self.send_message(mto=presence['from'], mbody="Hello %s, welcome in the 0ad alpha chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
+      self.send_message(mto=presence['from'], mbody="Hello %s, welcome to the 0AD chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
       # Store player JID with room prefix
       if str(presence['from']) not in self.nicks:
         self.nicks[str(presence['from'])] = presence['muc']['nick']
@@ -274,7 +274,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
           logging.error("Failed to process changestate data")
       else:
         logging.error("Failed to process command '%s' received from %s" % command, iq['from'].bare)
-    elif iq['type'] == 'endGame':
+    elif iq['type'] == 'gamereport':
        """
          Client is reporting end of game statistics
        """
@@ -289,7 +289,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     Send a massive stanza with the whole game list
     """
-    ## Check recipiant exists
+    ## Check recipient exists
     if to not in self.JIDs:
       logging.error("No player with the xmpp id '%s' known" % to.bare)
       return
@@ -300,18 +300,18 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     games = self.gameList.getAllGames()
     for JID in games:
       g = games[JID]
-      # Only send the game that are in the 'init' state and games
-      # and games that have to.bare in the list of players and are in the 'waiting' state.
+      # Only send the games that are in the 'init' state and games
+      # that are in the 'waiting' state which the receiving player is in. TODO
       if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[to] in g['players-init']):
         stz.addGame(g)
 
-    ## Set additional IQ attibutes
+    ## Set additional IQ attributes
     iq = self.Iq()
     iq['type'] = 'result'
     iq['to'] = to
     iq.setPayload(stz)
 
-    ## Try sending the stanze
+    ## Try sending the stanza
     try:
       iq.send()
     except:
@@ -323,7 +323,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     """
     ## Check recipiant exists
     if to not in self.JIDs:
-      logging.error("No player with the xmpp id '%s' known" % to.bare)
+      logging.error("No player with the XmPP ID '%s' known" % to.bare)
       return
 
     stz = BoardListXmppPlugin()

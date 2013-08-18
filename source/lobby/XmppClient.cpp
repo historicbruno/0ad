@@ -19,6 +19,7 @@
 #include "XmppClient.h"
 #include "GameItemData.h"
 #include "BoardItemData.h"
+#include "GameReportItemData.h"
 #include "StanzaExtensions.h"
 
 //debug
@@ -358,6 +359,30 @@ void XmppClient::SendIqGetBoardList()
 	DbgXMPP("SendIqGetBoardList [" << iq.tag()->xml() << "]");
 	_client->send(iq);
 }
+
+/* Send game report */
+void XmppClient::SendIqGameReport(/* What will we accept? TODO */)
+{
+	JID xpartamuppJid(_xpartamuppId);
+
+	// Placeholders
+	std::string civs, gameTime, result, mapName;
+
+	// Compose IQ
+	GameReport* game = new GameReport();
+	GameReportItemData *items = new GameReportItemData();
+	items->m_civs = civs;
+	items->m_gameTime = gameTime;
+	items->m_result = result;
+	items->m_mapName = mapName;
+	game->GameReportIQ.push_back(items);
+
+	// Send IQ
+	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	iq.addExtension(game);
+	DbgXMPP("SendGameReport [" << iq.tag()->xml() << "]");
+	_client->send(iq);
+};
 
 /* Register a game */
 void XmppClient::SendIqRegisterGame(CScriptVal data)

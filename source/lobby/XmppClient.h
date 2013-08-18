@@ -111,6 +111,7 @@ public:
 	void recv();
 	void SendIqGetGameList();
 	void SendIqGetBoardList();
+	void SendIqGameReport();
 	void SendIqRegisterGame(CScriptVal data);
 	void SendIqUnregisterGame();
 	void SendIqChangeStateGame(std::string nbp, std::string players);

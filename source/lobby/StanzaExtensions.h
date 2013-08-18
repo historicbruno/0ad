@@ -14,6 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with 0 A.D.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef STANZAEXTENSIONS_H
+#define STANZAEXTENSIONS_H
+
 #include <gloox/client.h>
 
 //Global Gamelist Extension
@@ -24,8 +28,31 @@ const std::string XMLNS_GAMELIST = "jabber:iq:gamelist";
 #define ExtBoardListQuery 1404
 const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
 
+//Global Boardlist Extension
+#define ExtGameReport 1405
+const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
+
 class GameItemData;
 class BoardItemData;
+class GameReportItemData;
+
+class GameReport : public gloox::StanzaExtension
+{
+	friend class XmppClient;
+public:
+	GameReport(const gloox::Tag* tag = 0);
+	// Following four methods are all required by gloox
+	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
+	{
+		return new GameReport(tag);
+	}
+	virtual gloox::Tag* tag() const;
+	virtual gloox::StanzaExtension* clone() const;
+	virtual const std::string& filterString() const;
+
+private:
+	std::list<GameReportItemData*> GameReportIQ;
+};
 
 class GameListQuery : public gloox::StanzaExtension
 {
@@ -83,6 +110,6 @@ public:
 	const std::list<BoardItemData*>& boardList() const;
 
 private:
-	std::string m_command;
 	std::list<BoardItemData*> m_IQBoardList;
 };
+#endif
