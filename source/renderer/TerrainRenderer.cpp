@@ -649,7 +649,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 	WaterManager* WaterMgr = g_Renderer.GetWaterManager();
 	CShaderDefines defines = context;
 	
-	WaterMgr->updateQuality();
+	WaterMgr->UpdateQuality();
 
 	// If we're using fancy water, make sure its shader is loaded
 	if (!m->fancyWaterShader || WaterMgr->m_NeedsReloading)
@@ -689,18 +689,9 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			WaterMgr->m_RenderWater = false;
 			return false;
 		}
-		// we need to actually recompute the whole map settings.
-		if (WaterMgr->m_NeedsFullReloading)
-		{
-			WaterMgr->m_waveTT = 0;
-			WaterMgr->m_depthTT = 0;
-		}
 		WaterMgr->m_NeedsReloading = false;
 	}
 	
-	if (g_AtlasGameLoop->running)
-		WaterMgr->m_TerrainChangeThisTurn = false;
-		
 	CLOSTexture& losTexture = g_Renderer.GetScene().GetLOSTexture();
 
 	GLuint depthTex;
@@ -712,6 +703,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			glGenTextures(1, (GLuint*)&depthTex);
 			WaterMgr->m_depthTT = depthTex;
 			glBindTexture(GL_TEXTURE_2D, WaterMgr->m_depthTT);
+			// TODO: use POT texture
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, g_Renderer.GetWidth(), g_Renderer.GetHeight(),
 						 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE,NULL);
 		}
@@ -727,9 +719,9 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	// Calculating the advanced informations about Foam and all if the quality calls for it.
-	/*if (WaterMgr->m_NeedsFullReloading && (WaterMgr->m_WaterFoam || WaterMgr->m_WaterCoastalWaves))
+	/*if (WaterMgr->m_NeedInfoUpdate && (WaterMgr->m_WaterFoam || WaterMgr->m_WaterCoastalWaves))
 	{
-		WaterMgr->m_NeedsFullReloading = false;
+		WaterMgr->m_NeedInfoUpdate = false;
 		WaterMgr->CreateSuperfancyInfo();
 	}*/
 	
@@ -762,9 +754,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			WaterMgr->m_waveTT = renderedTexture;
 			
 			glBindTexture(GL_TEXTURE_2D, WaterMgr->m_waveTT);
-			int size = (int)round_up_to_pow2((unsigned)g_Renderer.GetHeight());
-			if(size > g_Renderer.GetHeight()) size /= 2;
-			
+			// TODO: use POT texture
 			glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, (float)g_Renderer.GetWidth(), (float)g_Renderer.GetHeight(), 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 		}
