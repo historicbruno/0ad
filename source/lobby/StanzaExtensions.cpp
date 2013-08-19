@@ -48,7 +48,7 @@ gloox::Tag* GameReport::tag() const
 /* Required by gloox, used to find the extension in a recived IQ */
 const std::string& GameReport::filterString() const
 {
-	static const std::string filter = "/iq[@xmlns='" + XMLNS_BOARDLIST + "']";
+	static const std::string filter = "/iq/report[@xmlns='" + XMLNS_GAMEREPORT + "']";
 	return filter;
 }
 

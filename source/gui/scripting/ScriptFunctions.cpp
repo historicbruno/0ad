@@ -697,6 +697,13 @@ void SendGetBoardList(void* UNUSED(cbdata))
 	g_XmppClient->SendIqGetBoardList();
 }
 
+void SendGameReport(void* UNUSED(cbdata), CScriptVal data)
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqGameReport(data);
+}
+
 void SendRegisterGame(void* UNUSED(cbdata), CScriptVal data)
 {
 	if (!g_XmppClient)
@@ -985,6 +992,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, &SendGetGameList>("SendGetGameList");
 	scriptInterface.RegisterFunction<void, &SendGetBoardList>("SendGetBoardList");
 	scriptInterface.RegisterFunction<void, CScriptVal, &SendRegisterGame>("SendRegisterGame");
+	scriptInterface.RegisterFunction<void, CScriptVal, &SendGameReport>("SendGameReport");
 	scriptInterface.RegisterFunction<void, &SendUnregisterGame>("SendUnregisterGame");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &SendChangeStateGame>("SendChangeStateGame");
 	scriptInterface.RegisterFunction<CScriptVal, &GetPlayerList>("GetPlayerList");

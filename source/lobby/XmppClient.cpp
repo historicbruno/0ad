@@ -361,19 +361,25 @@ void XmppClient::SendIqGetBoardList()
 }
 
 /* Send game report */
-void XmppClient::SendIqGameReport(/* What will we accept? TODO */)
+void XmppClient::SendIqGameReport(CScriptVal data)
 {
 	JID xpartamuppJid(_xpartamuppId);
 
 	// Placeholders
-	std::string civs, gameTime, result, mapName;
+	std::string timeElapsed, playerStates, playerID, civs, mapName;
+	GetScriptInterface().GetProperty(data.get(), "timeElapsed", timeElapsed);
+	GetScriptInterface().GetProperty(data.get(), "playerStates", playerStates);
+	GetScriptInterface().GetProperty(data.get(), "playerID", playerID);
+	GetScriptInterface().GetProperty(data.get(), "civs", civs);
+	GetScriptInterface().GetProperty(data.get(), "mapName", mapName);
 
 	// Compose IQ
 	GameReport* game = new GameReport();
 	GameReportItemData *items = new GameReportItemData();
+	items->m_timeElapsed = timeElapsed;
+	items->m_playerStates = playerStates;
+	items->m_playerID = playerID;
 	items->m_civs = civs;
-	items->m_gameTime = gameTime;
-	items->m_result = result;
 	items->m_mapName = mapName;
 	game->GameReportIQ.push_back(items);
 

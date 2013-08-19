@@ -55,14 +55,14 @@ class LeaderboardList():
         Returns True if successful, False otherwise.
     """
     ## TODO ##
-    return False
+    raise NotImplementedError
   def updatePlayer(self, JID, gameResults):
     """
       Updates the data on a player(JID) from game results.
         Returns True is successful False otherwise.
     """
     ## TODO ##
-    return False
+    raise NotImplementedError
   def getBoard(self):
     """
       Returns full leaderboard for sending
@@ -137,7 +137,7 @@ class GameListXmppPlugin(ElementBase):
 class BoardListXmppPlugin(ElementBase):
   name = 'query'
   namespace = 'jabber:iq:boardlist'
-  interfaces = set(('board', 'command'))
+  interfaces = set(('board'))
   sub_interfaces = interfaces
   plugin_attrib = 'boardlist'
 
@@ -152,6 +152,11 @@ class BoardListXmppPlugin(ElementBase):
   def getCommand(self):
     command = self.xml.find('{%s}command' % self.namespace)
     return command
+
+class GameReportXmppPlugin(ElementBase):
+  name = 'report'
+  namespace = 'jabber:iq:gamereport'
+  plugin_attrib = 'gamereport'
 
 ## Main class which handles IQ data and sends new data ##
 class XpartaMuPP(sleekxmpp.ClientXMPP):
@@ -177,6 +182,8 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
 
     register_stanza_plugin(Iq, GameListXmppPlugin)
     register_stanza_plugin(Iq, BoardListXmppPlugin)
+    register_stanza_plugin(Iq, GameReportXmppPlugin)
+
     self.register_handler(Callback('Iq Gamelist',
                                        StanzaPath('iq/gamelist'),
                                        self.iqhandler,
@@ -185,6 +192,11 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
                                        StanzaPath('iq/boardlist'),
                                        self.iqhandler,
                                        instream=True))
+    self.register_handler(Callback('Iq GameReport',
+                                       StanzaPath('iq/gamereport'),
+                                       self.iqhandler,
+                                       instream=True))
+    self.add_event_handler("session_start", self.start)
     self.add_event_handler("session_start", self.start)
     self.add_event_handler("muc::%s::got_online" % self.room, self.muc_online)
     self.add_event_handler("muc::%s::got_offline" % self.room, self.muc_offline)
@@ -249,39 +261,40 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       pass
     elif iq['type'] == 'set':
-      """
-      Register-update / unregister a game
-      """
-      command = iq['gamelist']['command']
-      if command == 'register':
-        # Add game
-        try:
-          self.gameList.addGame(iq['from'], iq['gamelist']['game'])
-        except:
-          logging.error("Failed to process game registration data")
-      elif command == 'unregister':
-        # Remove game
-        try:
-          self.gameList.removeGame(iq['from'])
-        except:
-          logging.error("Failed to process game unregistration data")
+      if 'gamelist' in iq.values:
+        """
+        Register-update / unregister a game
+        """
+        command = iq['gamelist']['command']
+        if command == 'register':
+          # Add game
+          try:
+            self.gameList.addGame(iq['from'], iq['gamelist']['game'])
+          except:
+            logging.error("Failed to process game registration data")
+        elif command == 'unregister':
+          # Remove game
+          try:
+            self.gameList.removeGame(iq['from'])
+          except:
+            logging.error("Failed to process game unregistration data")
 
-      elif command == 'changestate':
-        # Change game status (waiting/running)
+        elif command == 'changestate':
+          # Change game status (waiting/running)
+          try:
+            self.gameList.changeGameState(iq['from'], iq['gamelist']['game'])
+          except:
+            logging.error("Failed to process changestate data")
+        else:
+          logging.error("Failed to process command '%s' received from %s" % command, iq['from'].bare)
+      elif 'gamereport' in iq.values:
+        """
+        Client is reporting end of game statistics
+        """
         try:
-          self.gameList.changeGameState(iq['from'], iq['gamelist']['game'])
+          self.leaderboard.updatePlayer(iq['from'], iq['gamereport']['game'])
         except:
-          logging.error("Failed to process changestate data")
-      else:
-        logging.error("Failed to process command '%s' received from %s" % command, iq['from'].bare)
-    elif iq['type'] == 'gamereport':
-       """
-         Client is reporting end of game statistics
-       """
-       try:
-         self.leaderboard.updatePlayer(iq['from'], iq['statlist']['board'])
-       except:
-         logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
+          logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
     else:
        logging.error("Failed to process type '%s' received from %s" % iq['type'], iq['from'].bare)
 

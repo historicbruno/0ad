@@ -218,8 +218,13 @@ function leaveGame()
 {
 	var extendedSimState = Engine.GuiInterfaceCall("GetExtendedSimulationState");
 	var playerState = extendedSimState.players[Engine.GetPlayerID()];
-
+	var mapSettings = Engine.GetMapSettings();
+	var playerStatesString = "";
+	var playerCivsString = "";
+	var playerStatisticsStrings = {}; //TODO
+	for each (var player in extendedSimState.players) {playerStatesString += player.state + ","; playerCivsString += player.civ + ",";}
 	var gameResult;
+
 	if (g_Disconnected)
 	{
 		gameResult = "You have been disconnected."
@@ -245,8 +250,6 @@ function leaveGame()
 		global.music.setState(global.music.states.DEFEAT);
 	}
 
-	var mapSettings = Engine.GetMapSettings();
-
 	stopAmbient();
 	endGame();
 
@@ -254,6 +257,13 @@ function leaveGame()
 	{
 		Engine.SendUnregisterGame();
 	}
+	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
+							"playerStates" : playerStatesString,
+							"playerID": Engine.GetPlayerID(),
+							"civs" : playerCivsString,
+							"mapName" : mapSettings.Name,
+							"playerStatistics" : playerStatisticsStrings
+						});
 	Engine.SwitchGuiPage("page_summary.xml", {
 							"gameResult"  : gameResult,
 							"timeElapsed" : extendedSimState.timeElapsed,
