@@ -215,7 +215,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Process presence stanza from a chat room.
     """
     if presence['muc']['nick'] != self.nick:
-      self.send_message(mto=presence['from'], mbody="Hello %s, welcome to the 0AD chatroom. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
+      self.send_message(mto=presence['from'], mbody="Hello %s, welcome to the 0 A.D. lobby. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
       # Store player JID with room prefix
       if str(presence['from']) not in self.nicks:
         self.nicks[str(presence['from'])] = presence['muc']['nick']
