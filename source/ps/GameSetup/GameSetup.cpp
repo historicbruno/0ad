@@ -435,9 +435,11 @@ static std::vector<CStr> GetMods(const CmdLineArgs& args, bool dev)
 	return mods;
 }
 
-static void InitVfs(const CmdLineArgs& args)
+static void InitVfs(const CmdLineArgs& args, int flags)
 {
 	TIMER(L"InitVfs");
+
+	const bool setup_error = (flags & INIT_HAVE_DISPLAY_ERROR) == 0;
 
 	const Paths paths(args);
 
@@ -450,7 +452,8 @@ static void InitVfs(const CmdLineArgs& args)
 	AppHooks hooks = {0};
 	hooks.bundle_logs = psBundleLogs;
 	hooks.get_log_dir = psLogDir;
-	hooks.display_error = psDisplayError;
+	if (setup_error)
+		hooks.display_error = psDisplayError;
 	app_hooks_update(&hooks);
 
 	const size_t cacheSize = ChooseCacheSize();
@@ -470,7 +473,7 @@ static void InitVfs(const CmdLineArgs& args)
 	{
 		size_t priority = (i+1)*2;	// mods are higher priority than regular mountings, which default to priority 0
 		size_t userFlags = VFS_MOUNT_WATCH|VFS_MOUNT_ARCHIVABLE|VFS_MOUNT_REPLACEABLE;
-		size_t flags = userFlags|VFS_MOUNT_MUST_EXIST;
+		size_t baseFlags = userFlags|VFS_MOUNT_MUST_EXIST;
 		
 		OsPath modName(mods[i]);
 		if (dev)
@@ -478,13 +481,13 @@ static void InitVfs(const CmdLineArgs& args)
 			// We are running a dev copy, so only mount mods in the user mod path
 			// if the mod does not exist in the data path.
 			if (DirectoryExists(modPath / modName/""))
-				g_VFS->Mount(L"", modPath / modName/"", flags, priority);
+				g_VFS->Mount(L"", modPath / modName/"", baseFlags, priority);
 			else
 				g_VFS->Mount(L"", modUserPath / modName/"", userFlags, priority);
 		}
 		else
 		{
-			g_VFS->Mount(L"", modPath / modName/"", flags, priority);
+			g_VFS->Mount(L"", modPath / modName/"", baseFlags, priority);
 			// Ensure that user modified files are loaded, if they are present
 			g_VFS->Mount(L"", modUserPath / modName/"", userFlags, priority+1);
 		}
@@ -611,8 +614,8 @@ static void InitRenderer()
 	g_Renderer.SetOptionBool(CRenderer::OPT_WATERREALDEPTH, g_WaterRealDepth);
 	g_Renderer.SetOptionBool(CRenderer::OPT_WATERFOAM, g_WaterFoam);
 	g_Renderer.SetOptionBool(CRenderer::OPT_WATERCOASTALWAVES, g_WaterCoastalWaves);
-	g_Renderer.SetOptionBool(CRenderer::OPT_WATERREFLECTION, g_WaterRefraction);
-	g_Renderer.SetOptionBool(CRenderer::OPT_WATERREFRACTION, g_WaterReflection);
+	g_Renderer.SetOptionBool(CRenderer::OPT_WATERREFLECTION, g_WaterReflection);
+	g_Renderer.SetOptionBool(CRenderer::OPT_WATERREFRACTION, g_WaterRefraction);
 	g_Renderer.SetOptionBool(CRenderer::OPT_WATERSHADOW, g_WaterShadows);
 	
 	g_Renderer.SetRenderPath(CRenderer::GetRenderPathByName(g_RenderPath));
@@ -867,14 +870,14 @@ void EarlyInit()
 
 bool Autostart(const CmdLineArgs& args);
 
-void Init(const CmdLineArgs& args, int UNUSED(flags))
+void Init(const CmdLineArgs& args, int flags)
 {
 	h_mgr_init();
 
 	// Do this as soon as possible, because it chdirs
 	// and will mess up the error reporting if anything
 	// crashes before the working directory is set.
-	InitVfs(args);
+	InitVfs(args, flags);
 
 	// This must come after VFS init, which sets the current directory
 	// (required for finding our output log files).
@@ -1215,7 +1218,7 @@ bool Autostart(const CmdLineArgs& args)
 			CStr name = aiArgs[i].AfterFirst(":");
 
 			scriptInterface.SetProperty(player.get(), "AI", std::string(name));
-			scriptInterface.SetProperty(player.get(), "AIDiff", 1);
+			scriptInterface.SetProperty(player.get(), "AIDiff", 2);
 			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
 		}
 	}
