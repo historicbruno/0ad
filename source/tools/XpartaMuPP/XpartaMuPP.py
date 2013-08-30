@@ -377,7 +377,7 @@ if __name__ == '__main__':
   # XpartaMuPP configuration options
   optp.add_option('-m', '--domain', help='set xpartamupp domain',
                   action='store', dest='xdomain',
-                  default="localhost")
+                  default="lobby.wildfiregames.com")
   optp.add_option('-l', '--login', help='set xpartamupp login',
                   action='store', dest='xlogin',
                   default="xpartamupp")
@@ -386,7 +386,7 @@ if __name__ == '__main__':
                   default="XXXXXX")
   optp.add_option('-n', '--nickname', help='set xpartamupp nickname',
                   action='store', dest='xnickname',
-                  default="XpartaMuCC")
+                  default="WFGbot")
 
   opts, args = optp.parse_args()
 
