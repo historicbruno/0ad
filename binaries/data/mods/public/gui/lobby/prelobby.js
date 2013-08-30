@@ -98,10 +98,11 @@ function onTick()
 			var username = getGUIObjectByName("connectUsername").caption;
 			var password = getGUIObjectByName("connectPassword").caption;
 			var nick = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
-			Engine.SwitchGuiPage("page_lobby.xml", { name: nick } );
 
+			// Switch to lobby and tell it our nick
+			Engine.SwitchGuiPage("page_lobby.xml", { name: nick } );
 			// Store latest player name
-			Engine.SaveMPConfig(sanitisePlayerName(username), Engine.GetDefaultMPServer());
+			Engine.SaveMPConfig(nick, Engine.GetDefaultMPServer());
 			// Store latest username and password
 			Engine.SetDefaultLobbyPlayerPair(username, password);
 

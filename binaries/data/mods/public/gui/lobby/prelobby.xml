@@ -52,7 +52,7 @@
 					</action>
 				</object>
 			</object>
-			<object name="nick toggle" type="button" style="StoneButton" size="100%-64 120 100%-32 144">
+			<object name="nickToggle" type="button" style="StoneButton" size="100%-64 120 100%-32 144">
 				<![CDATA[<<]]>
 				<action on="Press"><![CDATA[
 					this.hidden = true;

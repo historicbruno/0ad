@@ -1,14 +1,13 @@
 var g_ChatMessages = [];
-var g_Name = "unknown Bob";
+var g_Name = "unknown";
 var g_GameList = {};
 var g_specialKey = Math.random();
 var g_spamMonitor = {};
 var g_spammers = {};
-var g_IRCConfig = false;
 var g_timestamp = g_ConfigDB.user["lobby.chattimestamp"] == "true";
+var g_mapSizes = {};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-var g_mapSizes = {};
 
 function init(attribs)
 {
