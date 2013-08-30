@@ -27,7 +27,10 @@ function lobbyStart()
 
 	var username = getGUIObjectByName("connectUsername").caption;
 	var password = getGUIObjectByName("connectPassword").caption;
-	var playername = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
+	if (getGUIObjectByName("nickPanel").hidden == true)
+		var nick = sanitisePlayerName(username);
+	else
+		var nick = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
 	var feedback = getGUIObjectByName("connectFeedback");
 
 	if (!username || !password)
@@ -37,8 +40,8 @@ function lobbyStart()
 	}
 
 	feedback.caption = "Connecting..";
-	Engine.StartXmppClient(username, Engine.EncryptPassword(password, username), "arena", playername);
-	g_LobbyIsConnecting=true;
+	Engine.StartXmppClient(username, Engine.EncryptPassword(password, username), "arena", nick);
+	g_LobbyIsConnecting = true;
 	Engine.ConnectXmppClient();
 }
 
@@ -97,7 +100,10 @@ function onTick()
 			Engine.PopGuiPage();
 			var username = getGUIObjectByName("connectUsername").caption;
 			var password = getGUIObjectByName("connectPassword").caption;
-			var nick = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
+			if (getGUIObjectByName("nickPanel").hidden == true)
+				var nick = sanitisePlayerName(username);
+			else
+				var nick = sanitisePlayerName(getGUIObjectByName("joinPlayerName").caption);
 
 			// Switch to lobby and tell it our nick
 			Engine.SwitchGuiPage("page_lobby.xml", { name: nick } );
