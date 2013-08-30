@@ -635,6 +635,11 @@ void XmppClient::SetNick(const std::string& nick)
 	_mucRoom->setNick(nick);
 }
 
+void XmppClient::GetNick(std::string& nick)
+{
+	nick = _mucRoom->nick();
+}
+
 void XmppClient::kick(const std::string& nick, const std::string& reason)
 {
 	_mucRoom->kick(nick, reason);

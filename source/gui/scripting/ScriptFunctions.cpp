@@ -810,6 +810,16 @@ void LobbySetNick(void* UNUSED(cbdata), std::string nick)
 	g_XmppClient->SetNick(nick);
 }
 
+std::string LobbyGetNick(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return "";
+
+	std::string nick;
+	g_XmppClient->GetNick(nick);
+	return nick;
+}
+
 void LobbyKick(void* UNUSED(cbdata), std::string nick, std::string reason)
 {
 	if (!g_XmppClient)
@@ -1005,6 +1015,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, std::string, std::string, &SetDefaultLobbyPlayerPair>("SetDefaultLobbyPlayerPair");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySetPlayerPresence>("LobbySetPlayerPresence");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySetNick>("LobbySetNick");
+	scriptInterface.RegisterFunction<std::string, &LobbyGetNick>("LobbyGetNick");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &LobbyKick>("LobbyKick");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &LobbyBan>("LobbyBan");
 	scriptInterface.RegisterFunction<std::string, std::string, &LobbyGetPlayerPresence>("LobbyGetPlayerPresence");

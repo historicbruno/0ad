@@ -116,6 +116,7 @@ public:
 	void SendIqUnregisterGame();
 	void SendIqChangeStateGame(std::string nbp, std::string players);
 	void SetNick(const std::string& nick);
+	void GetNick(std::string& nick);
 	void kick(const std::string& nick, const std::string& reason);
 	void ban(const std::string& nick, const std::string& reason);
 	void SetPresence(const std::string& presence);

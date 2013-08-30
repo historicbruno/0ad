@@ -11,10 +11,7 @@ var g_mapSizes = {};
 
 function init(attribs)
 {
-	if (attribs.name)
-		g_Name = attribs.name;
-	else
-		error("No name");
+	g_Name = Engine.LobbyGetNick();
 
 	g_mapSizes = initMapSizes();
 	g_mapSizes.names.push("Any");
@@ -315,7 +312,6 @@ function selectGame(selected)
 	// Set the map preview
 	var mapPreview = mapSettings.Preview || "nopreview.png";
 	getGUIObjectByName("sgMapPreview").sprite = "cropped:(0.7812,0.5859)session/icons/mappreview/" + mapPreview;
-
 }
 
 function joinSelectedGame()
@@ -541,10 +537,10 @@ function addChatMessage(msg)
 {
 	var from = escapeText(msg.from);
 	var text = escapeText(msg.text);
-    if (msg.color)
-        from = '[color="' + msg.color + '"]' + from + '[/color]';
-    else if (from)
-        from = colorPlayerName(from);
+	if (msg.color)
+		from = '[color="' + msg.color + '"]' + from + '[/color]';
+	else if (from)
+		from = colorPlayerName(from);
 
 	// Run spam test
 	if (updateSpamandDetect(text, from))
@@ -654,22 +650,22 @@ function clearSpammers()
 // See http://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-jquery-javascript
 function getPlayerColor(playername)
 {
-    // Generate a probably-unique hash for the player name and use that to create a color.
-    var hash = 0;
-    for (var i = 0; i < playername.length; i++)
-        hash = playername.charCodeAt(i) + ((hash << 5) - hash);
+	// Generate a probably-unique hash for the player name and use that to create a color.
+	var hash = 0;
+	for (var i = 0; i < playername.length; i++)
+	hash = playername.charCodeAt(i) + ((hash << 5) - hash);
 
-    // First create the color in RGB then HSL, clamp the lightness so it's not too dark to read, and then convert back to RGB to display.
-    // The reason for this roundabout method is this algorithm can generate values from 0 to 255 for RGB but only 0 to 100 for HSL; this gives
-    // us much more variety if we generate in RGB. Unfortunately, enforcing that RGB values are a certain lightness is very difficult, so
-    // we convert to HSL to do the computation. Since our GUI code only displays RGB colors, we have to convert back.
-    var [h, s, l] = rgbToHsl(hash >> 24 & 0xFF, hash >> 16 & 0xFF, hash >> 8 & 0xFF);
-    l = Math.max(0.3, l);
-    return hslToRgb(h, s, l).join(" ");
+	// First create the color in RGB then HSL, clamp the lightness so it's not too dark to read, and then convert back to RGB to display.
+	// The reason for this roundabout method is this algorithm can generate values from 0 to 255 for RGB but only 0 to 100 for HSL; this gives
+	// us much more variety if we generate in RGB. Unfortunately, enforcing that RGB values are a certain lightness is very difficult, so
+	// we convert to HSL to do the computation. Since our GUI code only displays RGB colors, we have to convert back.
+	var [h, s, l] = rgbToHsl(hash >> 24 & 0xFF, hash >> 16 & 0xFF, hash >> 8 & 0xFF);
+	l = Math.max(0.3, l);
+	return hslToRgb(h, s, l).join(" ");
 }
 
 function repeatString(times, string) {
-    return Array(times + 1).join(string);
+	return Array(times + 1).join(string);
 }
 
 // Some names are special and should always appear in certain colors.
@@ -677,19 +673,19 @@ var fixedColors = { "system": repeatString(7, "255.0.0."), "wfgbot": repeatStrin
 fixedColors.wfgbotDEV = fixedColors.wfgbot + repeatString(3, "255.255.255.");
 function colorPlayerName(playername)
 {
-    var color = fixedColors[playername];
-    if (color) {
-        color = color.split(".");
-        return ('[color="' + playername.split("").map(function (c, i) color.slice(i * 3, i * 3 + 3).join(" ") + '"]' + c + '[/color][color="')
-                .join("") + '"]').slice(0, -10);
-    }
-    return '[color="' + getPlayerColor(playername) + '"]' + playername + '[/color]';
+	var color = fixedColors[playername];
+	if (color) {
+	color = color.split(".");
+	return ('[color="' + playername.split("").map(function (c, i) color.slice(i * 3, i * 3 + 3).join(" ") + '"]' + c + '[/color][color="')
+				.join("") + '"]').slice(0, -10);
+	}
+	return '[color="' + getPlayerColor(playername) + '"]' + playername + '[/color]';
 }
 
 // Ensure `value` is between 0 and 1.
 function clampColorValue(value)
 {
-    return Math.abs(1 - Math.abs(value - 1));
+	return Math.abs(1 - Math.abs(value - 1));
 }
 
 // See http://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
