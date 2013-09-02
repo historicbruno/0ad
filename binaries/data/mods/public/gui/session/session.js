@@ -258,12 +258,12 @@ function leaveGame()
 		Engine.SendUnregisterGame();
 	}
 	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
-							"playerStates" : playerStatesString,
-							"playerID": Engine.GetPlayerID(),
-							"civs" : playerCivsString,
-							"mapName" : mapSettings.Name,
-							"playerStatistics" : playerStatisticsStrings
-						});
+				"playerStates" : playerStatesString,
+				"playerID": Engine.GetPlayerID(),
+				"civs" : playerCivsString,
+				"mapName" : mapSettings.Name,
+				"playerStatistics" : playerStatisticsStrings
+				});
 	Engine.SwitchGuiPage("page_summary.xml", {
 							"gameResult"  : gameResult,
 							"timeElapsed" : extendedSimState.timeElapsed,
