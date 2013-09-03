@@ -45,7 +45,9 @@ class LeaderboardList():
     """
       Stores a player(JID) in the database if they
         don't yet exist.
-      Returns an instance of the Player model.
+      Returns either the newly created instance of
+      the Player model, or the one that already
+      exists in the database.
     """
     players = db.query(Player).filter_by(jid=JID)
     if not players.first():
@@ -60,11 +62,12 @@ class LeaderboardList():
       Returns the player that was removed, or None
       if that player didn't exist.
     """
-    if JID in self.leaderboard:
-      del self.leaderboard[JID]
-      return True
-    else:
-      return False
+    players = db.query(Player).filter_by(jid=JID)
+    player = players.first()
+    if not player:
+      return None
+    players.delete()
+    return player
   def addGame(self, JID, game):
     """
       Adds a game (dictionary) to the database and
