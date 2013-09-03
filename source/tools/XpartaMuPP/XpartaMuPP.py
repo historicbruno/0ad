@@ -27,6 +27,8 @@ from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
+from LobbyRanking import session as db, Game, Player, PlayerInfo
+
 ## Class that contains and manages leaderboard data ##
 class LeaderboardList():
   def __init__(self):
@@ -41,7 +43,7 @@ class LeaderboardList():
     self.leaderboard["666.666.666.662"] = {"name":"scythetwirler", "rank":"5"}
   def addPlayer(self, JID, name, rank):
     """
-      Stores a player(JID) in the leaderboard if they 
+      Stores a player(JID) in the leaderboard if they
         don't yet exist.
       Returns True if successful, False otherwise.
     """
@@ -62,8 +64,8 @@ class LeaderboardList():
       return False
   def addGame(self, JID, game):
     """
-      Adds a game (dictionary) to the database and 
-        updates the data on a player(JID) from game 
+      Adds a game (dictionary) to the database and
+        updates the data on a player(JID) from game
         results.
       Returns True is successful, False otherwise.
     """
@@ -71,7 +73,7 @@ class LeaderboardList():
     raise NotImplementedError
   def getBoard(self):
     """
-      Returns a dictionary of player rankings to 
+      Returns a dictionary of player rankings to
         JIDs for sending.
     """
     return self.leaderboard
