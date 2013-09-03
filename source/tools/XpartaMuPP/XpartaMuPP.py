@@ -27,7 +27,7 @@ from sleekxmpp.xmlstream import ElementBase, register_stanza_plugin, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
-## Class that contains manages leaderboard data ##
+## Class that contains and manages leaderboard data ##
 class LeaderboardList():
   def __init__(self):
     self.leaderboard = {}
@@ -41,31 +41,38 @@ class LeaderboardList():
     self.leaderboard["666.666.666.662"] = {"name":"scythetwirler", "rank":"5"}
   def addPlayer(self, JID, name, rank):
     """
-      Stores a player(JID) in the leaderboard
+      Stores a player(JID) in the leaderboard if they 
+        don't yet exist.
+      Returns True if successful, False otherwise.
     """
-    self.leaderboard[JID] = {"name":name, "rank":rank}
+    if JID not in self.leaderboard:
+      self.leaderboard[JID] = {"name":name, "rank":rank}
+      return True
+    else:
+      return False
   def removePlayer(self, JID):
     """
-      Remove a player(JID) from leaderboard
+      Remove a player(JID) from leaderboard.
+      Returns True if successful, False otherwise.
     """
-    del self.leaderboard[JID]
-  def updateRankings(self):
+    if JID in self.leaderboard:
+      del self.leaderboard[JID]
+      return True
+    else:
+      return False
+  def addGame(self, JID, game):
     """
-      Performs a full update of the leaderboard rankings.
-        Returns True if successful, False otherwise.
-    """
-    ## TODO ##
-    raise NotImplementedError
-  def updatePlayer(self, JID, gameResults):
-    """
-      Updates the data on a player(JID) from game results.
-        Returns True is successful False otherwise.
+      Adds a game (dictionary) to the database and 
+        updates the data on a player(JID) from game 
+        results.
+      Returns True is successful, False otherwise.
     """
     ## TODO ##
     raise NotImplementedError
   def getBoard(self):
     """
-      Returns full leaderboard for sending
+      Returns a dictionary of player rankings to 
+        JIDs for sending.
     """
     return self.leaderboard
 
@@ -292,7 +299,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         Client is reporting end of game statistics
         """
         try:
-          self.leaderboard.updatePlayer(iq['from'], iq['gamereport']['game'])
+          self.leaderboard.addGame(iq['from'], iq['gamereport']['game'])
         except:
           logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
     else:
