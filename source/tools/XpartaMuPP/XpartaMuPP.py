@@ -41,21 +41,24 @@ class LeaderboardList():
     self.leaderboard["666.666.666.664"] = {"name":"leper", "rank":"3"}
     self.leaderboard["666.666.666.663"] = {"name":"alpha123", "rank":"4"}
     self.leaderboard["666.666.666.662"] = {"name":"scythetwirler", "rank":"5"}
-  def addPlayer(self, JID, name, rank):
+  def getOrCreatePlayer(self, JID):
     """
-      Stores a player(JID) in the leaderboard if they
+      Stores a player(JID) in the database if they
         don't yet exist.
-      Returns True if successful, False otherwise.
+      Returns an instance of the Player model.
     """
-    if JID not in self.leaderboard:
-      self.leaderboard[JID] = {"name":name, "rank":rank}
-      return True
-    else:
-      return False
+    players = db.query(Player).filter_by(jid=JID)
+    if not players.first():
+      player = Player(jid=JID, rating=1200)
+      db.add(player)
+      db.commit()
+      return player
+    return players.first()
   def removePlayer(self, JID):
     """
-      Remove a player(JID) from leaderboard.
-      Returns True if successful, False otherwise.
+      Remove a player(JID) from database.
+      Returns the player that was removed, or None
+      if that player didn't exist.
     """
     if JID in self.leaderboard:
       del self.leaderboard[JID]
