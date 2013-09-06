@@ -37,6 +37,9 @@ var g_GameEnded = false;
 
 var g_Disconnected = false; // Lost connection to server
 
+// Holds player states from the last tick
+var g_CachedLastStates = "";
+
 // Colors to flash when pop limit reached
 const DEFAULT_POPULATION_COLOR = "white";
 const POPULATION_ALERT_COLOR = "orange";
@@ -219,10 +222,6 @@ function leaveGame()
 	var extendedSimState = Engine.GuiInterfaceCall("GetExtendedSimulationState");
 	var playerState = extendedSimState.players[Engine.GetPlayerID()];
 	var mapSettings = Engine.GetMapSettings();
-	var playerStatesString = "";
-	var playerCivsString = "";
-	var playerStatisticsStrings = {}; //TODO
-	for each (var player in extendedSimState.players) {playerStatesString += player.state + ","; playerCivsString += player.civ + ",";}
 	var gameResult;
 
 	if (g_Disconnected)
@@ -257,13 +256,6 @@ function leaveGame()
 	{
 		Engine.SendUnregisterGame();
 	}
-	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
-				"playerStates" : playerStatesString,
-				"playerID": Engine.GetPlayerID(),
-				"civs" : playerCivsString,
-				"mapName" : mapSettings.Name,
-				"playerStatistics" : playerStatisticsStrings
-				});
 	Engine.SwitchGuiPage("page_summary.xml", {
 							"gameResult"  : gameResult,
 							"timeElapsed" : extendedSimState.timeElapsed,
@@ -356,6 +348,13 @@ function checkPlayerState()
 
 	if (!g_GameEnded)
 	{
+		var tempStates;
+		for each (var player in simState.players) {tempStates += player.state + ",";}
+		if (g_CachedLastStates != tempStates)
+		{
+			g_CachedLastStates = tempStates;
+			reportGame(Engine.GuiInterfaceCall("GetExtendedSimulationState"));
+		}
 		// If the game is about to end, disable the ability to resign.
 		if (playerState.state != "active")
 			getGUIObjectByName("menuResignButton").enabled = false;
@@ -693,4 +692,22 @@ function stopAmbient()
 		currentAmbient.free();
 		currentAmbient = null;
 	}
+}
+// Send a report on the game status to the lobby
+function reportGame(extendedSimState)
+{
+	// Retrive and format data
+	var playerStatesString = "";
+	var playerCivsString = "";
+	var mapName = Engine.GetMapSettings().Name;
+
+	for each (var player in extendedSimState.players) {playerStatesString += player.state + ","; playerCivsString += player.civ + ",";}
+
+	// Send the report
+	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
+				"playerStates" : playerStatesString,
+				"playerID": Engine.GetPlayerID(),
+				"civs" : playerCivsString,
+				"mapName" : mapName
+				});
 }

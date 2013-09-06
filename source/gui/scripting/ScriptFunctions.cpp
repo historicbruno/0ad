@@ -863,7 +863,7 @@ void SetBoundingBoxDebugOverlay(void* UNUSED(cbdata), bool enabled)
 	ICmpSelectable::ms_EnableDebugOverlays = enabled;
 }
 
-//Non-public secure PBKDF2 hash function with salting and 10,000 iterations
+// Non-public secure PBKDF2 hash function with salting and 10,000 iterations
 void SecureHash(const std::string& saltIn, std::string& text)
 {
         const int DIGESTSIZE = CryptoPP::SHA256::DIGESTSIZE;
