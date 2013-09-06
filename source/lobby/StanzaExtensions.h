@@ -32,8 +32,10 @@ const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
 #define ExtGameReport 1405
 const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
 
+
+typedef gloox::Tag PlayerData;
+
 class GameItemData;
-class BoardItemData;
 class GameReportItemData;
 
 class GameReport : public gloox::StanzaExtension
@@ -107,9 +109,9 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<BoardItemData*>& boardList() const;
+	std::list<gloox::Tag*> boardList() const;
 
 private:
-	std::list<BoardItemData*> m_IQBoardList;
+	std::list<PlayerData*> m_IQBoardList;
 };
 #endif

@@ -17,10 +17,10 @@
 #include "precompiled.h"
 #include "StanzaExtensions.h"
 #include "GameItemData.h"
-#include "BoardItemData.h"
 #include "GameReportItemData.h"
 
 #include <gloox/rostermanager.h>
+
 /****************************************************
  * GameReport, fairly generic custom stanza extension used
  * to report game statistics.
@@ -60,8 +60,8 @@ gloox::StanzaExtension* GameReport::clone() const
 }
 
 /******************************************************
- *  BoardListQuery, custom IQ Stanza, used solely to 
- *  request and receive leaderboard from server. This 
+ *  BoardListQuery, custom IQ Stanza, used solely to
+ *  request and receive leaderboard from server. This
  *  could probably be cleaned up some.
  */
 BoardListQuery::BoardListQuery( const gloox::Tag* tag )
@@ -70,18 +70,7 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
 
-	const gloox::ConstTagList& l = tag->findTagList( "query/board" );
-	gloox::ConstTagList::const_iterator it = l.begin();
-	for( ; it != l.end(); ++it )
-	{
-		BoardItemData *pItem = new BoardItemData();
-#define BITEM(param)\
-	const std::string param = (*it)->findAttribute( #param ); \
-	pItem->m_##param = param;
-		BOARDITEMS
-#undef BITEM
-		m_IQBoardList.push_back( pItem );
-	}
+	m_IQBoardList = tag->findChildren( "query/board" );
 }
 
 BoardListQuery::~BoardListQuery()
@@ -101,9 +90,9 @@ gloox::Tag* BoardListQuery::tag() const
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::list<BoardItemData*>::const_iterator it = m_IQBoardList.begin();
+	std::list<PlayerData*>::const_iterator it = m_IQBoardList.begin();
 	for( ; it != m_IQBoardList.end(); ++it )
-		t->addChild( (*it)->tag() );
+		t->addChild( *it );
 
 	return t;
 }
@@ -115,7 +104,7 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 	return q;
 }
 
-const std::list<BoardItemData*>& BoardListQuery::boardList() const
+std::list<PlayerData*> BoardListQuery::boardList() const
 {
 	return m_IQBoardList;
 }

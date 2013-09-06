@@ -18,7 +18,6 @@
 #include "precompiled.h"
 #include "XmppClient.h"
 #include "GameItemData.h"
-#include "BoardItemData.h"
 #include "GameReportItemData.h"
 #include "StanzaExtensions.h"
 
@@ -52,7 +51,7 @@ XmppClient *g_XmppClient = NULL;
 
 //Hack
 #if 1
-#if OS_WIN 
+#if OS_WIN
 const std::string gloox::EmptyString = "";
 #endif
 #endif
@@ -268,7 +267,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(bq)
 		{
 			m_BoardList.clear();
-			std::list<BoardItemData*>::const_iterator it = bq->boardList().begin();
+			std::list<gloox::Tag*>::const_iterator it = bq->boardList().begin();
 			for(; it != bq->boardList().end(); ++it)
 			{
 				m_BoardList.push_back(**it);
@@ -367,7 +366,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 
 	// Convert the values from the CScriptVal to std
 	std::string timeElapsed, playerStates, playerID, civs, mapName,
-		foodGathered, woodGathered, stoneGathered, metalGathered, 
+		foodGathered, woodGathered, stoneGathered, metalGathered,
 		foodUsed, woodUsed, stoneUsed, metalUsed;
 	GetScriptInterface().GetProperty(data.get(), "timeElapsed", timeElapsed);
 	GetScriptInterface().GetProperty(data.get(), "playerStates", playerStates);
@@ -537,7 +536,7 @@ void XmppClient::handleOOB( const JID& /*from*/, const OOB& /* oob */ )
   */
 void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/ )
 {
-	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str() 
+	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str()
 	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
 
 	CScriptValRooted message;
@@ -596,17 +595,16 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 {
 	CScriptValRooted boardList;
 	GetScriptInterface().Eval("([])", boardList);
-	for(std::list<BoardItemData>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
+	for(std::list<gloox::Tag>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
-		GetScriptInterface().Eval("({})", board);
+		ScriptInterface& script = GetScriptInterface();
+		script.Eval("({})", board);
 
-#define BITEM(param)\
-	GetScriptInterface().SetProperty(board.get(), #param, it->m_##param .c_str());
-		BOARDITEMS
-#undef BITEM
+		script.SetProperty(board.get(), "name", it->findAttribute("name").c_str());
+		script.SetProperty(board.get(), "rank", it->findAttribute("rank").c_str());
 
-		GetScriptInterface().CallFunctionVoid(boardList.get(), "push", board);
+		script.CallFunctionVoid(boardList.get(), "push", board);
 	}
 
 	return boardList;

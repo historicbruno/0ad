@@ -46,8 +46,8 @@ typedef __nullterminated CHAR *NPSTR, *LPSTR, *PSTR;
 typedef __nullterminated CONST WCHAR *LPCWSTR, *PCWSTR;
 typedef __nullterminated CONST CHAR *LPCSTR, *PCSTR;
 typedef unsigned char       BYTE;
-typedef BYTE  BOOLEAN;   
-typedef BOOLEAN *PBOOLEAN;    
+typedef BYTE  BOOLEAN;
+typedef BOOLEAN *PBOOLEAN;
 typedef void *PVOID;
 
 	//Taken from BaseTsd.h
@@ -83,7 +83,8 @@ typedef void *PVOID;
 //Game - script
 class ScriptInterface;
 class GameItemData;
-class BoardItemData;
+
+typedef gloox::Tag PlayerData;
 
 class XmppClient : public gloox::ConnectionListener, public gloox::MUCRoomHandler, public gloox::IqHandler, public gloox::LogHandler, public gloox::RegistrationHandler, public gloox::MessageHandler
 {
@@ -179,7 +180,7 @@ private:
 	/// List of games
 	std::list< GameItemData > m_GameList;
 	/// List of rankings
-	std::list< BoardItemData > m_BoardList;
+	std::list< PlayerData > m_BoardList;
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
 };
