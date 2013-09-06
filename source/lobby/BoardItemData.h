@@ -20,10 +20,6 @@
 
 #include <string>
 
-#define BOARDITEMS\
-	BITEM(name)\
-	BITEM(rank)
-
 class BoardItemData
 {
 	friend class XmppClient;
@@ -37,19 +33,15 @@ public:
 	{
 		gloox::Tag* i = new gloox::Tag( "board" );
 
-#define BITEM(param)\
-	i->addAttribute( #param, m_##param );
-		BOARDITEMS
-#undef BITEM
+		i->addAttribute( "name", m_name );
+		i->addAttribute( "rank", m_rank );
 
 		return i;
 	}
 
 protected:
-#define BITEM(param)\
-	std::string m_##param ;
-	BOARDITEMS
-#undef BITEM
+	std::string m_name;
+	std::string m_rank;
 };
 
 #endif
