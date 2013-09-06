@@ -28,6 +28,8 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
 from LobbyRanking import session as db, Game, Player, PlayerInfo
+from config import default_rating, leaderboard_minimum_games,
+    leaderboard_active_games
 
 ## Class that contains and manages leaderboard data ##
 class LeaderboardList():
@@ -81,7 +83,7 @@ class LeaderboardList():
     playerInfos = []
     for player in players:
       jid = player.jid
-      playerinfo = PlayerInfo()
+      playerinfo = PlayerInfo(player=player)
       playerInfos.append(playerinfo)
   def getBoard(self):
     """
