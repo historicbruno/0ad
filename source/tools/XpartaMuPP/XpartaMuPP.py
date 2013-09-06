@@ -68,15 +68,21 @@ class LeaderboardList():
       return None
     players.delete()
     return player
-  def addGame(self, JID, game):
+  def addGame(self, gamereport):
     """
       Adds a game (dictionary) to the database and
         updates the data on a player(JID) from game
         results.
-      Returns True is successful, False otherwise.
+      Returns the created Game object, or None if
+      the creation failed for any reason.
     """
-    ## TODO ##
-    raise NotImplementedError
+    players = map(lambda jid: db.query(Player).filter_by(jid=jid).first(),
+                  gamereport.players)
+    playerInfos = []
+    for player in players:
+      jid = player.jid
+      playerinfo = PlayerInfo()
+      playerInfos.append(playerinfo)
   def getBoard(self):
     """
       Returns a dictionary of player rankings to
