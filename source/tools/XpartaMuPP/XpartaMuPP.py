@@ -191,12 +191,6 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     register_stanza_plugin(Iq, BoardListXmppPlugin)
     register_stanza_plugin(Iq, GameReportXmppPlugin)
 
-    self.m_gameList = {}
-
-    # Store mapping of nicks and XmppIDs
-    self.m_xmppIdToNick = {}
-
-    register_stanza_plugin(Iq, BasicGameList)
     self.register_handler(Callback('Iq Gamelist',
                                        StanzaPath('iq/gamelist'),
                                        self.iqhandler,
