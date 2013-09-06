@@ -20,12 +20,21 @@
 
 #include <string>
 
-#define REPORTITEMS   \
-	ITEM(timeElapsed) \
-	ITEM(playerStates)\
-	ITEM(playerID)    \
-	ITEM(civs)        \
-	ITEM(mapName)
+#define REPORTITEMS        \
+	ITEM(timeElapsed)  \
+	ITEM(playerStates) \
+	ITEM(playerID)     \
+	ITEM(civs)         \
+	ITEM(mapName)      \
+	ITEM(foodGathered) \
+	ITEM(woodGathered) \
+	ITEM(stoneGathered)\
+	ITEM(metalGathered)\
+	ITEM(foodUsed)     \
+	ITEM(woodUsed)     \
+	ITEM(stoneUsed)    \
+	ITEM(metalUsed)    \
+	
 
 class GameReportItemData
 {

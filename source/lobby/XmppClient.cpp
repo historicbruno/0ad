@@ -365,13 +365,23 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 {
 	JID xpartamuppJid(_xpartamuppId);
 
-	// Placeholders
-	std::string timeElapsed, playerStates, playerID, civs, mapName;
+	// Convert the values from the CScriptVal to std
+	std::string timeElapsed, playerStates, playerID, civs, mapName,
+		foodGathered, woodGathered, stoneGathered, metalGathered, 
+		foodUsed, woodUsed, stoneUsed, metalUsed;
 	GetScriptInterface().GetProperty(data.get(), "timeElapsed", timeElapsed);
 	GetScriptInterface().GetProperty(data.get(), "playerStates", playerStates);
 	GetScriptInterface().GetProperty(data.get(), "playerID", playerID);
 	GetScriptInterface().GetProperty(data.get(), "civs", civs);
 	GetScriptInterface().GetProperty(data.get(), "mapName", mapName);
+	GetScriptInterface().GetProperty(data.get(), "foodGathered", foodGathered);
+	GetScriptInterface().GetProperty(data.get(), "woodGathered", woodGathered);
+	GetScriptInterface().GetProperty(data.get(), "stoneGathered", stoneGathered);
+	GetScriptInterface().GetProperty(data.get(), "metalGathered", metalGathered);
+	GetScriptInterface().GetProperty(data.get(), "foodUsed", foodUsed);
+	GetScriptInterface().GetProperty(data.get(), "wood Used", woodUsed);
+	GetScriptInterface().GetProperty(data.get(), "stoneUsed", stoneUsed);
+	GetScriptInterface().GetProperty(data.get(), "metalUsed", metalUsed);
 
 	// Compose IQ
 	GameReport* game = new GameReport();
@@ -381,6 +391,14 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	items->m_playerID = playerID;
 	items->m_civs = civs;
 	items->m_mapName = mapName;
+	items->m_foodGathered = foodGathered;
+	items->m_woodGathered = woodGathered;
+	items->m_stoneGathered = stoneGathered;
+	items->m_metalGathered = metalGathered;
+	items->m_foodUsed = foodUsed;
+	items->m_woodUsed = woodUsed;
+	items->m_stoneUsed = stoneUsed;
+	items->m_metalUsed = metalUsed;
 	game->GameReportIQ.push_back(items);
 
 	// Send IQ

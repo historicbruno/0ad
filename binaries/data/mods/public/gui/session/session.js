@@ -699,15 +699,43 @@ function reportGame(extendedSimState)
 	// Retrive and format data
 	var playerStatesString = "";
 	var playerCivsString = "";
+	var playerFoodGatheredString = "";
+	var playerWoodGatheredString  = "";
+	var playerStoneGatheredString = "";
+	var playerMetalGatheredString = "";
+	var playerFoodUsedString = "";
+	var playerWoodUsedString  = "";
+	var playerStoneUsedString = "";
+	var playerMetalUsedString = "";
 	var mapName = Engine.GetMapSettings().Name;
 
-	for each (var player in extendedSimState.players) {playerStatesString += player.state + ","; playerCivsString += player.civ + ",";}
+	for each (var player in extendedSimState.players) 
+	{
+		playerStatesString += player.state + ","; 
+		playerCivsString += player.civ + ",";
+		playerFoodGatheredString += player.statistics.resourcesGathered.food + ",";
+		playerWoodGatheredString += player.statistics.resourcesGathered.wood + ",";
+		playerStoneGatheredString += player.statistics.resourcesGathered.stone + ",";
+		playerMetalGatheredString += player.statistics.resourcesGathered.metal + ",";
+		playerFoodUsedString += player.statistics.resourcesUsed.food + ",";
+		playerWoodUsedString += player.statistics.resourcesUsed.wood + ",";
+		playerStoneUsedString += player.statistics.resourcesUsed.stone + ",";
+		playerMetalUsedString += player.statistics.resourcesUsed.metal + ",";
+	}
 
 	// Send the report
 	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
 				"playerStates" : playerStatesString,
 				"playerID": Engine.GetPlayerID(),
 				"civs" : playerCivsString,
-				"mapName" : mapName
+				"mapName" : mapName,
+				"foodGathered": playerFoodGatheredString,
+				"woodGathered": playerWoodGatheredString,
+				"stoneGathered": playerStoneGatheredString,
+				"metalGathered": playerMetalGatheredString,
+				"foodUsed": playerFoodUsedString,
+				"woodUsed": playerWoodUsedString,
+				"stoneUsed": playerStoneUsedString,
+				"metalUsed": playerMetalUsedString
 				});
 }
