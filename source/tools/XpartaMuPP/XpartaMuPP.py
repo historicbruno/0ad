@@ -53,7 +53,7 @@ class LeaderboardList():
     """
     players = db.query(Player).filter_by(jid=JID)
     if not players.first():
-      player = Player(jid=JID, rating=1200)
+      player = Player(jid=JID, rating=default_rating)
       db.add(player)
       db.commit()
       return player
