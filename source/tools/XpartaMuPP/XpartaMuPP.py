@@ -28,8 +28,7 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
 from LobbyRanking import session as db, Game, Player, PlayerInfo
-from config import default_rating, leaderboard_minimum_games,
-    leaderboard_active_games
+from config import default_rating, leaderboard_minimum_games, leaderboard_active_games
 
 ## Class that contains and manages leaderboard data ##
 class LeaderboardList():
