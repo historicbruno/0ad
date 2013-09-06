@@ -696,9 +696,7 @@ function stopAmbient()
 // Send a report on the game status to the lobby
 function reportGame(extendedSimState)
 {
-	// Retrive and format data
-	var playerStatesString = "";
-	var playerCivsString = "";
+	// Resources gathered and used
 	var playerFoodGatheredString = "";
 	var playerWoodGatheredString  = "";
 	var playerStoneGatheredString = "";
@@ -707,11 +705,40 @@ function reportGame(extendedSimState)
 	var playerWoodUsedString  = "";
 	var playerStoneUsedString = "";
 	var playerMetalUsedString = "";
+	// Resources exchanged
+	var playerFoodBoughtString = "";
+	var playerWoodBoughtString = "";
+	var playerStoneBoughtString = "";
+	var playerMetalBoughtString = "";
+	var playerFoodSoldString = "";
+	var playerWoodSoldString = "";
+	var playerStoneSoldString = "";
+	var playerMetalSoldString = "";
+	var playerTradeIncomeString = "";
+	// Unit Stats
+    var playerUnitsLostString = "";
+    var playerUnitsTrainedString = "";
+	var playerEnemyUnitsKilledString = "";
+	// Building stats
+	var playerBuildingsConstructedString = "";
+	var playerBuildingsLostString = "";
+	var playerEnemyBuildingsDestroyedString = "";
+	var playerCivCentersBuiltString = "";
+	var playerEnemyCivCentersDestroyedString = "";
+	// Tribute
+	var playerTributeSentString = "";
+	var playerTributeReceivedString = "";
+	// Various
 	var mapName = Engine.GetMapSettings().Name;
+	var playerStatesString = "";
+	var playerCivsString = "";
+	var playerPercentMapExploredString = "";
+	var playerTreasuresCollectedString = "";
 
-	for each (var player in extendedSimState.players) 
+	// Serialize the statistics for each player into a comma-separated list.
+	for each (var player in extendedSimState.players)
 	{
-		playerStatesString += player.state + ","; 
+		playerStatesString += player.state + ",";
 		playerCivsString += player.civ + ",";
 		playerFoodGatheredString += player.statistics.resourcesGathered.food + ",";
 		playerWoodGatheredString += player.statistics.resourcesGathered.wood + ",";
@@ -721,21 +748,64 @@ function reportGame(extendedSimState)
 		playerWoodUsedString += player.statistics.resourcesUsed.wood + ",";
 		playerStoneUsedString += player.statistics.resourcesUsed.stone + ",";
 		playerMetalUsedString += player.statistics.resourcesUsed.metal + ",";
+		playerUnitsLostString += player.statistics.unitsLost + ",";
+		playerUnitsTrainedString += player.statistics.unitsTrained + ",";
+		playerEnemyUnitsKilledString += player.statistics.enemyUnitsKilled + ",";
+		playerBuildingsConstructedString += player.statistics.buildingsConstructed + ",";
+		playerBuildingsLostString += player.statistics.buildingsLost + ",";
+		playerEnemyBuildingsDestroyedString += player.statistics.enemyBuildingsDestroyed + ",";
+		playerFoodBoughtString += player.statistics.resourcesBought.food + ",";
+		playerWoodBoughtString += player.statistics.resourcesBought.wood + ",";
+		playerStoneBoughtString += player.statistics.resourcesBought.stone + ",";
+		playerMetalBoughtString += player.statistics.resourcesBought.metal + ",";
+		playerFoodSoldString += player.statistics.resourcesSold.food + ",";
+		playerWoodSoldString += player.statistics.resourcesSold.wood + ",";
+		playerStoneSoldString += player.statistics.resourcesSold.stone + ",";
+		playerMetalSoldString += player.statistics.resourcesSold.metal + ",";
+		playerTributeSentString += player.statistics.tributesSent + ",";
+		playerTributeReceivedString += player.statistics.tributesReceived + ",";
+		playerPercentMapExploredString += player.statistics.precentMapExplored = ",";
+		playerCivCentersBuiltString += player.statistics.civCentresBuilt + ",";
+		playerEnemyCivCentersDestroyedString += player.statistics.enemyCivCentresDestroyed + ",";
+		playerTreasuresCollectedString += player.statistics.treasuresCollected + ",";
+		playerTradeIncomeString += player.statistics.tradeIncome + ",";
 	}
 
-	// Send the report
-	Engine.SendGameReport({"timeElapsed" : extendedSimState.timeElapsed,
-				"playerStates" : playerStatesString,
-				"playerID": Engine.GetPlayerID(),
-				"civs" : playerCivsString,
-				"mapName" : mapName,
-				"foodGathered": playerFoodGatheredString,
-				"woodGathered": playerWoodGatheredString,
-				"stoneGathered": playerStoneGatheredString,
-				"metalGathered": playerMetalGatheredString,
-				"foodUsed": playerFoodUsedString,
-				"woodUsed": playerWoodUsedString,
-				"stoneUsed": playerStoneUsedString,
-				"metalUsed": playerMetalUsedString
-				});
+	// Send the report with serialized data
+	Engine.SendGameReport({
+			"timeElapsed" : extendedSimState.timeElapsed,
+			"playerStates" : playerStatesString,
+			"playerID": Engine.GetPlayerID(),
+			"civs" : playerCivsString,
+			"mapName" : mapName,
+			"foodGathered": playerFoodGatheredString,
+			"woodGathered": playerWoodGatheredString,
+			"stoneGathered": playerStoneGatheredString,
+			"metalGathered": playerMetalGatheredString,
+			"foodUsed": playerFoodUsedString,
+			"woodUsed": playerWoodUsedString,
+			"stoneUsed": playerStoneUsedString,
+			"metalUsed": playerMetalUsedString,
+			"unitsLost": playerUnitsLostString,
+			"unitsTrained": playerUnitsTrainedString,
+			"enemyUnitsKilled": playerEnemyUnitsKilledString,
+			"buildingsLost": playerBuildingsLostString,
+			"buildingsConstructed": playerBuildingsConstructedString,
+			"enemyBuildingsDestroyed": playerEnemyBuildingsDestroyedString,
+			"foodBought": playerFoodBoughtString,
+			"woodBought": playerWoodBoughtString,
+			"stoneBought": playerStoneBoughtString,
+			"metalBought": playerMetalBoughtString,
+			"foodSold": playerFoodSoldString,
+			"woodSold": playerWoodSoldString,
+			"stoneSold": playerStoneSoldString,
+			"metalSold": playerMetalSoldString,
+			"tributeSent": playerTributeSentString,
+			"tributeReceived": playerTributeReceivedString,
+			"precentMapExplored": playerPercentMapExploredString,
+			"civCentersBuilt": playerCivCentersBuiltString,
+			"enemyCivCentersDestroyed": playerEnemyCivCentersDestroyedString,
+			"treasuresCollected": playerTreasuresCollectedString,
+			"tradeIncome": playerTradeIncomeString
+		});
 }
