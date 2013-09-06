@@ -264,6 +264,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       """
       # We expect each client to register for future updates by sending at least one get request.
       try:
+        self.leaderboard.getOrCreatePlayer(iq['from'])
         if iq['from'] not in self.JIDs:
           self.JIDs.append(iq['from'])
         self.sendGameList(iq['from'])
