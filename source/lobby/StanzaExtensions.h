@@ -109,7 +109,7 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	std::list<gloox::Tag*> boardList() const;
+	std::list<PlayerData*> boardList() const;
 
 private:
 	std::list<PlayerData*> m_IQBoardList;

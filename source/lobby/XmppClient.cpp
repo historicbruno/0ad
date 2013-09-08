@@ -266,7 +266,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(bq)
 		{
 			m_BoardList.clear();
-			std::list<gloox::Tag*>::const_iterator it = bq->boardList().begin();
+			std::list<PlayerData*>::const_iterator it = bq->boardList().begin();
 			for(; it != bq->boardList().end(); ++it)
 			{
 				m_BoardList.push_back(**it);
