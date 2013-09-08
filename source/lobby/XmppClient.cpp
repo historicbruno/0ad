@@ -579,15 +579,10 @@ CScriptValRooted XmppClient::GUIGetGameList()
 		CScriptValRooted game;
 		script.Eval("({})", game);
 
-		script.SetProperty(game.get(), "name", it->findAttribute("name").c_str());
-		script.SetProperty(game.get(), "ip", it->findAttribute("ip").c_str());
-		script.SetProperty(game.get(), "state", it->findAttribute("state").c_str());
-		script.SetProperty(game.get(), "nbp", it->findAttribute("nbp").c_str());
-		script.SetProperty(game.get(), "tnbp", it->findAttribute("tnbp").c_str());
-		script.SetProperty(game.get(), "players", it->findAttribute("players").c_str());
-		script.SetProperty(game.get(), "mapName", it->findAttribute("mapName").c_str());
-		script.SetProperty(game.get(), "mapSize", it->findAttribute("mapSize").c_str());
-		script.SetProperty(game.get(), "victoryCondition", it->findAttribute("victoryCondition").c_str());
+		const char* stats[] = { "name", "ip", "state", "nbp", "tnpb", "players", "mapName", "mapSize", "victoryCondition" };
+		short stats_length = 9;
+		for (short i = 0; i < stats_length; i++)
+			script.SetProperty(game.get(), stats[i], it->findAttribute(stats[i]).c_str());
 
 		script.CallFunctionVoid(gameList.get(), "push", game);
 	}
