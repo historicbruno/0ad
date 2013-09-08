@@ -30,6 +30,7 @@
 #include "maths/MathUtil.h"
 #include "maths/Matrix3D.h"
 #include "maths/Vector3D.h"
+#include "maths/Vector2D.h"
 #include "ps/CLogger.h"
 
 /**
@@ -58,6 +59,7 @@ public:
 		UPRIGHT = 0,
 		PITCH = 1,
 		PITCH_ROLL = 2,
+		ROLL=3,
 	} m_AnchorType;
 
 	bool m_Floating;
@@ -69,11 +71,16 @@ public:
 	// m_LastX/Z contain the position from the start of the most recent turn
 	// m_PrevX/Z conatain the position from the turn before that
 	entity_pos_t m_X, m_Z, m_LastX, m_LastZ, m_PrevX, m_PrevZ; // these values contain undefined junk if !InWorld
-	entity_pos_t m_YOffset;
+	entity_pos_t m_YOffset, m_LastYOffset;
 	bool m_RelativeToGround; // whether m_YOffset is relative to terrain/water plane, or an absolute height
 
 	entity_angle_t m_RotX, m_RotY, m_RotZ;
-	float m_InterpolatedRotY; // not serialized
+
+	// not serialized:
+	float m_InterpolatedRotX, m_InterpolatedRotY, m_InterpolatedRotZ;
+	float m_LastInterpolatedRotX, m_LastInterpolatedRotZ; // not serialized
+
+	bool m_NeedInitialXZRotation;
 
 	static std::string GetSchema()
 	{
@@ -87,9 +94,10 @@ public:
 			"</a:example>"
 			"<element name='Anchor' a:help='Automatic rotation to follow the slope of terrain'>"
 				"<choice>"
-					"<value a:help='Always stand straight up'>upright</value>"
-					"<value a:help='Rotate backwards and forwards to follow the terrain'>pitch</value>"
-					"<value a:help='Rotate in all direction to follow the terrain'>pitch-roll</value>"
+					"<value a:help='Always stand straight up (e.g. humans)'>upright</value>"
+					"<value a:help='Rotate backwards and forwards to follow the terrain (e.g. animals)'>pitch</value>"
+					"<value a:help='Rotate sideways to follow the terrain'>roll</value>"
+					"<value a:help='Rotate in all directions to follow the terrain (e.g. carts)'>pitch-roll</value>"
 				"</choice>"
 			"</element>"
 			"<element name='Altitude' a:help='Height above terrain in metres'>"
@@ -110,19 +118,24 @@ public:
 			m_AnchorType = PITCH;
 		else if (anchor == L"pitch-roll")
 			m_AnchorType = PITCH_ROLL;
+		else if (anchor == L"roll")
+			m_AnchorType = ROLL;
 		else
 			m_AnchorType = UPRIGHT;
 
 		m_InWorld = false;
 
-		m_YOffset = paramNode.GetChild("Altitude").ToFixed();
+		m_LastYOffset = m_YOffset = paramNode.GetChild("Altitude").ToFixed();
 		m_RelativeToGround = true;
 		m_Floating = paramNode.GetChild("Floating").ToBool();
 
 		m_RotYSpeed = paramNode.GetChild("TurnRate").ToFixed().ToFloat();
 
 		m_RotX = m_RotY = m_RotZ = entity_angle_t::FromInt(0);
-		m_InterpolatedRotY = 0;
+		m_InterpolatedRotX = m_InterpolatedRotY = m_InterpolatedRotZ = 0.f;
+		m_LastInterpolatedRotX = m_LastInterpolatedRotZ = 0.f;
+
+		m_NeedInitialXZRotation = false;
 	}
 
 	virtual void Deinit()
@@ -138,8 +151,6 @@ public:
 			serialize.NumberFixed_Unbounded("z", m_Z);
 			serialize.NumberFixed_Unbounded("last x", m_LastX);
 			serialize.NumberFixed_Unbounded("last z", m_LastZ);
-			// TODO: for efficiency, we probably shouldn't actually store the last position - it doesn't
-			// matter if we don't have smooth interpolation after reloading a game
 		}
 		serialize.NumberFixed_Unbounded("rot x", m_RotX);
 		serialize.NumberFixed_Unbounded("rot y", m_RotY);
@@ -152,9 +163,22 @@ public:
 			const char* anchor = "???";
 			switch (m_AnchorType)
 			{
-			case UPRIGHT: anchor = "upright"; break;
-			case PITCH: anchor = "pitch"; break;
-			case PITCH_ROLL: anchor = "pitch-roll"; break;
+			case PITCH: 
+				anchor = "pitch"; 
+				break;
+
+			case PITCH_ROLL: 
+				anchor = "pitch-roll"; 
+				break;
+			
+			case ROLL:
+				anchor = "roll";
+				break;
+
+			case UPRIGHT: // upright is the default
+			default: 
+				anchor = "upright"; 
+				break;
 			}
 			serialize.StringASCII("anchor", anchor, 0, 16);
 			serialize.Bool("floating", m_Floating);
@@ -181,6 +205,10 @@ public:
 		// TODO: should there be range checks on all these values?
 
 		m_InterpolatedRotY = m_RotY.ToFloat();
+		m_LastYOffset = m_YOffset;
+
+		if (m_InWorld)
+			UpdateXZRotation();
 	}
 
 	virtual bool IsInWorld()
@@ -205,6 +233,7 @@ public:
 			m_InWorld = true;
 			m_LastX = m_PrevX = m_X;
 			m_LastZ = m_PrevZ = m_Z;
+			m_LastYOffset = m_YOffset;
 		}
 
 		AdvertisePositionChanges();
@@ -216,13 +245,26 @@ public:
 		m_LastZ = m_PrevZ = m_Z = z;
 		m_InWorld = true;
 
+		UpdateXZRotation();
+
+		m_LastInterpolatedRotX = m_InterpolatedRotX;
+		m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+
 		AdvertisePositionChanges();
 	}
 
 	virtual void SetHeightOffset(entity_pos_t dy)
 	{
-		m_YOffset = dy;
-		m_RelativeToGround = true;
+		if (m_RelativeToGround)
+		{
+			m_LastYOffset = m_YOffset;
+			m_YOffset = dy;
+		}
+		else 
+		{
+			m_LastYOffset = m_YOffset = dy;
+			m_RelativeToGround = true;
+		}
 
 		AdvertisePositionChanges();
 	}
@@ -234,8 +276,16 @@ public:
 
 	virtual void SetHeightFixed(entity_pos_t y)
 	{
-		m_YOffset = y;
-		m_RelativeToGround = false;
+		if (m_RelativeToGround)
+		{
+			m_LastYOffset = m_YOffset = y;
+			m_RelativeToGround = false;
+		}
+		else
+		{
+			m_LastYOffset = m_YOffset;
+			m_YOffset = y;	
+		}
 	}
 
 	virtual bool IsFloating()
@@ -329,6 +379,14 @@ public:
 		m_RotY = y;
 		m_InterpolatedRotY = m_RotY.ToFloat();
 
+		if (m_InWorld)
+		{
+			UpdateXZRotation();
+
+			m_LastInterpolatedRotX = m_InterpolatedRotX;
+			m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+		}
+
 		AdvertisePositionChanges();
 	}
 
@@ -336,6 +394,14 @@ public:
 	{
 		m_RotX = x;
 		m_RotZ = z;
+
+		if (m_InWorld)
+		{
+			UpdateXZRotation();
+
+			m_LastInterpolatedRotX = m_InterpolatedRotX;
+			m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+		}
 
 		AdvertisePositionChanges();
 	}
@@ -398,13 +464,15 @@ public:
 			}
 		}
 
-		float y = baseY + m_YOffset.ToFloat();
+		float y = baseY + Interpolate(m_LastYOffset.ToFloat(), m_YOffset.ToFloat(), frameOffset);
 
-		// TODO: do something with m_AnchorType
-
-        CMatrix3D m;
-		m.SetXRotation(m_RotX.ToFloat());
-		m.RotateZ(m_RotZ.ToFloat());
+		CMatrix3D m;
+		
+		// linear interpolation is good enough (for RotX/Z). 
+		// As you always stay close to zero angle.	
+		m.SetXRotation(Interpolate(m_LastInterpolatedRotX, m_InterpolatedRotX, frameOffset));
+		m.RotateZ(Interpolate(m_LastInterpolatedRotZ, m_InterpolatedRotZ, frameOffset));
+	
 		m.RotateY(rotY + (float)M_PI);
 		m.Translate(CVector3D(x, y, z));
 		
@@ -420,32 +488,61 @@ public:
 			const CMessageInterpolate& msgData = static_cast<const CMessageInterpolate&> (msg);
 
 			float rotY = m_RotY.ToFloat();
-			float delta = rotY - m_InterpolatedRotY;
-			// Wrap delta to -M_PI..M_PI
-			delta = fmodf(delta + (float)M_PI, 2*(float)M_PI); // range -2PI..2PI
-			if (delta < 0) delta += 2*(float)M_PI; // range 0..2PI
-			delta -= (float)M_PI; // range -M_PI..M_PI
-			// Clamp to max rate
-			float deltaClamped = clamp(delta, -m_RotYSpeed*msgData.deltaSimTime, +m_RotYSpeed*msgData.deltaSimTime);
-			// Calculate new orientation, in a peculiar way in order to make sure the
-			// result gets close to m_orientation (rather than being n*2*M_PI out)
-			m_InterpolatedRotY = rotY + deltaClamped - delta;
+
+			if (rotY != m_InterpolatedRotY)
+			{
+				float delta = rotY - m_InterpolatedRotY;
+				// Wrap delta to -M_PI..M_PI
+				delta = fmodf(delta + (float)M_PI, 2*(float)M_PI); // range -2PI..2PI
+				if (delta < 0) delta += 2*(float)M_PI; // range 0..2PI
+				delta -= (float)M_PI; // range -M_PI..M_PI
+				// Clamp to max rate
+				float deltaClamped = clamp(delta, -m_RotYSpeed*msgData.deltaSimTime, +m_RotYSpeed*msgData.deltaSimTime);
+				// Calculate new orientation, in a peculiar way in order to make sure the
+				// result gets close to m_orientation (rather than being n*2*M_PI out)
+				m_InterpolatedRotY = rotY + deltaClamped - delta;
+				
+				// update the visual XZ rotation
+				if (m_InWorld)
+				{
+					m_LastInterpolatedRotX = m_InterpolatedRotX;
+					m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+
+					UpdateXZRotation();
+				}
+			}
+			
+			if (m_InWorld && m_NeedInitialXZRotation)
+			{
+				// the terrain probably wasn't loaded last time we tried, so update the XZ rotation without interpolation
+				UpdateXZRotation();
+
+				m_LastInterpolatedRotX = m_InterpolatedRotX;
+				m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+			}
 
 			break;
 		}
 		case MT_TurnStart:
 		{
+			m_LastInterpolatedRotX = m_InterpolatedRotX;
+			m_LastInterpolatedRotZ = m_InterpolatedRotZ;
+
+			if (m_InWorld && (m_LastX != m_X || m_LastZ != m_Z))
+				UpdateXZRotation();
+
 			// Store the positions from the turn before
 			m_PrevX = m_LastX;
 			m_PrevZ = m_LastZ;
-			
+
 			m_LastX = m_X;
 			m_LastZ = m_Z;
+			m_LastYOffset = m_YOffset;
 
 			break;
 		}
-		}
 	}
+};
 
 private:
 	void AdvertisePositionChanges()
@@ -460,6 +557,52 @@ private:
 			CMessagePositionChanged msg(GetEntityId(), false, entity_pos_t::Zero(), entity_pos_t::Zero(), entity_angle_t::Zero());
 			GetSimContext().GetComponentManager().PostMessage(GetEntityId(), msg);
 		}
+	}
+
+	void UpdateXZRotation()
+	{
+		if (!m_InWorld)
+		{
+			LOGERROR(L"CCmpPosition::UpdateXZRotation called on entity when IsInWorld is false");
+			return;
+		}
+
+		if (m_AnchorType == UPRIGHT || !m_RotZ.IsZero() || !m_RotX.IsZero())
+		{
+			// set the visual rotations to the ones fixed by the interface
+			m_InterpolatedRotX = m_RotX.ToFloat();
+			m_InterpolatedRotZ = m_RotZ.ToFloat();
+			return;
+		}
+
+		CmpPtr<ICmpTerrain> cmpTerrain(GetSimContext(), SYSTEM_ENTITY);
+		if (!cmpTerrain || !cmpTerrain->IsLoaded())
+		{
+			// try again when terrain is loaded
+			m_NeedInitialXZRotation = true;
+			return;
+		}
+
+		// TODO: average normal (average all the tiles?) for big units or for buildings?
+		CVector3D normal = cmpTerrain->CalcExactNormal(m_X.ToFloat(), m_Z.ToFloat());
+
+		// rotate the normal so the positive x direction is in the direction of the unit
+		CVector2D projected = CVector2D(normal.X, normal.Z);
+		projected.Rotate(m_InterpolatedRotY);
+
+		normal.X = projected.X;
+		normal.Z = projected.Y;
+
+		// project and calculate the angles
+		if (m_AnchorType == PITCH || m_AnchorType == PITCH_ROLL)
+			m_InterpolatedRotX = -atan2(normal.Z, normal.Y);
+
+		if (m_AnchorType == ROLL || m_AnchorType == PITCH_ROLL)
+			m_InterpolatedRotZ = atan2(normal.X, normal.Y);
+
+		m_NeedInitialXZRotation = false;
+		
+		return;
 	}
 };
 

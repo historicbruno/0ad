@@ -22,13 +22,12 @@
   </Cost>
   <Health>
     <Max>600</Max>
-    <RegenRate>0.5</RegenRate>
   </Health>
   <Identity>
     <Civ>maur</Civ>
     <Classes datatype="tokens">Hero Organic</Classes>
 	<GenericName>Acharya Chanakya</GenericName>
-    <SpecificName>Acharya Chanakya</SpecificName>
+    <SpecificName>Acharya Chāṇakya</SpecificName>
     <Icon>units/maur_hero_chanakya.png</Icon>
 	<Tooltip>Hero Healer.
 Hero Special: "Teacher." TBD.</Tooltip>

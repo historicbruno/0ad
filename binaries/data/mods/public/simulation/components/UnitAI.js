@@ -367,7 +367,7 @@ var UnitFsmSpec = {
 		this.order.data.attackType = type;
 
 		// If we are already at the target, try attacking it from here
-		if (this.CheckTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
+		if (this.CheckTargetAttackRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 		{
 			this.StopMoving();
 			// For packable units within attack range:
@@ -390,10 +390,21 @@ var UnitFsmSpec = {
 				return;
 			}
 
-			if (this.IsAnimal())
-				this.SetNextState("ANIMAL.COMBAT.ATTACKING");
+			
+			if (this.order.data.attackType == this.oldAttackType)
+			{
+				if (this.IsAnimal())
+					this.SetNextState("ANIMAL.COMBAT.ATTACKING");
+				else
+					this.SetNextState("INDIVIDUAL.COMBAT.ATTACKING");
+			}
 			else
-				this.SetNextState("INDIVIDUAL.COMBAT.ATTACKING");
+			{
+				if (this.IsAnimal())
+					this.SetNextStateAlwaysEntering("ANIMAL.COMBAT.ATTACKING");
+				else
+					this.SetNextStateAlwaysEntering("INDIVIDUAL.COMBAT.ATTACKING");
+			}
 			return;
 		}
 
@@ -428,7 +439,7 @@ var UnitFsmSpec = {
 		}
 
 		// Try to move within attack range
-		if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
+		if (this.MoveToTargetAttackRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 		{
 			// We've started walking to the given point
 			if (this.IsAnimal())
@@ -1315,11 +1326,27 @@ var UnitFsmSpec = {
 				},
 
 				"MoveCompleted": function() {
-					// If the unit needs to unpack, do so
-					if (this.CanUnpack())
-						this.SetNextState("UNPACKING");
-					else
-						this.SetNextState("ATTACKING");
+
+					if (this.CheckTargetAttackRange(this.order.data.target, IID_Attack , this.order.data.attackType)) 
+					{
+						// If the unit needs to unpack, do so
+						if (this.CanUnpack())
+							this.SetNextState("UNPACKING");
+						else
+							this.SetNextState("ATTACKING");
+					} 
+					else 
+					{
+						if (this.MoveToTargetAttackRange(this.order.data.target, IID_Attack, this.order.data.attackType))
+						{
+							this.SetNextState("APPROACHING");
+						}
+						else
+						{
+							// Give up
+							this.FinishOrder();
+						}
+					}
 				},
 
 				"Attacked": function(msg) {
@@ -1335,9 +1362,9 @@ var UnitFsmSpec = {
 			"UNPACKING": {
 				"enter": function() {
 					// If we're not in range yet (maybe we stopped moving), move to target again
-					if (!this.CheckTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
+					if (!this.CheckTargetAttackRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 					{
-						if (this.MoveToTargetRange(this.order.data.target, IID_Attack, this.order.data.attackType))
+						if (this.MoveToTargetAttackRange(this.order.data.target, IID_Attack, this.order.data.attackType))
 							this.SetNextState("APPROACHING");
 						else
 						{
@@ -1403,7 +1430,7 @@ var UnitFsmSpec = {
 					if (this.TargetIsAlive(target) && this.CanAttack(target, this.order.data.forceResponse || null))
 					{
 						// Check we can still reach the target
-						if (this.CheckTargetRange(target, IID_Attack, this.order.data.attackType))
+						if (this.CheckTargetAttackRange(target, IID_Attack, this.order.data.attackType))
 						{
 							var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 							this.lastAttacked = cmpTimer.GetTime() - msg.lateness;
@@ -1431,12 +1458,13 @@ var UnitFsmSpec = {
 						}
 					}
 
+					this.oldAttackType = this.order.data.attackType;
 					// Can't reach it, no longer owned by enemy, or it doesn't exist any more - give up
 					// Except if in WalkAndFight mode where we look for more ennemies around before moving again
 					if (this.FinishOrder())
 					{
 						if (this.orderQueue.length > 0 && this.orderQueue[0].type == "WalkAndFight")
-	    						this.FindNewTargets();
+							this.FindNewTargets();
 						return;
 					}
 
@@ -1444,7 +1472,8 @@ var UnitFsmSpec = {
 					if (this.FindNewTargets())
 					{
 						// Attempt to immediately re-enter the timer function, to avoid wasting the attack.
-						this.TimerHandler(msg.data, msg.lateness);
+						if (this.orderQueue.length > 0 && this.orderQueue[0].data.attackType == this.oldAttackType)
+							this.TimerHandler(msg.data, msg.lateness);
 						return;
 					}
 
@@ -1512,7 +1541,7 @@ var UnitFsmSpec = {
 			"APPROACHING": {
 				"enter": function() {
 					this.SelectAnimation("move");
-					
+
 					this.gatheringTarget = this.order.data.target;	// temporary, deleted in "leave".
 
 					// check that we can gather from the resource we're supposed to gather from.
@@ -1658,16 +1687,20 @@ var UnitFsmSpec = {
 				"enter": function() {
 					this.gatheringTarget = this.order.data.target;	// deleted in "leave".
 
-					if (this.gatheringTarget) {
+					// Check if the resource is full.
+					if (this.gatheringTarget)
+					{
 						// Check that we can gather from the resource we're supposed to gather from.
 						// Will only be added if we're not already in.
 						var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
 						if (!cmpSupply || !cmpSupply.AddGatherer(this.entity))
 						{
+							this.gatheringTarget = INVALID_ENTITY;
 							this.StartTimer(0);
 							return false;
 						}
 					}
+
 					// If this order was forced, the player probably gave it, but now we've reached the target
 					//	switch to an unforced order (can be interrupted by attacks)
 					this.order.data.force = false;
@@ -1687,7 +1720,7 @@ var UnitFsmSpec = {
 							this.StartTimer(0);
 							return false;
 						}
-						
+
 						// No rate, give up on gathering
 						this.FinishOrder();
 						return true;
@@ -1714,12 +1747,12 @@ var UnitFsmSpec = {
 
 				"leave": function() {
 					this.StopTimer();
-					
+
 					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
 					if (cmpSupply)
 						cmpSupply.RemoveGatherer(this.entity);
 					delete this.gatheringTarget;
-					
+
 					// Show the carried resource, if we've gathered anything.
 					this.SetGathererAnimationOverride();
 				},
@@ -1727,72 +1760,75 @@ var UnitFsmSpec = {
 				"Timer": function(msg) {
 					var resourceTemplate = this.order.data.template;
 					var resourceType = this.order.data.type;
-					
+
 					var cmpSupply = Engine.QueryInterface(this.gatheringTarget, IID_ResourceSupply);
-						
-					// Check we can still reach and gather from the target
-					if (this.CheckTargetRange(this.gatheringTarget, IID_ResourceGatherer) && this.CanGather(this.gatheringTarget) && cmpSupply && cmpSupply.IsAvailable(this.entity))
+
+					if (cmpSupply && cmpSupply.IsAvailable(this.entity))
 					{
-						// Gather the resources:
-
-						var cmpResourceGatherer = Engine.QueryInterface(this.entity, IID_ResourceGatherer);
-
-						// Try to gather treasure
-						if (cmpResourceGatherer.TryInstantGather(this.gatheringTarget))
-							return;
-						
-						// If we've already got some resources but they're the wrong type,
-						// drop them first to ensure we're only ever carrying one type
-						if (cmpResourceGatherer.IsCarryingAnythingExcept(resourceType.generic))
-							cmpResourceGatherer.DropResources();
-
-						// Collect from the target
-						var status = cmpResourceGatherer.PerformGather(this.gatheringTarget);
-
-						// If we've collected as many resources as possible,
-						// return to the nearest dropsite
-						if (status.filled)
+						// Check we can still reach and gather from the target
+						if (this.CheckTargetRange(this.gatheringTarget, IID_ResourceGatherer) && this.CanGather(this.gatheringTarget))
 						{
-							var nearby = this.FindNearestDropsite(resourceType.generic);
-							if (nearby)
+							// Gather the resources:
+
+							var cmpResourceGatherer = Engine.QueryInterface(this.entity, IID_ResourceGatherer);
+
+							// Try to gather treasure
+							if (cmpResourceGatherer.TryInstantGather(this.gatheringTarget))
+								return;
+
+							// If we've already got some resources but they're the wrong type,
+							// drop them first to ensure we're only ever carrying one type
+							if (cmpResourceGatherer.IsCarryingAnythingExcept(resourceType.generic))
+								cmpResourceGatherer.DropResources();
+
+							// Collect from the target
+							var status = cmpResourceGatherer.PerformGather(this.gatheringTarget);
+
+							// If we've collected as many resources as possible,
+							// return to the nearest dropsite
+							if (status.filled)
 							{
-								// (Keep this Gather order on the stack so we'll
-								// continue gathering after returning)
-								this.PushOrderFront("ReturnResource", { "target": nearby, "force": false });
+								var nearby = this.FindNearestDropsite(resourceType.generic);
+								if (nearby)
+								{
+									// (Keep this Gather order on the stack so we'll
+									// continue gathering after returning)
+									this.PushOrderFront("ReturnResource", { "target": nearby, "force": false });
+									return;
+								}
+
+								// Oh no, couldn't find any drop sites. Give up on gathering.
+								this.FinishOrder();
 								return;
 							}
 
-							// Oh no, couldn't find any drop sites. Give up on gathering.
-							this.FinishOrder();
-							return;
+							// We can gather more from this target, do so in the next timer
+							if (!status.exhausted)
+								return;
 						}
-
-						// We can gather more from this target, do so in the next timer
-						if (!status.exhausted)
-							return;
-					}
-					else if (cmpSupply && cmpSupply.IsAvailable(this.entity))
-					{
-						// Try to follow the target
-						if (this.MoveToTargetRange(this.gatheringTarget, IID_ResourceGatherer))
+						else
 						{
-							this.SetNextState("APPROACHING");
-							return;
-						}
+							// Try to follow the target
+							if (this.MoveToTargetRange(this.gatheringTarget, IID_ResourceGatherer))
+							{
+								this.SetNextState("APPROACHING");
+								return;
+							}
 
-						// Can't reach the target, or it doesn't exist any more
+							// Can't reach the target, or it doesn't exist any more
 
-						// We want to carry on gathering resources in the same area as
-						// the old one. So try to get close to the old resource's
-						// last known position
+							// We want to carry on gathering resources in the same area as
+							// the old one. So try to get close to the old resource's
+							// last known position
 
-						var maxRange = 8; // get close but not too close
-						if (this.order.data.lastPos &&
-							this.MoveToPointRange(this.order.data.lastPos.x, this.order.data.lastPos.z,
-								0, maxRange))
-						{
-							this.SetNextState("APPROACHING");
-							return;
+							var maxRange = 8; // get close but not too close
+							if (this.order.data.lastPos &&
+								this.MoveToPointRange(this.order.data.lastPos.x, this.order.data.lastPos.z,
+									0, maxRange))
+							{
+								this.SetNextState("APPROACHING");
+								return;
+							}
 						}
 					}
 
@@ -2269,7 +2305,7 @@ var UnitFsmSpec = {
 				var cmpDamageReceiver = Engine.QueryInterface(this.entity, IID_DamageReceiver);
 				cmpDamageReceiver.SetInvulnerability(true); 
 				this.SelectAnimation("promotion");
-				this.StartTimer(4000, 4000);
+				this.StartTimer(2800, 2800);
 				return false;
 			},
 
@@ -3282,6 +3318,53 @@ UnitAI.prototype.MoveToTargetRange = function(target, iid, type)
 	return cmpUnitMotion.MoveToTargetRange(target, range.min, range.max);
 };
 
+/**
+ * Move unit so we hope the target is in the attack range
+ * for melee attacks, this goes straight to the default range checks
+ * for ranged attacks, the parabolic range is used
+ */
+UnitAI.prototype.MoveToTargetAttackRange = function(target, iid, type)
+{
+
+	if(type!= "Ranged") 
+		return this.MoveToTargetRange(target, iid, type);
+	
+	if (!this.CheckTargetVisible(target)) 
+		return false;
+	
+	var cmpRanged = Engine.QueryInterface(this.entity, iid);
+	var range = cmpRanged.GetRange(type);
+
+	var thisCmpPosition = Engine.QueryInterface(this.entity, IID_Position);
+	var s = thisCmpPosition.GetPosition();
+
+	var targetCmpPosition = Engine.QueryInterface(target, IID_Position);
+	if(!targetCmpPosition.IsInWorld()) 
+		return false;   
+
+	var t = targetCmpPosition.GetPosition();
+	// h is positive when I'm higher than the target
+	var h = s.y-t.y+range.elevationBonus;
+
+	// No negative roots please
+	if(h>-range.max/2) 
+		var parabolicMaxRange = Math.sqrt(range.max*range.max+2*range.max*h);
+	else 
+		// return false? Or hope you come close enough?
+		var parabolicMaxRange = 0;
+		//return false;
+
+	// the parabole changes while walking, take something in the middle
+	var guessedMaxRange = (range.max + parabolicMaxRange)/2;
+
+	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
+	if (cmpUnitMotion.MoveToTargetRange(target, range.min, guessedMaxRange))
+		return true;
+
+	// if that failed, try closer
+	return cmpUnitMotion.MoveToTargetRange(target, range.min, Math.min(range.max, parabolicMaxRange));
+};
+
 UnitAI.prototype.MoveToTargetRangeExplicit = function(target, min, max)
 {
 	if (!this.CheckTargetVisible(target))
@@ -3304,6 +3387,43 @@ UnitAI.prototype.CheckTargetRange = function(target, iid, type)
 
 	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
 	return cmpUnitMotion.IsInTargetRange(target, range.min, range.max);
+};
+
+/**
+ * Check if the target is inside the attack range 
+ * For melee attacks, this goes straigt to the regular range calculation
+ * For ranged attacks, the parabolic formula is used to accout for bigger ranges
+ * when the target is lower, and smaller ranges when the target is higher
+ */ 
+UnitAI.prototype.CheckTargetAttackRange = function(target, iid, type)
+{
+
+	if (type != "Ranged") 
+		return this.CheckTargetRange(target,iid,type);
+	
+	var targetCmpPosition = Engine.QueryInterface(target, IID_Position);
+	if (!targetCmpPosition || !targetCmpPosition.IsInWorld()) 
+		return false; 
+
+	var cmpRanged = Engine.QueryInterface(this.entity, iid);
+	var range = cmpRanged.GetRange(type);
+
+	var thisCmpPosition = Engine.QueryInterface(this.entity, IID_Position);
+	var s = thisCmpPosition.GetPosition();
+
+	var t = targetCmpPosition.GetPosition();
+
+	var h = s.y-t.y+range.elevationBonus;
+	var maxRangeSq = 2*range.max*(h + range.max/2);
+
+	if (maxRangeSq < 0)
+		return false;
+
+	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
+	return cmpUnitMotion.IsInTargetRange(target, range.min, Math.sqrt(maxRangeSq));
+
+	return maxRangeSq >= distanceSq && range.min*range.min <= distanceSq;
+
 };
 
 UnitAI.prototype.CheckTargetRangeExplicit = function(target, min, max)

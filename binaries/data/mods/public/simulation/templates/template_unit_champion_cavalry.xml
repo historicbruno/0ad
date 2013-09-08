@@ -22,7 +22,7 @@
     <Population>1</Population>
     <BuildTime>15</BuildTime>
     <Resources>
-      <food>100</food>
+      <food>80</food>
       <wood>0</wood>
       <stone>0</stone>
       <metal>0</metal>
@@ -42,6 +42,9 @@
   <Obstruction>
     <Unit radius="1.0"/>
   </Obstruction>
+  <Position>
+    <Anchor>pitch</Anchor>
+  </Position>
   <Selectable>
     <Overlay>
       <Texture>

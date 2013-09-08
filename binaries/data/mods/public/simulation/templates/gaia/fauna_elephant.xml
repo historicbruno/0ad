@@ -6,7 +6,6 @@
   </Footprint>
   <Health>
     <Max>200</Max>
-    <RegenRate>1</RegenRate>
   </Health>
   <Identity>
     <Civ>gaia</Civ>
@@ -14,6 +13,9 @@
     <SpecificName>Elephant</SpecificName>
     <Icon>gaia/fauna_elephant.png</Icon>
   </Identity>
+  <Position>
+    <Anchor>pitch</Anchor>
+  </Position>
   <Sound>
     <SoundGroups>
       <select>actor/fauna/animal/elephant_select.xml</select>

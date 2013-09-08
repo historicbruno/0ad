@@ -121,7 +121,23 @@ function updateBuildingPlacementPreview()
 			// Show placement info tooltip if invalid position
 			placementSupport.tooltipError = !result.success;
 			placementSupport.tooltipMessage = result.success ? "" : result.message;
-			return result.success;
+
+			if (!result.success)
+				return false;
+
+			if (placementSupport.attack)
+			{
+				// building can be placed here, and has an attack
+				// show the range advantage in the tooltip
+				var cmd = {x: placementSupport.position.x, 
+				    z: placementSupport.position.z,
+				    range: placementSupport.attack.maxRange,
+				    elevationBonus: placementSupport.attack.elevationBonus,
+				};
+				var averageRange = Engine.GuiInterfaceCall("GetAverageRangeForBuildings",cmd);
+				placementSupport.tooltipMessage = "Basic range: "+Math.round(cmd.range/4)+"\nAverage bonus range: "+Math.round((averageRange - cmd.range)/4);
+			}
+			return true;
 		}
 	}
 	else if (placementSupport.mode === "wall")
@@ -271,17 +287,17 @@ function getActionInfo(action, target)
 
 			var traderData = { "firstMarket": entState.id, "secondMarket": targetState.id, "template": trader };
 			var gain = Engine.GuiInterfaceCall("GetTradingRouteGain", traderData);
-			if (gain !== null)
+			if (gain && gain.traderGain)
 			{
 				data.command = "trade";
 				data.target = traderData.secondMarket;
 				data.source = traderData.firstMarket;
 				cursor = "action-setup-trade-route";
-				tooltip = "Click to establish a default route for new traders.";
+				tooltip = "Right-click to establish a default route for new traders.";
 				if (trader)
-					tooltip += " Gain: " + gain + " metal.";
+					tooltip += "\nGain (metal): " + getTradingTooltip(gain);
 				else // Foundation or cannot produce traders
-					tooltip += " Expected gain: " + gain + " metal.";
+					tooltip += "\nExpected gain (metal): " + getTradingTooltip(gain);
 			}
 		}
 
@@ -348,18 +364,18 @@ function getActionInfo(action, target)
 				case "is first":
 					tooltip = "Origin trade market.";
 					if (tradingDetails.hasBothMarkets)
-						tooltip += " Gain: " + tradingDetails.gain + " " + tradingDetails.goods + ". Right-click to create a new trade route."
+						tooltip += "\nGain (" + tradingDetails.goods + "): " + getTradingTooltip(tradingDetails.gain);
 					else
-						tooltip += " Right-click on another market to set it as a destination trade market."
+						tooltip += "\nRight-click on another market to set it as a destination trade market."
 					break;
 				case "is second":
-					tooltip = "Destination trade market. Gain: " + tradingDetails.gain + " " + tradingDetails.goods + "." + " Right-click to create a new trade route.";
+					tooltip = "Destination trade market.\nGain (" + tradingDetails.goods + "): " + getTradingTooltip(tradingDetails.gain);
 					break;
 				case "set first":
-					tooltip = "Set as origin trade market";
+					tooltip = "Right-click to set as origin trade market";
 					break;
 				case "set second":
-					tooltip = "Set as destination trade market. Gain: " + tradingDetails.gain + " " + tradingDetails.goods + ".";
+					tooltip = "Right-click to set as destination trade market.\nGain (" + tradingDetails.goods + "): " + getTradingTooltip(tradingDetails.gain);
 					break;
 				}
 				return {"possible": true, "tooltip": tooltip};
@@ -1493,6 +1509,14 @@ function startBuildingPlacement(buildTemplate, playerState)
 		placementSupport.mode = "building";
 		placementSupport.template = buildTemplate;
 		inputState = INPUT_BUILDING_PLACEMENT;
+	}
+
+	if (templateData.attack && 
+	    templateData.attack.Ranged && 
+	    templateData.attack.Ranged.maxRange) 
+	{
+		// add attack information to display a good tooltip
+		placementSupport.attack = templateData.attack.Ranged;
 	}
 }
 

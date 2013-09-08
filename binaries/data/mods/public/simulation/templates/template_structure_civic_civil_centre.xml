@@ -14,7 +14,7 @@
     </Ranged>
   </Attack>
   <BuildingAI>
-    <DefaultArrowCount>1</DefaultArrowCount>
+    <DefaultArrowCount>3</DefaultArrowCount>
     <GarrisonArrowMultiplier>1</GarrisonArrowMultiplier>
   </BuildingAI>
   <BuildRestrictions>
@@ -42,6 +42,7 @@
   <GarrisonHolder>
     <Max>20</Max>
     <EjectHealth>0.1</EjectHealth>
+    <EjectEntitiesOnDestroy>true</EjectEntitiesOnDestroy>
     <List datatype="tokens">Support Infantry Cavalry</List>
     <BuffHeal>1</BuffHeal>
     <LoadingRange>2</LoadingRange>
@@ -77,7 +78,7 @@
       units/{civ}_support_female_citizen
     </Entities>
     <Technologies datatype="tokens">
-      phase_town
+      phase_town_generic
       phase_city_generic
     </Technologies>
   </ProductionQueue>

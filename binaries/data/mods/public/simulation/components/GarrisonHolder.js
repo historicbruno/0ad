@@ -12,7 +12,10 @@ GarrisonHolder.prototype.Schema =
 	"</element>" +
 	"<element name='EjectHealth' a:help='Percentage of maximum health below which this holder no longer allows garrisoning'>" +
 		"<ref name='nonNegativeDecimal'/>" +
-	"</element>" + 
+	"</element>" +
+	"<element name='EjectEntitiesOnDestroy' a:help='Whether the entity should eject or kill all garrisoned entities on destroy'>" +
+		"<data type='boolean'/>" +
+	"</element>" +
 	"<element name='BuffHeal' a:help='Number of hit points that will be restored to this holder&apos;s garrisoned units each second'>" +
 		"<ref name='nonNegativeDecimal'/>" +
 	"</element>" +
@@ -29,6 +32,7 @@ GarrisonHolder.prototype.Init = function()
 	this.entities = [];
 	this.spaceOccupied = 0;
 	this.timer = undefined;
+	this.allowGarrisoning = {};
 };
 
 /**
@@ -54,8 +58,8 @@ GarrisonHolder.prototype.GetEntities = function()
  */
 GarrisonHolder.prototype.GetAllowedClassesList = function()
 {
-	var string = this.template.List._string || "";
-	return string.split(/\s+/);
+	var classes = this.template.List._string;
+	return classes ? classes.split(/\s+/) : [];
 };
 
 /**
@@ -74,18 +78,54 @@ GarrisonHolder.prototype.GetHealRate = function()
 	return ApplyTechModificationsToEntity("GarrisonHolder/BuffHeal", +this.template.BuffHeal, this.entity);
 };
 
+GarrisonHolder.prototype.EjectEntitiesOnDestroy = function()
+{
+	if (this.template.EjectEntitiesOnDestroy == "true")
+		return true;
+	return false;
+};
+
+/**
+ * Set this entity to allow or disallow garrisoning in
+ * Every component calling this function should do it with its own ID, and as long as one
+ * component doesn't allow this entity to garrison, it can't be garrisoned
+ * When this entity already contains garrisoned soldiers, 
+ * these will not be able to ungarrison until the flag is set to true again.
+ *
+ * This more useful for modern-day features. For example you can't garrison or ungarrison
+ * a driving vehicle or plane.
+ */
+GarrisonHolder.prototype.AllowGarrisoning = function(allow, callerID)
+{
+	this.allowGarrisoning[callerID] = allow;
+};
+
+/**
+ * Check if no component of this entity blocks garrisoning 
+ * (f.e. because the vehicle is moving too fast)
+ */
+GarrisonHolder.prototype.IsGarrisoningAllowed = function()
+{
+	for each (var allow in this.allowGarrisoning)
+	{
+		if (!allow)
+			return false;
+	}
+	return true;
+};
+
 /**
  * Get number of garrisoned units capable of shooting arrows
  * Not necessarily archers
  */
-GarrisonHolder.prototype.GetGarrisonedArcherCount = function()
+GarrisonHolder.prototype.GetGarrisonedArcherCount = function(garrisonArrowClasses)
 {
 	var count = 0;
 	for each (var entity in this.entities)
 	{
 		var cmpIdentity = Engine.QueryInterface(entity, IID_Identity);
 		var classes = cmpIdentity.GetClassesList();
-		if (classes.indexOf("Infantry") != -1 || classes.indexOf("Ranged") != -1)
+		if (classes.some(function(c){return garrisonArrowClasses.indexOf(c) > -1;}))
 			count++;
 	}
 	return count;
@@ -97,6 +137,9 @@ GarrisonHolder.prototype.GetGarrisonedArcherCount = function()
  */
 GarrisonHolder.prototype.AllowedToGarrison = function(entity)
 {
+	if (!this.IsGarrisoningAllowed())
+		return false;
+
 	var allowedClasses = this.GetAllowedClassesList();
 	var entityClasses = (Engine.QueryInterface(entity, IID_Identity)).GetClassesList();
 	// Check if the unit is allowed to be garrisoned inside the building
@@ -157,11 +200,11 @@ GarrisonHolder.prototype.Garrison = function(entity)
  */
 GarrisonHolder.prototype.Eject = function(entity, forced)
 {
+
 	var entityIndex = this.entities.indexOf(entity);
+	// Error: invalid entity ID, usually it's already been ejected
 	if (entityIndex == -1)
-	{	// Error: invalid entity ID, usually it's already been ejected
 		return false; // Fail
-	}
 	
 	// Find spawning location
 	var cmpFootprint = Engine.QueryInterface(this.entity, IID_Footprint);
@@ -227,6 +270,9 @@ GarrisonHolder.prototype.OrderWalkToRallyPoint = function(entities)
  */
 GarrisonHolder.prototype.PerformEject = function(entities, forced)
 {
+	if (!this.IsGarrisoningAllowed() && !forced)
+		return false;
+
 	var ejectedEntities = [];
 	var success = true;
 	for each (var entity in entities)
@@ -337,15 +383,12 @@ GarrisonHolder.prototype.OnHealthChanged = function(msg)
 {
 	if (!this.HasEnoughHealth())
 	{
-		// We have to be careful of our passability
-		//	ships: not land passable, so assume units have drowned in a shipwreck
-		//  building: land passable, so units can be ejected freely
-		var classes = (Engine.QueryInterface(this.entity, IID_Identity)).GetClassesList();
 		var cmpPosition = Engine.QueryInterface(this.entity, IID_Position);
 
-		// Destroy the garrisoned units if the holder is a ship or is not in the
-		// world (generally means this holder is inside a ship which has sunk).
-		if (classes.indexOf("Ship") != -1 || !cmpPosition.IsInWorld())
+		// Destroy the garrisoned units if the holder kill his entities on destroy or
+		// is not in the world (generally means this holder is inside 
+		// a holder which kills its entities which has sunk).
+		if (!this.EjectEntitiesOnDestroy() || !cmpPosition.IsInWorld())
 		{
 			for each (var entity in this.entities)
 			{

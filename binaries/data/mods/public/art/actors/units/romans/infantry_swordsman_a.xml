@@ -42,7 +42,7 @@
         <animation file="infantry/general/death/inf_04.psa" name="Death" speed="400"/>
         <animation file="infantry/general/death/inf_06.psa" name="Death" speed="500"/>
         <animation file="infantry/general/death/inf_07.psa" name="Death" speed="400"/>
-        <animation file="biped/inf_salute_c.psa" name="Promotion" speed="288"/>
+        <animation file="biped/inf_salute_c.psa" name="Promotion" speed="450"/>
       </animations>
       <mesh>skeletal/m_tunic_short.dae</mesh>
       <props>
@@ -56,13 +56,19 @@
   </group>
   <group>
     <variant frequency="1" name="pectoral--plain">
-      <textures><texture file="skeletal/rome_isw_b.dds" name="baseTex"/></textures>
+      <textures>
+        <texture file="skeletal/rome_isw_b.dds" name="baseTex"/>
+      </textures>
     </variant>
     <variant frequency="1" name="pectoral--muscle">
-      <textures><texture file="skeletal/rome_isw_b_2.dds" name="baseTex"/></textures>
+      <textures>
+        <texture file="skeletal/rome_isw_b_2.dds" name="baseTex"/>
+      </textures>
     </variant>
     <variant frequency="1" name="pectoral">
-      <textures><texture file="skeletal/rome_isw_b_3.dds" name="baseTex"/></textures>
+      <textures>
+        <texture file="skeletal/rome_isw_b_3.dds" name="baseTex"/>
+      </textures>
     </variant>
   </group>
   <group>
@@ -87,6 +93,7 @@
       <props>
         <prop actor="props/units/tools/basket.xml" attachpoint="l_leg"/>
         <prop attachpoint="r_hand"/>
+        <prop attachpoint="l_hand"/>
         <prop attachpoint="shield"/>
         <prop attachpoint="helmet"/>
       </props>
@@ -95,6 +102,7 @@
       <props>
         <prop attachpoint="helmet"/>
         <prop attachpoint="r_hand"/>
+        <prop attachpoint="l_hand"/>
         <prop attachpoint="shield"/>
         <prop actor="props/units/tools/basket.xml" attachpoint="l_leg"/>
       </props>

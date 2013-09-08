@@ -26,7 +26,7 @@ rootdir = "../.."
 
 dofile("extern_libs4.lua")
 
--- detect CPU architecture (simplistic, currently only supports x86 and amd64)
+-- detect CPU architecture (simplistic, currently only supports x86, amd64 and ARM)
 arch = "x86"
 if _OPTIONS["android"] then
 	arch = "arm"
@@ -47,6 +47,8 @@ else
 			arch = "amd64"
 		elseif string.find(machine, "i.86") == 1 then
 			arch = "x86"
+		elseif string.find(machine, "arm") == 1 then
+			arch = "arm"
 		else
 			print("WARNING: Cannot determine architecture from GCC, assuming x86")
 		end
@@ -175,6 +177,12 @@ function project_set_build_flags()
 		-- use native wchar_t type (not typedef to unsigned short)
 		flags { "NativeWChar" }
 
+		-- VC++ 2008 has implied FPO as the default (newer versions default to /Oy-)
+		-- disable it explicitly since it breaks our stack walker in release build
+		if _ACTION == "vs2008" then
+			buildoptions { "/Oy-" }
+		end
+
 	else	-- *nix
 		if _OPTIONS["icc"] and not _OPTIONS["minimal-flags"] then
 			buildoptions {
@@ -262,9 +270,13 @@ function project_set_build_flags()
 			if arch == "arm" then
 				-- disable warnings about va_list ABI change
 				buildoptions { "-Wno-psabi" }
-
-				-- target Cortex-A9 CPUs with NEON
-				buildoptions { "-mthumb -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=softfp" }
+				if _OPTIONS["android"] then
+					-- target generic arm CPUs with NEON
+					buildoptions { "-mtune=generic-arm -mfpu=neon -mfloat-abi=softfp" }
+				else
+					-- target Cortex-A15 CPUs with NEON
+					buildoptions { "-mtune=cortex-a15 -mfpu=neon-vfpv4 -mfloat-abi=hard" }
+				end
 			end
 
 			if _OPTIONS["coverage"] then
@@ -1177,7 +1189,8 @@ function configure_cxxtestgen()
 		-- Don't include sysdep tests on the wrong sys
 		-- Don't include Atlas tests unless Atlas is being built
 		if not (string.find(v, "/sysdep/os/win/") and not os.is("windows")) and
-		   not (string.find(v, "/tools/atlas/") and not _OPTIONS["atlas"])
+		   not (string.find(v, "/tools/atlas/") and not _OPTIONS["atlas"]) and
+		   not (string.find(v, "/sysdep/arch/x86_x64/") and ((arch ~= "amd64") or (arch ~= "x86")))
 		then
 			local src_file = string.sub(v, 1, -3) .. ".cpp"
 			cxxtestsrcfiles { src_file }

@@ -17,7 +17,7 @@
     <Population>1</Population>
     <BuildTime>13</BuildTime>
     <Resources>
-      <food>100</food>
+      <food>80</food>
     </Resources>
   </Cost>
   <Footprint>
@@ -26,7 +26,6 @@
   </Footprint>
   <Health>
     <Max>130</Max>
-    <RegenRate>0.2</RegenRate>
   </Health>
   <Identity>
     <Classes datatype="tokens">Cavalry CitizenSoldier Organic</Classes>

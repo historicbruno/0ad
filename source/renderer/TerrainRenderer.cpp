@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 #include "graphics/Model.h"
 #include "graphics/ShaderManager.h"
 #include "renderer/ShadowMap.h"
+#include "renderer/SkyManager.h"
 #include "graphics/TerritoryTexture.h"
 #include "graphics/TextRenderer.h"
 
@@ -649,10 +650,10 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 	WaterManager* WaterMgr = g_Renderer.GetWaterManager();
 	CShaderDefines defines = context;
 	
-	WaterMgr->updateQuality();
+	WaterMgr->UpdateQuality();
 
 	// If we're using fancy water, make sure its shader is loaded
-	if (!m->fancyWaterShader || (WaterMgr->m_NeedsReloading && !g_AtlasGameLoop->running))
+	if (!m->fancyWaterShader || WaterMgr->m_NeedsReloading)
 	{
 		if(WaterMgr->m_WaterNormal)
 			defines.Add("USE_NORMALS","1");
@@ -689,18 +690,9 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			WaterMgr->m_RenderWater = false;
 			return false;
 		}
-		// we need to actually recompute the whole map settings.
-		if (WaterMgr->m_NeedsFullReloading)
-		{
-			WaterMgr->m_waveTT = 0;
-			WaterMgr->m_depthTT = 0;
-		}
 		WaterMgr->m_NeedsReloading = false;
 	}
 	
-	if (g_AtlasGameLoop->running)
-		WaterMgr->m_TerrainChangeThisTurn = false;
-		
 	CLOSTexture& losTexture = g_Renderer.GetScene().GetLOSTexture();
 
 	GLuint depthTex;
@@ -712,6 +704,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			glGenTextures(1, (GLuint*)&depthTex);
 			WaterMgr->m_depthTT = depthTex;
 			glBindTexture(GL_TEXTURE_2D, WaterMgr->m_depthTT);
+			// TODO: use POT texture
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, g_Renderer.GetWidth(), g_Renderer.GetHeight(),
 						 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE,NULL);
 		}
@@ -727,9 +720,9 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	// Calculating the advanced informations about Foam and all if the quality calls for it.
-	/*if (WaterMgr->m_NeedsFullReloading && (WaterMgr->m_WaterFoam || WaterMgr->m_WaterCoastalWaves))
+	/*if (WaterMgr->m_NeedInfoUpdate && (WaterMgr->m_WaterFoam || WaterMgr->m_WaterCoastalWaves))
 	{
-		WaterMgr->m_NeedsFullReloading = false;
+		WaterMgr->m_NeedInfoUpdate = false;
 		WaterMgr->CreateSuperfancyInfo();
 	}*/
 	
@@ -746,7 +739,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 	GLuint FramebufferName = 0;
 
 	// rendering waves to a framebuffer
-	if (WaterMgr->m_WaterCoastalWaves && !g_AtlasGameLoop->running)
+	if (WaterMgr->m_WaterCoastalWaves && WaterMgr->m_VBWaves && !g_AtlasGameLoop->running)
 	{
 		// Save the post-processing framebuffer.
 		GLint fbo;
@@ -762,9 +755,7 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 			WaterMgr->m_waveTT = renderedTexture;
 			
 			glBindTexture(GL_TEXTURE_2D, WaterMgr->m_waveTT);
-			int size = (int)round_up_to_pow2((unsigned)g_Renderer.GetHeight());
-			if(size > g_Renderer.GetHeight()) size /= 2;
-			
+			// TODO: use POT texture
 			glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, (float)g_Renderer.GetWidth(), (float)g_Renderer.GetHeight(), 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 		}
@@ -856,7 +847,8 @@ bool TerrainRenderer::RenderFancyWater(const CShaderDefines& context, ShadowMap*
 	m->fancyWaterShader->Uniform("fogParams", lightEnv.m_FogFactor, lightEnv.m_FogMax, 0.f, 0.f);
 	m->fancyWaterShader->Uniform("time", (float)time);
 	m->fancyWaterShader->Uniform("screenSize", (float)g_Renderer.GetWidth(), (float)g_Renderer.GetHeight(), 0.0f, 0.0f);
-	
+	m->fancyWaterShader->BindTexture("skyCube", g_Renderer.GetSkyManager()->GetSkyCube());
+
 	if (shadow && WaterMgr->m_WaterShadows)
 	{
 		m->fancyWaterShader->BindTexture("shadowTex", shadow->GetTexture());

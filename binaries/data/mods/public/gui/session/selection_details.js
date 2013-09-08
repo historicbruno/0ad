@@ -96,7 +96,8 @@ function displaySingle(entState, template)
 	// Resource stats
 	if (entState.resourceSupply)
 	{
-		var resources = Math.ceil(+entState.resourceSupply.amount) + " / " + entState.resourceSupply.max;
+		var resources = entState.resourceSupply.isInfinite ? "\u221E" :  // Infinity symbol
+						Math.ceil(+entState.resourceSupply.amount) + " / " + entState.resourceSupply.max;
 		var resourceType = entState.resourceSupply.type["generic"];
 		if (resourceType == "treasure")
 			resourceType = entState.resourceSupply.type["specific"];
@@ -104,7 +105,8 @@ function displaySingle(entState, template)
 		var unitResourceBar = getGUIObjectByName("resourceBar");
 		var resourceSize = unitResourceBar.size;
 
-		resourceSize.rright = 100 * Math.max(0, Math.min(1, +entState.resourceSupply.amount / +entState.resourceSupply.max));
+		resourceSize.rright = entState.resourceSupply.isInfinite ? 100 :
+						100 * Math.max(0, Math.min(1, +entState.resourceSupply.amount / +entState.resourceSupply.max));
 		unitResourceBar.size = resourceSize;
 		getGUIObjectByName("resourceLabel").caption = toTitleCase(resourceType) + ":";
 		getGUIObjectByName("resourceStats").caption = resources;
@@ -134,13 +136,18 @@ function displaySingle(entState, template)
 		getGUIObjectByName("resourceCarryingIcon").tooltip = "";
 	}
 	// Use the same indicators for traders
-	else if (entState.trader && entState.trader.goods.amount > 0)
+	else if (entState.trader && entState.trader.goods.amount)
 	{
 		getGUIObjectByName("resourceCarryingIcon").hidden = false;
 		getGUIObjectByName("resourceCarryingText").hidden = false;
 		getGUIObjectByName("resourceCarryingIcon").sprite = "stretched:session/icons/resources/"+entState.trader.goods.type+".png";
-		getGUIObjectByName("resourceCarryingText").caption = entState.trader.goods.amount;
-		getGUIObjectByName("resourceCarryingIcon").tooltip = "";
+		var totalGain = entState.trader.goods.amount.traderGain;
+		if (entState.trader.goods.amount.market1Gain)
+			totalGain += entState.trader.goods.amount.market1Gain;
+		if (entState.trader.goods.amount.market2Gain)
+			totalGain += entState.trader.goods.amount.market2Gain;
+		getGUIObjectByName("resourceCarryingText").caption = totalGain;
+		getGUIObjectByName("resourceCarryingIcon").tooltip = "Gain: " + getTradingTooltip(entState.trader.goods.amount);
 	}
 	// And for number of workers
 	else if (entState.foundation)
@@ -204,13 +211,31 @@ function displaySingle(entState, template)
 
 	// Attack and Armor
 	var type = "";
+	var attack = "[font=\"serif-bold-13\"]"+type+"Attack:[/font] " + damageTypeDetails(entState.attack);
 	if (entState.attack)
+	{
 		type = entState.attack.type + " ";
 
-	attack = "[font=\"serif-bold-13\"]"+type+"Attack:[/font] " + damageTypeDetails(entState.attack);
-	// Show max attack range if ranged attack, also convert to tiles (4m per tile)
-	if (entState.attack && entState.attack.type == "Ranged")
-		attack += ", [font=\"serif-bold-13\"]Range:[/font] " + Math.round(entState.attack.maxRange/4);
+		// Show max attack range if ranged attack, also convert to tiles (4m per tile)
+		if (entState.attack.type == "Ranged")
+		{
+			var realRange = entState.attack.elevationAdaptedRange;
+			var range =  entState.attack.maxRange;
+			attack += ", [font=\"serif-bold-13\"]Range:[/font] " + 
+				Math.round(range/4);
+
+			if (Math.round((realRange - range)/4) > 0)
+			{ 
+				attack += " (+" + Math.round((realRange - range)/4) + ")";
+			}
+			else if (Math.round((realRange - range)/4) < 0)
+			{
+				attack += " (" + Math.round((realRange - range)/4) + ")";
+			} // don't show when it's 0
+
+		}
+	}
+	
 	getGUIObjectByName("attackAndArmorStats").tooltip = attack + "\n[font=\"serif-bold-13\"]Armor:[/font] " + armorTypeDetails(entState.armour);
 
 	// Icon Tooltip

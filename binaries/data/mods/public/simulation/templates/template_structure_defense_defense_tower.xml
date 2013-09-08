@@ -5,8 +5,9 @@
       <Hack>0.0</Hack>
       <Pierce>20.0</Pierce>
       <Crush>0.0</Crush>
-      <MaxRange>70.0</MaxRange>
+      <MaxRange>57.0</MaxRange>
       <MinRange>16.0</MinRange>
+      <ElevationBonus>15</ElevationBonus>
       <ProjectileSpeed>75.0</ProjectileSpeed>
       <PrepareTime>1200</PrepareTime>
       <RepeatTime>2000</RepeatTime>
@@ -34,6 +35,7 @@
   <GarrisonHolder>
     <Max>5</Max>
     <EjectHealth>0.1</EjectHealth>
+    <EjectEntitiesOnDestroy>true</EjectEntitiesOnDestroy>
     <List datatype="tokens">Support Infantry</List>
     <BuffHeal>0</BuffHeal>
     <LoadingRange>2</LoadingRange>

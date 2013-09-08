@@ -60,6 +60,7 @@ function getPlayerData(playerAssignments)
 		    "color": color,
 		    "team": playerState.team,
 		    "teamsLocked": playerState.teamsLocked,
+		    "cheatsEnabled": playerState.cheatsEnabled,
 		    "state": playerState.state,
 		    "isAlly": playerState.isAlly,
 		    "isMutualAlly": playerState.isMutualAlly,
@@ -86,18 +87,6 @@ function getPlayerData(playerAssignments)
 	}
 
 	return players;
-}
-
-// Returns whether a player has physical allies.
-function hasAllies(playerID, playerData)
-{
-	if (playerData[playerID] && playerData[playerID].team != -1)
-	{
-		for (var i = 0; i < playerData.length; i++)
-			if (playerData[i].team == playerData[playerID].team)
-				return true;
-	}
-	return false;
 }
 
 function findGuidForPlayerID(playerAssignments, player)
@@ -546,4 +535,24 @@ function getRankIconSprite(entState)
 		return "stretched:session/icons/rank1.png";
 
 	return "";
+}
+
+/**
+ * Returns a message with the details of the trade gain.
+ */
+function getTradingTooltip(gain)
+{
+	var tooltip = gain.traderGain;
+	if (gain.market1Gain && gain.market1Owner == gain.traderOwner)
+		tooltip += "+" + gain.market1Gain;
+	if (gain.market2Gain && gain.market2Owner == gain.traderOwner)
+		tooltip += "+" + gain.market2Gain;
+	tooltip += " (you)";
+
+	if (gain.market1Gain && gain.market1Owner != gain.traderOwner)
+		tooltip += ", " + gain.market1Gain + " (player " + gain.market1Owner + ")";
+	if (gain.market2Gain && gain.market2Owner != gain.traderOwner)
+		tooltip += ", " + gain.market2Gain + " (player " + gain.market2Owner + ")";
+
+	return tooltip;
 }

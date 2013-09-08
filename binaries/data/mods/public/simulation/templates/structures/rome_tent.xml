@@ -16,6 +16,7 @@
   <GarrisonHolder>
     <Max>5</Max>
     <EjectHealth>0.1</EjectHealth>
+    <EjectEntitiesOnDestroy>true</EjectEntitiesOnDestroy>
     <List datatype="tokens">Support Infantry</List>
     <BuffHeal>0</BuffHeal>
     <LoadingRange>2</LoadingRange>
@@ -33,6 +34,15 @@
   <Obstruction>
     <Static width="8.0" depth="8.0"/>
   </Obstruction>
+  <ProductionQueue>
+    <BatchTimeModifier>1.0</BatchTimeModifier>
+    <Entities datatype="tokens">
+      -units/{civ}_support_female_citizen_house
+    </Entities>
+    <Technologies datatype="tokens">
+      -unlock_females_house
+    </Technologies>
+  </ProductionQueue>
   <Sound>
     <SoundGroups>
       <select>interface/select/building/sel_universal.xml</select>

@@ -64,6 +64,7 @@ AddMock(100, IID_Player, {
 	GetState: function() { return "active"; },
 	GetTeam: function() { return -1; },
 	GetLockTeams: function() { return false; },
+	GetCheatsEnabled: function() { return false; },
 	GetDiplomacy: function() { return [-1, 1]; },
 	GetConquestCriticalEntitiesCount: function() { return 1; },
 	IsAlly: function() { return false; },
@@ -119,6 +120,7 @@ AddMock(101, IID_Player, {
 	GetState: function() { return "active"; },
 	GetTeam: function() { return -1; },
 	GetLockTeams: function() {return false; },
+	GetCheatsEnabled: function() { return false; },
 	GetDiplomacy: function() { return [-1, 1]; },
 	GetConquestCriticalEntitiesCount: function() { return 1; },
 	IsAlly: function() { return true; },
@@ -217,6 +219,7 @@ TS_ASSERT_UNEVAL_EQUALS(cmp.GetSimulationState(), {
 			state: "active",
 			team: -1,
 			teamsLocked: false,
+			cheatsEnabled: false,
 			phase: "village",
 			isAlly: [false, false],
 			isMutualAlly: [false, false],
@@ -244,6 +247,7 @@ TS_ASSERT_UNEVAL_EQUALS(cmp.GetSimulationState(), {
 			state: "active",
 			team: -1,
 			teamsLocked: false,
+			cheatsEnabled: false,
 			phase: "village",
 			isAlly: [true, true],
 			isMutualAlly: [false, false],
@@ -278,6 +282,7 @@ TS_ASSERT_UNEVAL_EQUALS(cmp.GetExtendedSimulationState(), {
 			state: "active",
 			team: -1,
 			teamsLocked: false,
+			cheatsEnabled: false,
 			phase: "village",
 			isAlly: [false, false],
 			isMutualAlly: [false, false],
@@ -321,6 +326,7 @@ TS_ASSERT_UNEVAL_EQUALS(cmp.GetExtendedSimulationState(), {
 			state: "active",
 			team: -1,
 			teamsLocked: false,
+			cheatsEnabled: false,
 			phase: "village",
 			isAlly: [true, true],
 			isMutualAlly: [false, false],
@@ -381,6 +387,9 @@ AddMock(10, IID_Position, {
 	GetPosition: function() {
 		return {x:1, y:2, z:3};
 	},
+	GetRotation: function() {
+		return {x:4, y:5, z:6};
+	},
 	IsInWorld: function() {
 		return true;
 	},
@@ -398,6 +407,7 @@ TS_ASSERT_UNEVAL_EQUALS(cmp.GetEntityState(-1, 10), {
 		selectionGroupName: "Selection Group Name",
 	},
 	position: {x:1, y:2, z:3},
+	rotation: {x:4, y:5, z:6},
 	hitpoints: 50,
 	maxHitpoints: 60,
 	needsRepair: false,

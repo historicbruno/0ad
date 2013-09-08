@@ -9,10 +9,10 @@
     <Population>3</Population>
     <BuildTime>15</BuildTime>
     <Resources>
-      <food>200</food>
+      <food>150</food>
       <wood>0</wood>
       <stone>0</stone>
-      <metal>200</metal>
+      <metal>150</metal>
     </Resources>
   </Cost>
   <Footprint>
@@ -29,8 +29,11 @@
     <History>War elephants were used by many Eastern and African cultures.</History>
   </Identity>
   <Obstruction>
-    <Unit radius="4.0"/>
+    <Unit radius="3.0"/>
   </Obstruction>
+  <Position>
+    <Anchor>pitch</Anchor>
+  </Position>
   <Selectable>
     <Overlay>
       <Texture>

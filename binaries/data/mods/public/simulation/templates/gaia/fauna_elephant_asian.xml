@@ -39,7 +39,6 @@
   </Footprint>
   <Health>
     <Max>250</Max>
-    <RegenRate>1</RegenRate>
   </Health>
   <Identity>
     <Civ>gaia</Civ>
@@ -53,6 +52,9 @@
   <Obstruction>
     <Unit radius="2.7"/>
   </Obstruction>
+  <Position>
+    <Anchor>pitch</Anchor>
+  </Position>
   <ResourceSupply>
     <Amount>650</Amount>
     <Type>food.meat</Type>

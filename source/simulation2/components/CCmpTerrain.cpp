@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -25,6 +25,9 @@
 #include "simulation2/MessageTypes.h"
 
 #include "graphics/Terrain.h"
+#include "renderer/Renderer.h"
+#include "renderer/WaterManager.h"
+#include "maths/Vector3D.h"
 
 class CCmpTerrain : public ICmpTerrain
 {
@@ -70,6 +73,11 @@ public:
 		CFixedVector3D normal;
 		m_Terrain->CalcNormalFixed((x / (int)TERRAIN_TILE_SIZE).ToInt_RoundToZero(), (z / (int)TERRAIN_TILE_SIZE).ToInt_RoundToZero(), normal);
 		return normal;
+	}
+
+	virtual CVector3D CalcExactNormal(float x, float z)
+	{
+		return m_Terrain->CalcExactNormal(x, z);
 	}
 
 	virtual entity_pos_t GetGroundLevel(entity_pos_t x, entity_pos_t z)
@@ -126,6 +134,9 @@ public:
 					entity_pos_t::FromInt(tiles*(int)TERRAIN_TILE_SIZE),
 					vertices);
 		}
+		
+		if (CRenderer::IsInitialised())
+			g_Renderer.GetWaterManager()->SetMapSize(vertices);
 
 		MakeDirty(0, 0, tiles+1, tiles+1);
 	}
