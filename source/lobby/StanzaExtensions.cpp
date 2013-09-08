@@ -69,7 +69,7 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
 
-	m_IQBoardList = tag->findChildren( "query/board" );
+	m_IQBoardList = tag->findTagList( "query/board" );
 }
 
 BoardListQuery::~BoardListQuery()
@@ -89,9 +89,9 @@ gloox::Tag* BoardListQuery::tag() const
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::list<PlayerData*>::const_iterator it = m_IQBoardList.begin();
+	std::list<const PlayerData*>::const_iterator it = m_IQBoardList.begin();
 	for( ; it != m_IQBoardList.end(); ++it )
-		t->addChild( *it );
+		t->addChild( (*it)->clone() );
 
 	return t;
 }
@@ -103,7 +103,7 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 	return q;
 }
 
-std::list<PlayerData*> BoardListQuery::boardList() const
+std::list<const PlayerData*> BoardListQuery::boardList() const
 {
 	return m_IQBoardList;
 }
@@ -122,7 +122,7 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 	if (c)
 		m_command = c->cdata();
 
-    m_IQGameList = tag->findChildren( "query/game" );
+    m_IQGameList = tag->findTagList( "query/game" );
 }
 
 GameListQuery::~GameListQuery()
@@ -151,9 +151,9 @@ gloox::Tag* GameListQuery::tag() const
 	if(!m_command.empty())
 		t->addChild(new gloox::Tag("command", m_command));
 
-	std::list<GameData*>::const_iterator it = m_IQGameList.begin();
+	std::list<const GameData*>::const_iterator it = m_IQGameList.begin();
 	for( ; it != m_IQGameList.end(); ++it )
-		t->addChild( *it );
+		t->addChild( (*it)->clone() );
 
 	return t;
 }
@@ -165,7 +165,7 @@ gloox::StanzaExtension* GameListQuery::clone() const
 	return q;
 }
 
-std::list<GameData*> GameListQuery::gameList() const
+std::list<const GameData*> GameListQuery::gameList() const
 {
 	return m_IQGameList;
 }

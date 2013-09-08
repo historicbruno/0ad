@@ -256,20 +256,20 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(gq)
 		{
 			m_GameList.clear();
-			std::list<GameData*>::const_iterator it = gq->gameList().begin();
+			std::list<const GameData*>::const_iterator it = gq->gameList().begin();
 			for(; it != gq->gameList().end(); ++it)
 			{
-				m_GameList.push_back(**it);
+				m_GameList.push_back(*it);
 			}
 			CreateSimpleMessage("system", "gamelist updated", "internal");
 		}
 		if(bq)
 		{
 			m_BoardList.clear();
-			std::list<PlayerData*>::const_iterator it = bq->boardList().begin();
+			std::list<const PlayerData*>::const_iterator it = bq->boardList().begin();
 			for(; it != bq->boardList().end(); ++it)
 			{
-				m_BoardList.push_back(**it);
+				m_BoardList.push_back(*it);
 			}
 			CreateSimpleMessage("system", "boardlist updated", "internal");
 		}
@@ -573,7 +573,7 @@ CScriptValRooted XmppClient::GUIGetGameList()
 	CScriptValRooted gameList;
 	ScriptInterface& script = GetScriptInterface();
 	script.Eval("([])", gameList);
-	for(std::list<GameData>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
+	for(std::list<const GameData*>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
 	{
 		CScriptValRooted game;
 		script.Eval("({})", game);
@@ -581,7 +581,7 @@ CScriptValRooted XmppClient::GUIGetGameList()
 		const char* stats[] = { "name", "ip", "state", "nbp", "tnpb", "players", "mapName", "mapSize", "victoryCondition" };
 		short stats_length = 9;
 		for (short i = 0; i < stats_length; i++)
-			script.SetProperty(game.get(), stats[i], it->findAttribute(stats[i]).c_str());
+			script.SetProperty(game.get(), stats[i], (*it)->findAttribute(stats[i]).c_str());
 
 		script.CallFunctionVoid(gameList.get(), "push", game);
 	}
@@ -595,13 +595,13 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 	CScriptValRooted boardList;
 	ScriptInterface& script = GetScriptInterface();
 	script.Eval("([])", boardList);
-	for(std::list<PlayerData>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
+	for(std::list<const PlayerData*>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
 		script.Eval("({})", board);
 
-		script.SetProperty(board.get(), "name", it->findAttribute("name").c_str());
-		script.SetProperty(board.get(), "rank", it->findAttribute("rank").c_str());
+		script.SetProperty(board.get(), "name", (*it)->findAttribute("name").c_str());
+		script.SetProperty(board.get(), "rank", (*it)->findAttribute("rank").c_str());
 
 		script.CallFunctionVoid(boardList.get(), "push", board);
 	}
