@@ -416,9 +416,8 @@ if __name__ == '__main__':
     xmpp.process(block=False)
     while True:
       time.sleep(5)
-      if len(xmpp.gameList.getAllGames()):
-        logging.debug('Sending GameList')
-        for to in xmpp.JIDs:
-          xmpp.sendGameList(to)
+      logging.debug('Sending GameList')
+      for to in xmpp.JIDs:
+        xmpp.sendGameList(to)
   else:
     logging.error("Unable to connect")
