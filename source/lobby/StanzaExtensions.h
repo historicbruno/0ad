@@ -34,8 +34,8 @@ const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
 
 
 typedef gloox::Tag PlayerData;
+typedef gloox::Tag GameData;
 
-class GameItemData;
 class GameReportItemData;
 
 class GameReport : public gloox::StanzaExtension
@@ -79,11 +79,11 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<GameItemData*>& gameList() const;
+	std::list<GameData*> gameList() const;
 
 private:
 	std::string m_command;
-	std::list<GameItemData*> m_IQGameList;
+	std::list<GameData*> m_IQGameList;
 };
 
 class BoardListQuery : public gloox::StanzaExtension

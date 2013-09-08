@@ -82,9 +82,9 @@ typedef void *PVOID;
 
 //Game - script
 class ScriptInterface;
-class GameItemData;
 
 typedef gloox::Tag PlayerData;
+typedef gloox::Tag GameData;
 
 class XmppClient : public gloox::ConnectionListener, public gloox::MUCRoomHandler, public gloox::IqHandler, public gloox::LogHandler, public gloox::RegistrationHandler, public gloox::MessageHandler
 {
@@ -178,7 +178,7 @@ private:
 	/// Map of players
 	std::map<std::string, gloox::Presence::PresenceType> m_PlayerMap;
 	/// List of games
-	std::list< GameItemData > m_GameList;
+	std::list< GameData > m_GameList;
 	/// List of rankings
 	std::list< PlayerData > m_BoardList;
 	/// Queue of messages

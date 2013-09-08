@@ -257,7 +257,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(gq)
 		{
 			m_GameList.clear();
-			std::list<GameItemData*>::const_iterator it = gq->gameList().begin();
+			std::list<GameData*>::const_iterator it = gq->gameList().begin();
 			for(; it != gq->gameList().end(); ++it)
 			{
 				m_GameList.push_back(**it);
@@ -410,51 +410,50 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 /* Register a game */
 void XmppClient::SendIqRegisterGame(CScriptVal data)
 {
+#define SEND_STAT(stat) \
+	script.GetProperty( data.get(), #stat, (stat) ); \
+	game->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
 	std::string name, mapName, mapSize, victoryCondition, nbp, tnbp, players;
-	GetScriptInterface().GetProperty(data.get(), "name", name);
-	GetScriptInterface().GetProperty(data.get(), "mapName", mapName);
-	GetScriptInterface().GetProperty(data.get(), "mapSize", mapSize);
-	GetScriptInterface().GetProperty(data.get(), "victoryCondition", victoryCondition);
-	GetScriptInterface().GetProperty(data.get(), "nbp", nbp);
-	GetScriptInterface().GetProperty(data.get(), "tnbp", tnbp);
-	GetScriptInterface().GetProperty(data.get(), "players", players);
+	ScriptInterface& script = GetScriptInterface();
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_command = "register";
-	GameItemData *pItemData = new GameItemData();
-	pItemData->m_name = name;
-	pItemData->m_ip = "x"; /* This "x" fake ip will be overwritten by the ip stamp XMPP module */
-	pItemData->m_mapName = mapName;
-	pItemData->m_mapSize = mapSize;
-	pItemData->m_victoryCondition = victoryCondition;
-	pItemData->m_nbp = nbp;
-	pItemData->m_tnbp = tnbp;
-	pItemData->m_players = players;
-	g->m_IQGameList.push_back( pItemData );
+	GameData *game = new GameData( "game" );
+	// This fake ip will be overwritten by the ip stamp XMPP module.
+	game->addAttribute( "ip", "fake" );
+	SEND_STAT( name );
+	SEND_STAT( mapName );
+	SEND_STAT( mapSize );
+	SEND_STAT( victoryCondition );
+	SEND_STAT( nbp );
+	SEND_STAT( players );
+	SEND_STAT( tnbp );
+	g->m_IQGameList.push_back( game );
 
-	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	IQ iq( gloox::IQ::Set, xpartamuppJid );
 	iq.addExtension( g );
-	DbgXMPP("SendIqRegisterGame [" << iq.tag()->xml() << "]");
-	_client->send(iq);
+	DbgXMPP( "SendIqRegisterGame [" << iq.tag()->xml() << "]" );
+	_client->send( iq );
+#undef SEND_STAT
 }
 
 /* Unregister a game */
 void XmppClient::SendIqUnregisterGame()
 {
-	JID xpartamuppJid(_xpartamuppId);
+	JID xpartamuppJid( _xpartamuppId );
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_command = "unregister";
-	g->m_IQGameList.push_back( new GameItemData() );
+	g->m_IQGameList.push_back( new GameData( "game" ) );
 
-	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	IQ iq( gloox::IQ::Set, xpartamuppJid );
 	iq.addExtension( g );
 	DbgXMPP("SendIqUnregisterGame [" << iq.tag()->xml() << "]");
-	_client->send(iq);
+	_client->send( iq );
 }
 
 /* Change the state of a registered game to 'running' or 'waiting' - it's Xpartamupp that decide the game's state
@@ -466,10 +465,10 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_command = "changestate";
-	GameItemData *pItemData = new GameItemData();
-	pItemData->m_nbp = nbp;
-	pItemData->m_players = players;
-	g->m_IQGameList.push_back( pItemData );
+	GameData* game = new GameData( "game" );
+	game->addAttribute( "nbp", nbp );
+	game->addAttribute( "players", players );
+	g->m_IQGameList.push_back( game );
 
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
@@ -573,18 +572,24 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 CScriptValRooted XmppClient::GUIGetGameList()
 {
 	CScriptValRooted gameList;
-	GetScriptInterface().Eval("([])", gameList);
-	for(std::list<GameItemData>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
+	ScriptInterface& script = GetScriptInterface();
+	script.Eval("([])", gameList);
+	for(std::list<GameData>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
 	{
 		CScriptValRooted game;
-		GetScriptInterface().Eval("({})", game);
+		script.Eval("({})", game);
 
-#define ITEM(param)\
-	GetScriptInterface().SetProperty(game.get(), #param, it->m_##param .c_str());
-		ITEMS
-#undef ITEM
+		script.SetProperty(game.get(), "name", it->findAttribute("name").c_str());
+		script.SetProperty(game.get(), "ip", it->findAttribute("ip").c_str());
+		script.SetProperty(game.get(), "state", it->findAttribute("state").c_str());
+		script.SetProperty(game.get(), "nbp", it->findAttribute("nbp").c_str());
+		script.SetProperty(game.get(), "tnbp", it->findAttribute("tnbp").c_str());
+		script.SetProperty(game.get(), "players", it->findAttribute("players").c_str());
+		script.SetProperty(game.get(), "mapName", it->findAttribute("mapName").c_str());
+		script.SetProperty(game.get(), "mapSize", it->findAttribute("mapSize").c_str());
+		script.SetProperty(game.get(), "victoryCondition", it->findAttribute("victoryCondition").c_str());
 
-		GetScriptInterface().CallFunctionVoid(gameList.get(), "push", game);
+		script.CallFunctionVoid(gameList.get(), "push", game);
 	}
 
 	return gameList;
@@ -594,11 +599,11 @@ CScriptValRooted XmppClient::GUIGetGameList()
 CScriptValRooted XmppClient::GUIGetBoardList()
 {
 	CScriptValRooted boardList;
-	GetScriptInterface().Eval("([])", boardList);
-	for(std::list<gloox::Tag>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
+	ScriptInterface& script = GetScriptInterface();
+	script.Eval("([])", boardList);
+	for(std::list<PlayerData>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
-		ScriptInterface& script = GetScriptInterface();
 		script.Eval("({})", board);
 
 		script.SetProperty(board.get(), "name", it->findAttribute("name").c_str());

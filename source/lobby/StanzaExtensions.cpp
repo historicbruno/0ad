@@ -16,7 +16,6 @@
  */
 #include "precompiled.h"
 #include "StanzaExtensions.h"
-#include "GameItemData.h"
 #include "GameReportItemData.h"
 
 #include <gloox/rostermanager.h>
@@ -123,18 +122,7 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 	if (c)
 		m_command = c->cdata();
 
-	const gloox::ConstTagList& l = tag->findTagList( "query/game" );
-	gloox::ConstTagList::const_iterator it = l.begin();
-	for( ; it != l.end(); ++it )
-	{
-		GameItemData *pItem = new GameItemData();
-#define ITEM(param)\
-	const std::string param = (*it)->findAttribute( #param ); \
-	pItem->m_##param = param;
-		ITEMS
-#undef ITEM
-		m_IQGameList.push_back( pItem );
-	}
+    m_IQGameList = tag->findChildren( "query/game" );
 }
 
 GameListQuery::~GameListQuery()
@@ -163,9 +151,9 @@ gloox::Tag* GameListQuery::tag() const
 	if(!m_command.empty())
 		t->addChild(new gloox::Tag("command", m_command));
 
-	std::list<GameItemData*>::const_iterator it = m_IQGameList.begin();
+	std::list<GameData*>::const_iterator it = m_IQGameList.begin();
 	for( ; it != m_IQGameList.end(); ++it )
-		t->addChild( (*it)->tag() );
+		t->addChild( *it );
 
 	return t;
 }
@@ -177,7 +165,7 @@ gloox::StanzaExtension* GameListQuery::clone() const
 	return q;
 }
 
-const std::list<GameItemData*>& GameListQuery::gameList() const
+std::list<GameData*> GameListQuery::gameList() const
 {
 	return m_IQGameList;
 }
