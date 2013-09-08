@@ -103,7 +103,7 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 	return q;
 }
 
-std::list<const PlayerData*> BoardListQuery::boardList() const
+const std::list<const PlayerData*>& BoardListQuery::boardList() const
 {
 	return m_IQBoardList;
 }
@@ -165,7 +165,7 @@ gloox::StanzaExtension* GameListQuery::clone() const
 	return q;
 }
 
-std::list<const GameData*> GameListQuery::gameList() const
+const std::list<const GameData*>& GameListQuery::gameList() const
 {
 	return m_IQGameList;
 }

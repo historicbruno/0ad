@@ -79,7 +79,7 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	std::list<const GameData*> gameList() const;
+	const std::list<const GameData*>& gameList() const;
 
 private:
 	std::string m_command;
@@ -109,7 +109,7 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	std::list<const PlayerData*> boardList() const;
+	const std::list<const PlayerData*>& boardList() const;
 
 private:
 	std::list<const PlayerData*> m_IQBoardList;
