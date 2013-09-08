@@ -22,7 +22,7 @@
 -export([start/2, stop/1, on_filter_packet/1]).
 
 %% Domain on which run the ejabberd server
--define (Domain, "0ad.mikoton.com").
+-define (Domain, "lobby.wildfiregames.com").
 
 %% Login of the Xpartamupp jabber client
 -define (XpartamuppLogin, "xpartamupp").

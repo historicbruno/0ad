@@ -394,6 +394,9 @@ if __name__ == '__main__':
   optp.add_option('-n', '--nickname', help='set xpartamupp nickname',
                   action='store', dest='xnickname',
                   default="WFGbot")
+  optp.add_option('-r', '--room', help='set muc room to join',
+                  action='store', dest='xroom',
+                  default="arena")
 
   opts, args = optp.parse_args()
 
@@ -402,7 +405,7 @@ if __name__ == '__main__':
                       format='%(levelname)-8s %(message)s')
 
   # XpartaMuPP
-  xmpp = XpartaMuPP(opts.xlogin+'@'+opts.xdomain+'/CC', opts.xpassword, 'arena@conference.'+opts.xdomain, opts.xnickname)
+  xmpp = XpartaMuPP(opts.xlogin+'@'+opts.xdomain+'/CC', opts.xpassword, opts.xroom+'@conference.'+opts.xdomain, opts.xnickname)
   xmpp.register_plugin('xep_0030') # Service Discovery
   xmpp.register_plugin('xep_0004') # Data Forms
   xmpp.register_plugin('xep_0045') # Multi-User Chat	# used
@@ -413,9 +416,9 @@ if __name__ == '__main__':
     xmpp.process(block=False)
     while True:
       time.sleep(5)
-      logging.debug('Send Lists')
-      for to in xmpp.JIDs:
-        xmpp.sendGameList(to)
+      if len(xmpp.gameList.getAllGames()):
+        logging.debug('Sending GameList')
+        for to in xmpp.JIDs:
+          xmpp.sendGameList(to)
   else:
     logging.error("Unable to connect")
-
