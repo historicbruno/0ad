@@ -595,7 +595,7 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 	CScriptValRooted boardList;
 	ScriptInterface& script = GetScriptInterface();
 	script.Eval("([])", boardList);
-	for(std::list<const PlayerData*>::const_iterator it = m_BoardList.begin(); it !=m_BoardList.end(); ++it)
+	for(std::list<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
 		script.Eval("({})", board);

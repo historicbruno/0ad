@@ -69,7 +69,10 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
 
-	m_IQBoardList = tag->findTagList( "query/board" );
+	const gloox::ConstTagList boardTags = tag->findTagList( "query/board" );
+	gloox::ConstTagList::const_iterator it = boardTags.begin();
+	for ( ; it != boardTags.end(); ++it )
+		m_IQBoardList.push_back( (*it)->clone() );
 }
 
 BoardListQuery::~BoardListQuery()
@@ -122,7 +125,10 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 	if (c)
 		m_command = c->cdata();
 
-    m_IQGameList = tag->findTagList( "query/game" );
+	const gloox::ConstTagList games = tag->findTagList( "query/game" );
+	gloox::ConstTagList::const_iterator it = games.begin();
+	for ( ; it != games.end(); ++it )
+		m_IQGameList.push_back( (*it)->clone() );
 }
 
 GameListQuery::~GameListQuery()
