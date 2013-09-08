@@ -17,7 +17,6 @@
 
 #include "precompiled.h"
 #include "XmppClient.h"
-#include "GameItemData.h"
 #include "GameReportItemData.h"
 #include "StanzaExtensions.h"
 
