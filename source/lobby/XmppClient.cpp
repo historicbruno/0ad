@@ -255,8 +255,8 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(gq)
 		{
 			m_GameList.clear();
-			std::list<const GameData*>::const_iterator it = gq->gameList().begin();
-			for(; it != gq->gameList().end(); ++it)
+			std::list<const GameData*>::const_iterator it = gq->m_IQGameList.begin();
+			for(; it != gq->m_IQGameList.end(); ++it)
 			{
 				m_GameList.push_back(*it);
 			}
@@ -265,8 +265,8 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(bq)
 		{
 			m_BoardList.clear();
-			std::list<const PlayerData*>::const_iterator it = bq->boardList().begin();
-			for(; it != bq->boardList().end(); ++it)
+			std::list<const PlayerData*>::const_iterator it = bq->m_IQBoardList.begin();
+			for(; it != bq->m_IQBoardList.end(); ++it)
 			{
 				m_BoardList.push_back(*it);
 			}
@@ -386,7 +386,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	SEND_STAT( woodUsed );
 	SEND_STAT( stoneUsed );
 	SEND_STAT( metalUsed );
-	game->GameReportIQ.push_back( report );
+	game->m_GameReport.push_back( report );
 
 	// Send IQ
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
@@ -409,7 +409,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
-	g->m_command = "register";
+	g->m_Command = "register";
 	GameData *game = new GameData( "game" );
 	// This fake ip will be overwritten by the ip stamp XMPP module.
 	game->addAttribute( "ip", "fake" );
@@ -436,7 +436,7 @@ void XmppClient::SendIqUnregisterGame()
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
-	g->m_command = "unregister";
+	g->m_Command = "unregister";
 	g->m_IQGameList.push_back( new GameData( "game" ) );
 
 	IQ iq( gloox::IQ::Set, xpartamuppJid );
@@ -453,7 +453,7 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
-	g->m_command = "changestate";
+	g->m_Command = "changestate";
 	GameData* game = new GameData( "game" );
 	game->addAttribute( "nbp", nbp );
 	game->addAttribute( "players", players );

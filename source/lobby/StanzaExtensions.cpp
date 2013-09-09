@@ -36,8 +36,8 @@ gloox::Tag* GameReport::tag() const
 	gloox::Tag* t = new gloox::Tag( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::list<const GameReportData*>::const_iterator it = GameReportIQ.begin();
-	for( ; it != GameReportIQ.end(); ++it )
+	std::list<const GameReportData*>::const_iterator it = m_GameReport.begin();
+	for( ; it != m_GameReport.end(); ++it )
 		t->addChild( (*it)->clone() );
 
 	return t;
@@ -105,11 +105,6 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 	return q;
 }
 
-const std::list<const PlayerData*>& BoardListQuery::boardList() const
-{
-	return m_IQBoardList;
-}
-
 /*
  *  GameListQuery, custom IQ Stanza
  */
@@ -122,7 +117,7 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 
 	const gloox::Tag* c = tag->findTag( "query/game" );
 	if (c)
-		m_command = c->cdata();
+		m_Command = c->cdata();
 
 	const gloox::ConstTagList games = tag->findTagList( "query/game" );
 	gloox::ConstTagList::const_iterator it = games.begin();
@@ -153,8 +148,8 @@ gloox::Tag* GameListQuery::tag() const
 */
 
 	// register / unregister command
-	if(!m_command.empty())
-		t->addChild(new gloox::Tag("command", m_command));
+	if(!m_Command.empty())
+		t->addChild(new gloox::Tag("command", m_Command));
 
 	std::list<const GameData*>::const_iterator it = m_IQGameList.begin();
 	for( ; it != m_IQGameList.end(); ++it )
@@ -170,7 +165,3 @@ gloox::StanzaExtension* GameListQuery::clone() const
 	return q;
 }
 
-const std::list<const GameData*>& GameListQuery::gameList() const
-{
-	return m_IQGameList;
-}

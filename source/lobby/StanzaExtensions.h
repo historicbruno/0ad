@@ -39,7 +39,6 @@ typedef gloox::Tag GameReportData;
 
 class GameReport : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	GameReport(const gloox::Tag* tag = 0);
 	// Following four methods are all required by gloox
@@ -51,13 +50,11 @@ public:
 	virtual gloox::StanzaExtension* clone() const;
 	virtual const std::string& filterString() const;
 
-private:
-	std::list<const GameReportData*> GameReportIQ;
+	std::list<const GameReportData*> m_GameReport;
 };
 
 class GameListQuery : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	GameListQuery(const gloox::Tag* tag = 0);
 
@@ -78,16 +75,12 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<const GameData*>& gameList() const;
-
-private:
-	std::string m_command;
+	std::string m_Command;
 	std::list<const GameData*> m_IQGameList;
 };
 
 class BoardListQuery : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	BoardListQuery(const gloox::Tag* tag = 0);
 
@@ -108,9 +101,6 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<const PlayerData*>& boardList() const;
-
-private:
 	std::list<const PlayerData*> m_IQBoardList;
 };
 #endif
