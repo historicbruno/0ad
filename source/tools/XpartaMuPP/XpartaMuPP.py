@@ -77,6 +77,10 @@ class LeaderboardList():
       Returns the created Game object, or None if
       the creation failed for any reason.
     """
+    # Discard any games still in progress.
+    if any(map(lambda state: state == "active",
+               dict.values(gamereport.playerStates))):
+      return None
     players = map(lambda jid: db.query(Player).filter_by(jid=jid).first(),
                   gamereport.players)
     playerInfos = []
