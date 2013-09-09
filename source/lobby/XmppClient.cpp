@@ -382,21 +382,21 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 
 	// Compose IQ
 	GameReport* game = new GameReport();
-	gloox::Tag *items = new gloox::Tag( "game" );
-	items->addAttribute( "timeElapsed", timeElapsed );
-	items->addAttribute( "playerStates", playerStates );
-	items->addAttribute( "playerID", playerID );
-	items->addAttribute( "civs", civs );
-	items->addAttribute( "mapName", mapName );
-	items->addAttribute( "foodGathered", foodGathered );
-	items->addAttribute( "woodGathered", woodGathered );
-	items->addAttribute( "stoneGathered", stoneGathered );
-	items->addAttribute( "metalGathered", metalGathered );
-	items->addAttribute( "foodUsed", foodUsed );
-	items->addAttribute( "woodUsed", woodUsed );
-	items->addAttribute( "stoneUsed", stoneUsed );
-	items->addAttribute( "metalUsed", metalUsed );
-	game->GameReportIQ.push_back(items);
+	GameReportData *report = new GameReportData( "game" );
+	report->addAttribute( "timeElapsed", timeElapsed );
+	report->addAttribute( "playerStates", playerStates );
+	report->addAttribute( "playerID", playerID );
+	report->addAttribute( "civs", civs );
+	report->addAttribute( "mapName", mapName );
+	report->addAttribute( "foodGathered", foodGathered );
+	report->addAttribute( "woodGathered", woodGathered );
+	report->addAttribute( "stoneGathered", stoneGathered );
+	report->addAttribute( "metalGathered", metalGathered );
+	report->addAttribute( "foodUsed", foodUsed );
+	report->addAttribute( "woodUsed", woodUsed );
+	report->addAttribute( "stoneUsed", stoneUsed );
+	report->addAttribute( "metalUsed", metalUsed );
+	game->GameReportIQ.push_back( report );
 
 	// Send IQ
 	IQ iq(gloox::IQ::Set, xpartamuppJid);

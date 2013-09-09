@@ -36,7 +36,7 @@ gloox::Tag* GameReport::tag() const
 	gloox::Tag* t = new gloox::Tag( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::list<const gloox::Tag*>::const_iterator it = GameReportIQ.begin();
+	std::list<const GameReportData*>::const_iterator it = GameReportIQ.begin();
 	for( ; it != GameReportIQ.end(); ++it )
 		t->addChild( (*it)->clone() );
 
