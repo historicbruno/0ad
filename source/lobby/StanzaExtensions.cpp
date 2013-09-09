@@ -16,7 +16,6 @@
  */
 #include "precompiled.h"
 #include "StanzaExtensions.h"
-#include "GameReportItemData.h"
 
 #include <gloox/rostermanager.h>
 
@@ -37,9 +36,9 @@ gloox::Tag* GameReport::tag() const
 	gloox::Tag* t = new gloox::Tag( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::list<GameReportItemData*>::const_iterator it = GameReportIQ.begin();
+	std::list<const gloox::Tag*>::const_iterator it = GameReportIQ.begin();
 	for( ; it != GameReportIQ.end(); ++it )
-		t->addChild( (*it)->tag() );
+		t->addChild( (*it)->clone() );
 
 	return t;
 }

@@ -17,7 +17,6 @@
 
 #include "precompiled.h"
 #include "XmppClient.h"
-#include "GameReportItemData.h"
 #include "StanzaExtensions.h"
 
 //debug
@@ -383,20 +382,20 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 
 	// Compose IQ
 	GameReport* game = new GameReport();
-	GameReportItemData *items = new GameReportItemData();
-	items->m_timeElapsed = timeElapsed;
-	items->m_playerStates = playerStates;
-	items->m_playerID = playerID;
-	items->m_civs = civs;
-	items->m_mapName = mapName;
-	items->m_foodGathered = foodGathered;
-	items->m_woodGathered = woodGathered;
-	items->m_stoneGathered = stoneGathered;
-	items->m_metalGathered = metalGathered;
-	items->m_foodUsed = foodUsed;
-	items->m_woodUsed = woodUsed;
-	items->m_stoneUsed = stoneUsed;
-	items->m_metalUsed = metalUsed;
+	gloox::Tag *items = new gloox::Tag( "game" );
+	items->addAttribute( "timeElapsed", timeElapsed );
+	items->addAttribute( "playerStates", playerStates );
+	items->addAttribute( "playerID", playerID );
+	items->addAttribute( "civs", civs );
+	items->addAttribute( "mapName", mapName );
+	items->addAttribute( "foodGathered", foodGathered );
+	items->addAttribute( "woodGathered", woodGathered );
+	items->addAttribute( "stoneGathered", stoneGathered );
+	items->addAttribute( "metalGathered", metalGathered );
+	items->addAttribute( "foodUsed", foodUsed );
+	items->addAttribute( "woodUsed", woodUsed );
+	items->addAttribute( "stoneUsed", stoneUsed );
+	items->addAttribute( "metalUsed", metalUsed );
 	game->GameReportIQ.push_back(items);
 
 	// Send IQ
