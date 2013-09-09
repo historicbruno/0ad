@@ -360,42 +360,32 @@ void XmppClient::SendIqGetBoardList()
 /* Send game report */
 void XmppClient::SendIqGameReport(CScriptVal data)
 {
+#define SEND_STAT(stat) \
+	script.GetProperty( data.get(), #stat, (stat) ); \
+	report->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
 	// Convert the values from the CScriptVal to std
 	std::string timeElapsed, playerStates, playerID, civs, mapName,
 		foodGathered, woodGathered, stoneGathered, metalGathered,
 		foodUsed, woodUsed, stoneUsed, metalUsed;
-	GetScriptInterface().GetProperty(data.get(), "timeElapsed", timeElapsed);
-	GetScriptInterface().GetProperty(data.get(), "playerStates", playerStates);
-	GetScriptInterface().GetProperty(data.get(), "playerID", playerID);
-	GetScriptInterface().GetProperty(data.get(), "civs", civs);
-	GetScriptInterface().GetProperty(data.get(), "mapName", mapName);
-	GetScriptInterface().GetProperty(data.get(), "foodGathered", foodGathered);
-	GetScriptInterface().GetProperty(data.get(), "woodGathered", woodGathered);
-	GetScriptInterface().GetProperty(data.get(), "stoneGathered", stoneGathered);
-	GetScriptInterface().GetProperty(data.get(), "metalGathered", metalGathered);
-	GetScriptInterface().GetProperty(data.get(), "foodUsed", foodUsed);
-	GetScriptInterface().GetProperty(data.get(), "wood Used", woodUsed);
-	GetScriptInterface().GetProperty(data.get(), "stoneUsed", stoneUsed);
-	GetScriptInterface().GetProperty(data.get(), "metalUsed", metalUsed);
-
+	ScriptInterface& script = GetScriptInterface();
 	// Compose IQ
 	GameReport* game = new GameReport();
 	GameReportData *report = new GameReportData( "game" );
-	report->addAttribute( "timeElapsed", timeElapsed );
-	report->addAttribute( "playerStates", playerStates );
-	report->addAttribute( "playerID", playerID );
-	report->addAttribute( "civs", civs );
-	report->addAttribute( "mapName", mapName );
-	report->addAttribute( "foodGathered", foodGathered );
-	report->addAttribute( "woodGathered", woodGathered );
-	report->addAttribute( "stoneGathered", stoneGathered );
-	report->addAttribute( "metalGathered", metalGathered );
-	report->addAttribute( "foodUsed", foodUsed );
-	report->addAttribute( "woodUsed", woodUsed );
-	report->addAttribute( "stoneUsed", stoneUsed );
-	report->addAttribute( "metalUsed", metalUsed );
+	SEND_STAT( timeElapsed );
+	SEND_STAT( playerStates );
+	SEND_STAT( playerID );
+	SEND_STAT( civs );
+	SEND_STAT( mapName );
+	SEND_STAT( foodGathered );
+	SEND_STAT( woodGathered );
+	SEND_STAT( stoneGathered );
+	SEND_STAT( metalGathered );
+	SEND_STAT( foodUsed );
+	SEND_STAT( woodUsed );
+	SEND_STAT( stoneUsed );
+	SEND_STAT( metalUsed );
 	game->GameReportIQ.push_back( report );
 
 	// Send IQ
@@ -403,6 +393,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	iq.addExtension(game);
 	DbgXMPP("SendGameReport [" << iq.tag()->xml() << "]");
 	_client->send(iq);
+#undef SEND_STAT
 };
 
 /* Register a game */
