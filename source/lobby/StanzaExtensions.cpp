@@ -77,7 +77,7 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 
 BoardListQuery::~BoardListQuery()
 {
-	gloox::util::clearList( m_IQBoardList );
+	m_IQBoardList.clear();
 }
 
 const std::string& BoardListQuery::filterString() const
@@ -133,7 +133,7 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 
 GameListQuery::~GameListQuery()
 {
-	gloox::util::clearList( m_IQGameList );
+	m_IQGameList.clear();
 }
 
 const std::string& GameListQuery::filterString() const

@@ -578,7 +578,7 @@ CScriptValRooted XmppClient::GUIGetGameList()
 		CScriptValRooted game;
 		script.Eval("({})", game);
 
-		const char* stats[] = { "name", "ip", "state", "nbp", "tnpb", "players", "mapName", "mapSize", "victoryCondition" };
+		const char* stats[] = { "name", "ip", "state", "nbp", "tnbp", "players", "mapName", "mapSize", "victoryCondition" };
 		short stats_length = 9;
 		for (short i = 0; i < stats_length; i++)
 			script.SetProperty(game.get(), stats[i], (*it)->findAttribute(stats[i]).c_str());
