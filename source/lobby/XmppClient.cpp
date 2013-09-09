@@ -221,9 +221,9 @@ void XmppClient::handleMUCMessage( MUCRoom*, const Message& msg, bool )
 	DbgXMPP(msg.from().resource() << " said " << msg.body());
 
 	CScriptValRooted message;
-	GetScriptInterface().Eval("({ 'type':'mucmessage'})", message);
-	GetScriptInterface().SetProperty(message.get(), "from", msg.from().resource());
-	GetScriptInterface().SetProperty(message.get(), "text", msg.body());
+	m_ScriptInterface.Eval("({ 'type':'mucmessage'})", message);
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().resource());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
 	PushGuiMessage(message);
 }
 
@@ -361,7 +361,7 @@ void XmppClient::SendIqGetBoardList()
 void XmppClient::SendIqGameReport(CScriptVal data)
 {
 #define SEND_STAT(stat) \
-	script.GetProperty( data.get(), #stat, (stat) ); \
+	m_ScriptInterface.GetProperty( dataval, #stat, (stat) ); \
 	report->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
@@ -369,7 +369,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	std::string timeElapsed, playerStates, playerID, civs, mapName,
 		foodGathered, woodGathered, stoneGathered, metalGathered,
 		foodUsed, woodUsed, stoneUsed, metalUsed;
-	ScriptInterface& script = GetScriptInterface();
+	jsval dataval = data.get();
 	// Compose IQ
 	GameReport* game = new GameReport();
 	GameReportData *report = new GameReportData( "game" );
@@ -400,12 +400,12 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 void XmppClient::SendIqRegisterGame(CScriptVal data)
 {
 #define SEND_STAT(stat) \
-	script.GetProperty( data.get(), #stat, (stat) ); \
+	m_ScriptInterface.GetProperty( dataval, #stat, (stat) ); \
 	game->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
 	std::string name, mapName, mapSize, victoryCondition, nbp, tnbp, players;
-	ScriptInterface& script = GetScriptInterface();
+	jsval dataval = data.get();
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
@@ -528,9 +528,9 @@ void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/
 	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
 
 	CScriptValRooted message;
-	GetScriptInterface().Eval("({ 'type':'message'})", message);
-	GetScriptInterface().SetProperty(message.get(), "from", msg.from().username());
-	GetScriptInterface().SetProperty(message.get(), "text", msg.body());
+	m_ScriptInterface.Eval("({ 'type':'message'})", message);
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
 	PushGuiMessage(message);
 }
 
@@ -542,16 +542,16 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 {
 	std::string presence;
 	CScriptValRooted playerList;
-	GetScriptInterface().Eval("({})", playerList);
+	m_ScriptInterface.Eval("({})", playerList);
 	for(std::map<std::string, Presence::PresenceType>::const_iterator it = m_PlayerMap.begin(); it != m_PlayerMap.end(); ++it)
 	{
 		CScriptValRooted player;
 		GetPresenceString(it->second, presence);
-		GetScriptInterface().Eval("({})", player);
-		GetScriptInterface().SetProperty(player.get(), "name", it->first.c_str());
-		GetScriptInterface().SetProperty(player.get(), "presence", presence.c_str());
+		m_ScriptInterface.Eval("({})", player);
+		m_ScriptInterface.SetProperty(player.get(), "name", it->first.c_str());
+		m_ScriptInterface.SetProperty(player.get(), "presence", presence.c_str());
 
-		GetScriptInterface().SetProperty(playerList.get(), it->first.c_str(), player);
+		m_ScriptInterface.SetProperty(playerList.get(), it->first.c_str(), player);
 	}
 
 	return playerList;
@@ -561,19 +561,18 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 CScriptValRooted XmppClient::GUIGetGameList()
 {
 	CScriptValRooted gameList;
-	ScriptInterface& script = GetScriptInterface();
-	script.Eval("([])", gameList);
+	m_ScriptInterface.Eval("([])", gameList);
 	for(std::list<const GameData*>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
 	{
 		CScriptValRooted game;
-		script.Eval("({})", game);
+		m_ScriptInterface.Eval("({})", game);
 
 		const char* stats[] = { "name", "ip", "state", "nbp", "tnbp", "players", "mapName", "mapSize", "victoryCondition" };
 		short stats_length = 9;
 		for (short i = 0; i < stats_length; i++)
-			script.SetProperty(game.get(), stats[i], (*it)->findAttribute(stats[i]).c_str());
+			m_ScriptInterface.SetProperty(game.get(), stats[i], (*it)->findAttribute(stats[i]).c_str());
 
-		script.CallFunctionVoid(gameList.get(), "push", game);
+		m_ScriptInterface.CallFunctionVoid(gameList.get(), "push", game);
 	}
 
 	return gameList;
@@ -583,17 +582,16 @@ CScriptValRooted XmppClient::GUIGetGameList()
 CScriptValRooted XmppClient::GUIGetBoardList()
 {
 	CScriptValRooted boardList;
-	ScriptInterface& script = GetScriptInterface();
-	script.Eval("([])", boardList);
+	m_ScriptInterface.Eval("([])", boardList);
 	for(std::list<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
-		script.Eval("({})", board);
+		m_ScriptInterface.Eval("({})", board);
 
-		script.SetProperty(board.get(), "name", (*it)->findAttribute("name").c_str());
-		script.SetProperty(board.get(), "rank", (*it)->findAttribute("rank").c_str());
+		m_ScriptInterface.SetProperty(board.get(), "name", (*it)->findAttribute("name").c_str());
+		m_ScriptInterface.SetProperty(board.get(), "rank", (*it)->findAttribute("rank").c_str());
 
-		script.CallFunctionVoid(boardList.get(), "push", board);
+		m_ScriptInterface.CallFunctionVoid(boardList.get(), "push", board);
 	}
 
 	return boardList;
@@ -626,11 +624,11 @@ void XmppClient::PushGuiMessage(const CScriptValRooted& message)
 void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::string level, std::string data)
 {
 	CScriptValRooted message;
-	GetScriptInterface().Eval("({})", message);
-	GetScriptInterface().SetProperty(message.get(), "type", type);
-	GetScriptInterface().SetProperty(message.get(), "level", level);
-	GetScriptInterface().SetProperty(message.get(), "text", text);
-	GetScriptInterface().SetProperty(message.get(), "data", data);
+	m_ScriptInterface.Eval("({})", message);
+	m_ScriptInterface.SetProperty(message.get(), "type", type);
+	m_ScriptInterface.SetProperty(message.get(), "level", level);
+	m_ScriptInterface.SetProperty(message.get(), "text", text);
+	m_ScriptInterface.SetProperty(message.get(), "data", data);
 	PushGuiMessage(message);
 }
 
