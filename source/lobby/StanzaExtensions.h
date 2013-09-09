@@ -32,13 +32,13 @@ const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
 #define ExtGameReport 1405
 const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
 
-class GameItemData;
-class BoardItemData;
-class GameReportItemData;
+
+typedef gloox::Tag PlayerData;
+typedef gloox::Tag GameData;
+typedef gloox::Tag GameReportData;
 
 class GameReport : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	GameReport(const gloox::Tag* tag = 0);
 	// Following four methods are all required by gloox
@@ -50,13 +50,11 @@ public:
 	virtual gloox::StanzaExtension* clone() const;
 	virtual const std::string& filterString() const;
 
-private:
-	std::list<GameReportItemData*> GameReportIQ;
+	std::list<const GameReportData*> m_GameReport;
 };
 
 class GameListQuery : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	GameListQuery(const gloox::Tag* tag = 0);
 
@@ -77,16 +75,12 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<GameItemData*>& gameList() const;
-
-private:
-	std::string m_command;
-	std::list<GameItemData*> m_IQGameList;
+	std::string m_Command;
+	std::list<const GameData*> m_IQGameList;
 };
 
 class BoardListQuery : public gloox::StanzaExtension
 {
-	friend class XmppClient;
 public:
 	BoardListQuery(const gloox::Tag* tag = 0);
 
@@ -107,9 +101,6 @@ public:
 	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	const std::list<BoardItemData*>& boardList() const;
-
-private:
-	std::list<BoardItemData*> m_IQBoardList;
+	std::list<const PlayerData*> m_IQBoardList;
 };
 #endif

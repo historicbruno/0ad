@@ -16,11 +16,9 @@
  */
 #include "precompiled.h"
 #include "StanzaExtensions.h"
-#include "GameItemData.h"
-#include "BoardItemData.h"
-#include "GameReportItemData.h"
 
 #include <gloox/rostermanager.h>
+
 /****************************************************
  * GameReport, fairly generic custom stanza extension used
  * to report game statistics.
@@ -38,9 +36,9 @@ gloox::Tag* GameReport::tag() const
 	gloox::Tag* t = new gloox::Tag( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::list<GameReportItemData*>::const_iterator it = GameReportIQ.begin();
-	for( ; it != GameReportIQ.end(); ++it )
-		t->addChild( (*it)->tag() );
+	std::list<const GameReportData*>::const_iterator it = m_GameReport.begin();
+	for( ; it != m_GameReport.end(); ++it )
+		t->addChild( (*it)->clone() );
 
 	return t;
 }
@@ -60,8 +58,8 @@ gloox::StanzaExtension* GameReport::clone() const
 }
 
 /******************************************************
- *  BoardListQuery, custom IQ Stanza, used solely to 
- *  request and receive leaderboard from server. This 
+ *  BoardListQuery, custom IQ Stanza, used solely to
+ *  request and receive leaderboard from server. This
  *  could probably be cleaned up some.
  */
 BoardListQuery::BoardListQuery( const gloox::Tag* tag )
@@ -70,23 +68,15 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
 
-	const gloox::ConstTagList& l = tag->findTagList( "query/board" );
-	gloox::ConstTagList::const_iterator it = l.begin();
-	for( ; it != l.end(); ++it )
-	{
-		BoardItemData *pItem = new BoardItemData();
-#define BITEM(param)\
-	const std::string param = (*it)->findAttribute( #param ); \
-	pItem->m_##param = param;
-		BOARDITEMS
-#undef BITEM
-		m_IQBoardList.push_back( pItem );
-	}
+	const gloox::ConstTagList boardTags = tag->findTagList( "query/board" );
+	gloox::ConstTagList::const_iterator it = boardTags.begin();
+	for ( ; it != boardTags.end(); ++it )
+		m_IQBoardList.push_back( (*it)->clone() );
 }
 
 BoardListQuery::~BoardListQuery()
 {
-	gloox::util::clearList( m_IQBoardList );
+	m_IQBoardList.clear();
 }
 
 const std::string& BoardListQuery::filterString() const
@@ -101,9 +91,9 @@ gloox::Tag* BoardListQuery::tag() const
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::list<BoardItemData*>::const_iterator it = m_IQBoardList.begin();
+	std::list<const PlayerData*>::const_iterator it = m_IQBoardList.begin();
 	for( ; it != m_IQBoardList.end(); ++it )
-		t->addChild( (*it)->tag() );
+		t->addChild( (*it)->clone() );
 
 	return t;
 }
@@ -113,11 +103,6 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 	BoardListQuery* q = new BoardListQuery();
 
 	return q;
-}
-
-const std::list<BoardItemData*>& BoardListQuery::boardList() const
-{
-	return m_IQBoardList;
 }
 
 /*
@@ -132,25 +117,17 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 
 	const gloox::Tag* c = tag->findTag( "query/game" );
 	if (c)
-		m_command = c->cdata();
+		m_Command = c->cdata();
 
-	const gloox::ConstTagList& l = tag->findTagList( "query/game" );
-	gloox::ConstTagList::const_iterator it = l.begin();
-	for( ; it != l.end(); ++it )
-	{
-		GameItemData *pItem = new GameItemData();
-#define ITEM(param)\
-	const std::string param = (*it)->findAttribute( #param ); \
-	pItem->m_##param = param;
-		ITEMS
-#undef ITEM
-		m_IQGameList.push_back( pItem );
-	}
+	const gloox::ConstTagList games = tag->findTagList( "query/game" );
+	gloox::ConstTagList::const_iterator it = games.begin();
+	for ( ; it != games.end(); ++it )
+		m_IQGameList.push_back( (*it)->clone() );
 }
 
 GameListQuery::~GameListQuery()
 {
-	gloox::util::clearList( m_IQGameList );
+	m_IQGameList.clear();
 }
 
 const std::string& GameListQuery::filterString() const
@@ -171,12 +148,12 @@ gloox::Tag* GameListQuery::tag() const
 */
 
 	// register / unregister command
-	if(!m_command.empty())
-		t->addChild(new gloox::Tag("command", m_command));
+	if(!m_Command.empty())
+		t->addChild(new gloox::Tag("command", m_Command));
 
-	std::list<GameItemData*>::const_iterator it = m_IQGameList.begin();
+	std::list<const GameData*>::const_iterator it = m_IQGameList.begin();
 	for( ; it != m_IQGameList.end(); ++it )
-		t->addChild( (*it)->tag() );
+		t->addChild( (*it)->clone() );
 
 	return t;
 }
@@ -188,7 +165,3 @@ gloox::StanzaExtension* GameListQuery::clone() const
 	return q;
 }
 
-const std::list<GameItemData*>& GameListQuery::gameList() const
-{
-	return m_IQGameList;
-}
