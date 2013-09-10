@@ -77,6 +77,8 @@ class LeaderboardList():
         results.
       Returns the created Game object, or None if
       the creation failed for any reason.
+      Side effects:
+        Inserts a new Game instance into the database.
     """
     # Discard any games still in progress.
     if any(map(lambda state: state == 'active',
@@ -118,6 +120,8 @@ class LeaderboardList():
       Takes a game with 2 players and alters their ratings
       based on the result of the game.
       Returns self.
+      Side effects:
+        Changes the game's players' ratings in the database.
     """
     player1 = game.players[0]
     player2 = game.players[1]
