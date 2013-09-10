@@ -516,7 +516,6 @@ function handleSpecialCommand(text)
 	case "nick":
 		if (g_spammers[g_Name] != undefined)
 			break;
-		warn(nick);
 		Engine.LobbySetNick(nick);
 		g_Name = nick;
 		break;
@@ -539,25 +538,22 @@ function handleSpecialCommand(text)
 
 function addChatMessage(msg)
 {
-	var from = msg.from;
-	var text = msg.text;
-
 	// Set sender color
 	if (msg.color)
-		from = '[color="' + msg.color + '"]' + from + '[/color]';
-	else if (from)
-		from = colorPlayerName(from);
+		msg.from = '[color="' + msg.color + '"]' + msg.from + '[/color]';
+	else if (msg.from)
+		msg.from = colorPlayerName(msg.from);
 
 	// Highlight local user's nick
-	if (text.indexOf(g_Name) != -1 && g_Name != from)
-		text = text.replace(new RegExp('\\b' + '\\' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
+	if (msg.text.indexOf(g_Name) != -1 && g_Name != msg.from)
+		msg.text = msg.text.replace(new RegExp('\\b' + '\\' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
 
 	// Run spam test
-	if (updateSpamandDetect(text, from))
+	if (updateSpamandDetect(msg.text, msg.from))
 		return;
 
 	// Format Text
-	var formatted = ircFormat(text, from, msg.key);
+	var formatted = ircFormat(msg.text, msg.from, msg.key);
 
 	// If there is text, add it to the chat box.
 	if (formatted)
