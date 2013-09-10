@@ -367,8 +367,11 @@ function onTick()
 	while (true)
 	{
 		var message = Engine.LobbyGuiPollMessage();
+		// Clean Message
 		if (!message)
 			break;
+		message.from = escapeText(message.from);
+		message.text = escapeText(message.text);
 		switch (message.type)
 		{
 		case "mucmessage": // For room messages
@@ -485,7 +488,7 @@ function onTick()
 function submitChatInput()
 {
 	var input = getGUIObjectByName("chatInput");
-	var text = input.caption;
+	var text = escapeText(input.caption);
 	if (text.length)
 	{
 		if (!handleSpecialCommand(text))
@@ -513,6 +516,7 @@ function handleSpecialCommand(text)
 	case "nick":
 		if (g_spammers[g_Name] != undefined)
 			break;
+		warn(nick);
 		Engine.LobbySetNick(nick);
 		g_Name = nick;
 		break;
@@ -535,12 +539,18 @@ function handleSpecialCommand(text)
 
 function addChatMessage(msg)
 {
-	var from = escapeText(msg.from);
-	var text = escapeText(msg.text);
+	var from = msg.from;
+	var text = msg.text;
+
+	// Set sender color
 	if (msg.color)
 		from = '[color="' + msg.color + '"]' + from + '[/color]';
 	else if (from)
 		from = colorPlayerName(from);
+
+	// Highlight local user's nick
+	if (text.indexOf(g_Name) != -1 && g_Name != from)
+		text = text.replace(new RegExp('\\b' + '\\' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
 
 	// Run spam test
 	if (updateSpamandDetect(text, from))
@@ -552,9 +562,6 @@ function addChatMessage(msg)
 	// If there is text, add it to the chat box.
 	if (formatted)
 	{
-		// Highlight local user's nick
-		if (formatted.indexOf(g_Name) != -1 && g_Name != from)
-			formatted = formatted.replace(new RegExp('\\b' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
 		g_ChatMessages.push(formatted);
 		getGUIObjectByName("chatText").caption = g_ChatMessages.join("\n");
 	}
