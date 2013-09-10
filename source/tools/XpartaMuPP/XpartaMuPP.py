@@ -138,6 +138,18 @@ class LeaderboardList():
       player1.rating -= rating_adjustment
       player2.rating += rating_adjustment
     return self
+  def addAndRateGame(self, gamereport):
+    """
+      Calls addGame and if the game has only two
+      players, also calls rateGame.
+      Returns the result of addGame.
+    """
+
+    game = self.addGame(gamereport)
+    if len(game.players) == 2:
+      self.rateGame(game)
+    return game
+
   def getBoard(self):
     """
       Returns a dictionary of player rankings to
@@ -369,7 +381,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         Client is reporting end of game statistics
         """
         try:
-          self.leaderboard.addGame(iq['from'], iq['gamereport']['game'])
+          self.leaderboard.addAndRateGame(iq['from'], iq['gamereport']['game'])
         except:
           logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
     else:
