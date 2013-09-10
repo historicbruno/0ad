@@ -78,16 +78,40 @@ class LeaderboardList():
       the creation failed for any reason.
     """
     # Discard any games still in progress.
-    if any(map(lambda state: state == "active",
-               dict.values(gamereport.playerStates))):
+    if any(map(lambda state: state == 'active',
+               dict.values(gamereport['playerStates']))):
       return None
+
     players = map(lambda jid: db.query(Player).filter_by(jid=jid).first(),
-                  gamereport.players)
+                  dict.keys(gamereport['playerStates']))
+
+    winning_jid = list(dict.keys({jid: state for jid, state in
+                                  gamereport['playerStates'].items()
+                                  if state == 'won'}))[0]
+
+    def get(stat, jid):
+      return gamereport[stat]['playerStates'][jid]
+
+    stats = {'civ': 'civs', 'foodGathered': 'foodGathered', 'foodUsed': 'foodUsed',
+             'woodGathered': 'woodGathered', 'woodUsed': 'woodUsed',
+             'stoneGathered': 'stoneGathered', 'stoneUsed': 'stoneUsed',
+             'metalGathered': 'metalGathered', 'metalUsed': 'metalUsed'}
+
     playerInfos = []
     for player in players:
       jid = player.jid
       playerinfo = PlayerInfo(player=player)
+      for dbname, reportname in stats.items():
+        setattr(playerinfo, dbname, get(reportname, jid))
       playerInfos.append(playerinfo)
+
+    game = Game(map=gamereport['mapName'], duration=int(gamereport['timeElapsed']))
+    game.players.extend(players)
+    game.player_info.extend(playerInfos)
+    game.winner = db.query(Player).filter_by(jid=winning_jid).first()
+    db.add(game)
+    db.commit()
+    return game
   def getBoard(self):
     """
       Returns a dictionary of player rankings to
