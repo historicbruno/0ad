@@ -28,6 +28,7 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
 from LobbyRanking import session as db, Game, Player, PlayerInfo
+from ELO import get_rating_adjustment
 from config import default_rating, leaderboard_minimum_games, leaderboard_active_games
 
 ## Class that contains and manages leaderboard data ##
@@ -112,6 +113,27 @@ class LeaderboardList():
     db.add(game)
     db.commit()
     return game
+  def rateGame(self, game):
+    """
+      Takes a game with 2 players and alters their ratings
+      based on the result of the game.
+      Returns self.
+    """
+    player1 = game.players[0]
+    player2 = game.players[1]
+    # TODO: Support draws. Since it's impossible to draw in the game currently,
+    # the database model, and therefore this code, requires a winner.
+    # The Elo implementation does not, however.
+    result = 1 if player1 == game.winner else -1
+    rating_adjustment = get_rating_adjustment(player1.rating, player2.rating,
+      player1.games.length, player2.games.length, result)
+    if result == 1:
+      player1.rating += rating_adjustment
+      player2.rating -= rating_adjustment
+    else:
+      player1.rating -= rating_adjustment
+      player2.rating += rating_adjustment
+    return self
   def getBoard(self):
     """
       Returns a dictionary of player rankings to
