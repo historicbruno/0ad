@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<sprites>
+
+	<!--
+	==========================================
+	- Scrollbar -
+	==========================================
+	-->
+	<sprite name = "ModernScrollBack">
+		<image 	texture = "global/modern/scrollback.png"
+			real_texture_placement = "0 0 15 103"
+			size = "0 0 100% 100%"
+		/>
+	</sprite>
+	<sprite name = "ModernScrollBar">
+		<image 	texture = "global/modern/scrollbar.png"
+			real_texture_placement = "0 0 15 15"
+			size = "0 0 100% 100%"
+		/>
+	</sprite>
+	<!--
+	==========================================
+	- Window -
+	==========================================
+	-->
+	<sprite name = "ModernWindow">
+		<!-- black back-fill -->
+		<image backcolor = "0 0 0"/>
+
+		<!-- background -->
+		<image texture = "global/modern/background.png"
+			texture_size = "0 0 1024 1024"
+			size = "12 22 100%-12 100%-11"
+		/>
+
+		<!-- top and bottom edge -->
+		<image texture = "global/modern/border-top.png"
+			texture_size = "0 0 1259 6"
+			size = "10 18 100%-12 24"
+		/>
+		<image texture = "global/modern/border-bottom.png"
+			texture_size = "0 0 1259 6"
+			size = "10 100%-15 100%-12 100%-9"
+		/>
+
+		<!-- title frame -->
+		<image texture = "global/modern/titlebar-left.png"
+			real_texture_placement = "0 0 34 33"
+			size = "50%-98 4 50%-64 37"
+		/>
+		<image texture = "global/modern/titlebar-middle.png"
+			real_texture_placement = "0 0 138 23"
+			size = "50%-69 11 50%+69 34"
+		/>
+		<image texture = "global/modern/titlebar-right.png"
+			real_texture_placement = "0 0 34 33"
+			size = "50%+64 4 50%+98 37"
+		/>
+	</sprite>
+</sprites>

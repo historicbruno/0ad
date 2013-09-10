@@ -716,8 +716,8 @@ function reportGame(extendedSimState)
 	var playerMetalSoldString = "";
 	var playerTradeIncomeString = "";
 	// Unit Stats
-    var playerUnitsLostString = "";
-    var playerUnitsTrainedString = "";
+	var playerUnitsLostString = "";
+	var playerUnitsTrainedString = "";
 	var playerEnemyUnitsKilledString = "";
 	// Building stats
 	var playerBuildingsConstructedString = "";

@@ -67,7 +67,6 @@ CInput::CInput()
 	// Add scroll-bar
 	CGUIScrollBarVertical * bar = new CGUIScrollBarVertical();
 	bar->SetRightAligned(true);
-	bar->SetUseEdgeButtons(true);
 	AddScrollBar(bar);
 }
 

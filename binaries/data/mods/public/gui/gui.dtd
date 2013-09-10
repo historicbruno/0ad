@@ -120,7 +120,7 @@
   name					CDATA #REQUIRED
   width					CDATA #IMPLIED
   scroll_wheel				%bool; #IMPLIED
-  alwaysshown				%bool; #IMPLIED
+  show_edge_buttons				%bool; #REQUIRED
   scroll_speed				CDATA #IMPLIED
   sprite_button_top			CDATA #IMPLIED
   sprite_button_top_pressed		CDATA #IMPLIED
