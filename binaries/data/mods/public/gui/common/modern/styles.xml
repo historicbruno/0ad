@@ -7,4 +7,18 @@
 		text_align = "left"
 		text_valign = "top"
 	/>
+	<style 	name = "ModernList"
+		buffer_zone = "5"
+		font = "serif-bold-stroke-14"
+		scrollbar = "true"
+		scrollbar_style = "ModernScrollBar"
+		sprite = "ModernListFooter"
+		sprite_selectarea = "ModernDarkBoxWhite"
+		sprite_heading = "ModernListHeader"
+		textcolor = "white"
+		textcolor_selected = "white"
+		text_align = "left"
+		text_valign = "center"
+		sound_selected = "audio/interface/ui/ui_button_click.ogg"
+	/>
 </styles>
