@@ -25,14 +25,16 @@
 	==========================================
 	-->
 	<sprite name = "ModernWindow">
+		<!-- black back-fill -->
 		<image backcolor = "0 0 0"/>
+
 		<!-- background -->
 		<image texture = "global/modern/background.png"
 			texture_size = "0 0 1024 1024"
 			size = "12 22 100%-12 100%-11"
 		/>
 
-		<!-- sides -->
+		<!-- top and bottom edge -->
 		<image texture = "global/modern/border-top.png"
 			texture_size = "0 0 1259 6"
 			size = "10 18 100%-12 24"
