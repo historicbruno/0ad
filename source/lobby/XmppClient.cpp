@@ -122,7 +122,7 @@ XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, 
 
 	_client->registerConnectionListener( this );
 	_client->setPresence(Presence::Available, -1);
-	_client->disco()->setVersion( "Pyrogenesis", "1.0" );
+	_client->disco()->setVersion( "Pyrogenesis", "0.0.15" );
 	_client->disco()->setIdentity( "client", "bot" );
 	_client->setCompression(false);
 
