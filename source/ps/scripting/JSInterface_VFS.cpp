@@ -66,7 +66,7 @@ struct BuildDirEntListState
 };
 
 // called for each matching directory entry; add its full pathname to array.
-static Status BuildDirEntListCB(const VfsPath& pathname, const FileInfo& UNUSED(fileINfo), uintptr_t cbData)
+static Status BuildDirEntListCB(const VfsPath& pathname, const CFileInfo& UNUSED(fileINfo), uintptr_t cbData)
 {
 	BuildDirEntListState* s = (BuildDirEntListState*)cbData;
 
@@ -156,7 +156,7 @@ JSBool JSI_VFS::GetFileMTime(JSContext* cx, uintN argc, jsval* vp)
 	if (!ToPrimitive<CStrW> (cx, JS_ARGV(cx, vp)[0], filename))
 		return JS_FALSE;
 
-	FileInfo fileInfo;
+	CFileInfo fileInfo;
 	Status err = g_VFS->GetFileInfo(filename, &fileInfo);
 	JS_CHECK_FILE_ERR(err);
 
@@ -177,7 +177,7 @@ JSBool JSI_VFS::GetFileSize(JSContext* cx, uintN argc, jsval* vp)
 	if (!ToPrimitive<CStrW> (cx, JS_ARGV(cx, vp)[0], filename))
 		return JS_FALSE;
 
-	FileInfo fileInfo;
+	CFileInfo fileInfo;
 	Status err = g_VFS->GetFileInfo(filename, &fileInfo);
 	JS_CHECK_FILE_ERR(err);
 

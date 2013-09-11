@@ -25,10 +25,9 @@
 	==========================================
 	-->
 	<sprite name = "ModernWindow">
-		<!-- black back-fill -->
-		<image backcolor = "0 0 0"/>
 
 		<!-- background -->
+		<image backcolor = "0 0 0"/>
 		<image texture = "global/modern/background.png"
 			texture_size = "0 0 1024 1024"
 			size = "12 22 100%-12 100%-11"
@@ -45,17 +44,65 @@
 		/>
 
 		<!-- title frame -->
-		<image texture = "global/modern/titlebar-left.png"
-			real_texture_placement = "0 0 34 33"
-			size = "50%-98 4 50%-64 37"
-		/>
 		<image texture = "global/modern/titlebar-middle.png"
 			real_texture_placement = "0 0 138 23"
 			size = "50%-69 11 50%+69 34"
 		/>
+		<image texture = "global/modern/titlebar-left.png"
+			real_texture_placement = "0 0 34 33"
+			size = "50%-98 4 50%-64 37"
+		/>
 		<image texture = "global/modern/titlebar-right.png"
 			real_texture_placement = "0 0 34 33"
 			size = "50%+64 4 50%+98 37"
+		/>
+	</sprite>
+	<sprite name="ModernDarkBoxGold">
+		<!-- borders -->
+		<image texture = "global/modern/gold-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 0 100% 1"
+		/>
+		<image texture = "global/modern/gold-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 100%-1 100% 100%"
+		/>
+		<!-- background -->
+		<image backcolor = "12 12 12 150"
+			size = "0 1 100% 100%-1"
+		/>
+	</sprite>
+	<sprite name="ModernDarkBoxWhite">
+		<!-- borders -->
+		<image texture = "global/modern/white-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 0 100% 1"
+		/>
+		<image texture = "global/modern/white-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 100%-1 100% 100%"
+		/>
+		<!-- background -->
+		<image backcolor = "12 12 12 150"
+			size = "0 1 100% 100%-1"
+		/>
+	</sprite>
+	<sprite name = "ModernListHeader">
+		<image texture = "global/modern/gold-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 0 100% 1"
+		/>
+		<image backcolor = "12 12 12 150"
+			size = "0 1 100% 100%"
+		/>
+	</sprite>
+	<sprite name = "ModernListFooter">
+		<image texture = "global/modern/gold-separator.png"
+			real_texture_placement = "0 0 806 1"
+			size = "0 100%-1 100% 100%"
+		/>
+		<image backcolor = "12 12 12 150"
+			size = "0 0 100% 100%-1"
 		/>
 	</sprite>
 </sprites>

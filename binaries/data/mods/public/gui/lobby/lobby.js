@@ -367,8 +367,11 @@ function onTick()
 	while (true)
 	{
 		var message = Engine.LobbyGuiPollMessage();
+		// Clean Message
 		if (!message)
 			break;
+		message.from = escapeText(message.from);
+		message.text = escapeText(message.text);
 		switch (message.type)
 		{
 		case "mucmessage": // For room messages
@@ -485,7 +488,7 @@ function onTick()
 function submitChatInput()
 {
 	var input = getGUIObjectByName("chatInput");
-	var text = input.caption;
+	var text = escapeText(input.caption);
 	if (text.length)
 	{
 		if (!handleSpecialCommand(text))
@@ -535,26 +538,26 @@ function handleSpecialCommand(text)
 
 function addChatMessage(msg)
 {
-	var from = escapeText(msg.from);
-	var text = escapeText(msg.text);
+	// Set sender color
 	if (msg.color)
-		from = '[color="' + msg.color + '"]' + from + '[/color]';
-	else if (from)
-		from = colorPlayerName(from);
+		msg.from = '[color="' + msg.color + '"]' + msg.from + '[/color]';
+	else if (msg.from)
+		msg.from = colorPlayerName(msg.from);
+
+	// Highlight local user's nick
+	if (msg.text.indexOf(g_Name) != -1 && g_Name != msg.from)
+		msg.text = msg.text.replace(new RegExp('\\b' + '\\' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
 
 	// Run spam test
-	if (updateSpamandDetect(text, from))
+	if (updateSpamandDetect(msg.text, msg.from))
 		return;
 
 	// Format Text
-	var formatted = ircFormat(text, from, msg.key);
+	var formatted = ircFormat(msg.text, msg.from, msg.key);
 
 	// If there is text, add it to the chat box.
 	if (formatted)
 	{
-		// Highlight local user's nick
-		if (formatted.indexOf(g_Name) != -1 && g_Name != from)
-			formatted = formatted.replace(new RegExp('\\b' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
 		g_ChatMessages.push(formatted);
 		getGUIObjectByName("chatText").caption = g_ChatMessages.join("\n");
 	}
