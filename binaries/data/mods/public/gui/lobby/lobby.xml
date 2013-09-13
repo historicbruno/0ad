@@ -18,48 +18,58 @@
 		</action>
 
 		<!-- START Upper part of the gui containing the list of games and some details about the selected game -->
-		<object size="25 50 100%-25 0%+400">
-			<object name="gameInfoEmpty" size="0 0 340 100%-10" type="image" sprite="ModernDarkBoxGold" hidden="false">
+		<object size="25 50 100%-25 0%+390">
+			<object name="gameInfoEmpty" size="0 0 340 100%" type="image" sprite="ModernDarkBoxGold" hidden="false">
 				<object size="50%-110 50%-50 50%+110 50%+50" type="image" sprite="productLogo"/>
 			</object>
-			<object name="gameInfo" size="0 0 340 100%-10" type="image" sprite="ModernDarkBoxGold" hidden="true">
-				<object name="sgMapName" size="170 10 100%-10 30" type="text" style="TitleText"/>
+			<object name="gameInfo" size="0 0 340 100%" type="image" sprite="ModernDarkBoxGold" hidden="true">
+				<object name="sgMapName" size="170 10 100%-10 30" type="text" style="ModernCenteredLabelText"/>
 				<object name="sgMapPreview" size="10 10 160 160"  type="image" sprite=""/>
 
+				<object size="160 30 100%-10 31" type="image" sprite="ModernGoldLine" z="25"/>
+
 				<!-- Number of Players -->
-				<object size="170 40 100%-10 60">
-					<object size="0 0 80 100%">
-						<object size="0 0 100% 100%" type="text" style="LeftLabelText">Players:</object>
+				<object size="160 30 100%-10 60">
+					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Players:</object>
 					</object>
-					<object size="80 0 100% 100%">
-						<object name="sgNbPlayers" size="0 0 100% 100%" type="text" style="LeftLabelText"/>
+					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
+						<object name="sgNbPlayers" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
 					</object>
 				</object>
+
+				<object size="160 60 100%-10 61" type="image" sprite="ModernWhiteLine" z="25"/>
 
 				<!-- Player Names -->
-				<object size="170 60 100%-10 120">
-					<object name="sgPlayersNames" size="0 0 100% 100%" type="text" style="CenteredLabelText" textcolor="50 100 140"/>
+				<object size="170 60 100%-10 100">
+					<object name="sgPlayersNames" size="0 0 100% 100%" type="text" style="ModernCenteredLabelText"/>
 				</object>
+
+				<object size="160 100 100%-10 101" type="image" sprite="ModernWhiteLine" z="25"/>
 
 				<!-- Map Size -->
-				<object size="170 120 100%-10 140">
-					<object size="0 0 80 100%">
-						<object size="0 0 100% 100%" type="text" style="LeftLabelText">Map size:</object>
+				<object size="160 100 100% 130">
+					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map size:</object>
 					</object>
-					<object size="80 0 100% 100%">
-						<object name="sgMapSize" size="0 0 100% 100%" type="text" style="LeftLabelText"/>
+					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
+						<object name="sgMapSize" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
 					</object>
 				</object>
 
+				<object size="160 130 100%-10 131" type="image" sprite="ModernWhiteLine" z="25"/>
+
 				<!-- Victory Condition -->
-				<object size="170 140 100%-10 160">
-					<object size="0 0 80 100%">
-						<object size="0 0 100% 100%" type="text" style="LeftLabelText">Victory:</object>
+				<object size="160 130 100% 160">
+					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Victory:</object>
 					</object>
-					<object size="80 0 100% 100%">
-						<object name="sgVictoryCondition" size="0 0 100% 100%" type="text" style="LeftLabelText"/>
+					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
+						<object name="sgVictoryCondition" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
 					</object>
 				</object>
+
+				<object size="160 160 100%-10 161" type="image" sprite="ModernWhiteLine" z="25"/>
 
 				<!-- Map Description -->
 				<object type="image" sprite="ModernDarkBoxWhite" size="10 170 100%-10 100%-40">
@@ -78,7 +88,7 @@
 			<object name="gamesBox"
 				style="ModernList"
 				type="olist"
-				size="345 0 100% 100%-35">
+				size="345 0 100% 100%-25">
 				<action on="SelectionChange"> selectGame(this.selected);</action>
 				<def id="name" heading="Name" color="0 60 0" width="180"/>
 				<!--<def id="ip" heading="IP" color="0 128 128" width="170"/>-->
@@ -131,7 +141,7 @@
 			</object>
 			<!-- END Filter panel -->
 
-			<object name="gamesBar" size="345 100%-30 100% 100%">
+			<object name="gamesBar" size="345 100%-20 100% 100%">
 				<object type="button" style="StoneButton" size="0 0 100 20">
 					Leaderboards
 					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
@@ -162,8 +172,7 @@
 			<object name="playersBox"
 				style="ModernList"
 				type="olist"
-				size="100%-210 0 100% 100%"
-				tooltip_style="pgFloatingToolTip">
+				size="100%-210 0 100% 100%">
 				<def id="status" heading="Status" width="60"/>
 				<def id="name" heading="Name" width="50"/>
 			</object>
