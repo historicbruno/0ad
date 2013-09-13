@@ -94,7 +94,7 @@
 				<!--<def id="ip" heading="IP" color="0 128 128" width="170"/>-->
 				<def id="mapName" heading="Map name" color="128 128 128" width="140"/>
 				<def id="mapSize" heading="Map size" color="128 128 128" width="100"/>
-				<def id="victoryCondition" heading="Victory" color="0 128 128" width="100"/>
+				<def id="mapType" heading="Map Type" color="0 128 128" width="100"/>
 				<def id="nPlayers" heading="Players" color="0 128 128" width="30"/>
 			</object>
 
@@ -116,8 +116,8 @@
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 70 150 90" text_align="left" textcolor="white">Victory condition :</object>
-				<object name="victoryConditionFilter"
+				<object type="text" size="10 70 150 90" text_align="left" textcolor="white">Map type :</object>
+				<object name="mapTypeFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
 					size="160 70 310 90">

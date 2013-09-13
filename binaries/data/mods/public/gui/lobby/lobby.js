@@ -25,9 +25,9 @@ function init(attribs)
 	playersNumberFilter.list = [2,3,4,5,6,7,8,"Any"];
 	playersNumberFilter.list_data = [2,3,4,5,6,7,8,""];
 
-	var victoryConditionFilter = getGUIObjectByName("victoryConditionFilter");
-	victoryConditionFilter.list = ["Conquest","Any"];
-	victoryConditionFilter.list_data = ["conquest",""];
+	var mapTypeFilter = getGUIObjectByName("mapTypeFilter");
+	mapTypeFilter.list = ["Random", "Scenario", "Any"];
+	mapTypeFilter.list_data = ["conquest", "scenario", ""];
 
 	Engine.LobbySetPlayerPresence("available");
 	Engine.SendGetGameList();
@@ -77,7 +77,7 @@ function resetFilters()
 	// Reset states of gui objects
 	getGUIObjectByName("mapSizeFilter").selected = getGUIObjectByName("mapSizeFilter").list.length - 1;
 	getGUIObjectByName("playersNumberFilter").selected = getGUIObjectByName("playersNumberFilter").list.length - 1;
-	getGUIObjectByName("victoryConditionFilter").selected = getGUIObjectByName("victoryConditionFilter").list.length - 1;
+	getGUIObjectByName("mapTypeFilter").selected = getGUIObjectByName("mapTypeFilter").list.length - 1;
 	getGUIObjectByName("hideFullFilter").checked = true;
 
 	// Update the list of games
@@ -96,11 +96,11 @@ function applyFilters()
 	selectGame(getGUIObjectByName("gamesBox").selected);
 }
 
-function displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilter, hideFullFilter)
+function displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter)
 {
 	if(mapSizeFilter != "" && g.mapSize != mapSizeFilter) return false;
 	if(playersNumberFilter != "" && g.tnbp != playersNumberFilter) return false;
-	if(victoryConditionFilter != "" && g.victoryCondition != victoryConditionFilter) return false;
+	if(mapTypeFilter != "" && g.mapType != mapTypeFilter) return false;
 	if(hideFullFilter && g.tnbp == g.nbp) return false;
 
 	return true;
@@ -175,34 +175,34 @@ function updateGameList()
 	var list_ip = [];
 	var list_mapName = [];
 	var list_mapSize = [];
-	var list_victoryCondition = [];
+	var list_mapType = [];
 	var list_nPlayers = [];
 	var list = [];
 	var list_data = [];
 
 	var mapSizeFilterDD = getGUIObjectByName("mapSizeFilter");
 	var playersNumberFilterDD = getGUIObjectByName("playersNumberFilter");
-	var victoryConditionFilterDD = getGUIObjectByName("victoryConditionFilter");
+	var mapTypeFilterDD = getGUIObjectByName("mapTypeFilter");
 	var hideFullFilterCB = getGUIObjectByName("hideFullFilter");
 
 	// Get filter values
 	mapSizeFilter = mapSizeFilterDD.selected >= 0 ? mapSizeFilterDD.list_data[mapSizeFilterDD.selected] : "";
 	playersNumberFilter = playersNumberFilterDD.selected >=0 ? playersNumberFilterDD.list_data[playersNumberFilterDD.selected] : "";
-	victoryConditionFilter = victoryConditionFilterDD.selected >= 0 ? victoryConditionFilterDD.list_data[victoryConditionFilterDD.selected] : "";
+	mapTypeFilter = mapTypeFilterDD.selected >= 0 ? mapTypeFilterDD.list_data[mapTypeFilterDD.selected] : "";
 	hideFullFilter = hideFullFilterCB.checked ? true : false;
 
 	var c = 0;
 	for each (g in gameList)
 	{
-		if(displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilter, hideFullFilter))
+		if(displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter))
 		{
 			// Highlight games 'waiting' for this player, otherwise display as green
-			var name = (g.state != 'waiting') ? '[color="0 125 0"]' + g.name + '[/color]' : '[color="orange"]' + toTitleCase(g.name) + '[/color]';
+			var name = (g.state != 'waiting') ? '[color="0 125 0"]' + g.name + '[/color]' : '[color="orange"]' + g.name + '[/color]';
 			list_name.push(name);
 			list_ip.push(g.ip);
-			list_mapName.push(toTitleCase(g.mapName));
+			list_mapName.push(g.mapName);
 			list_mapSize.push(tilesToMapSize(g.mapSize));
-			list_victoryCondition.push(toTitleCase(g.victoryCondition));
+			list_mapType.push(g.mapType);
 			list_nPlayers.push(g.nbp + "/" +g.tnbp);
 			list.push(g.name);
 			list_data.push(c);
@@ -214,7 +214,7 @@ function updateGameList()
 	// gamesBox.list_ip = list_ip;
 	gamesBox.list_mapName = list_mapName;
 	gamesBox.list_mapSize = list_mapSize;
-	gamesBox.list_victoryCondition = list_victoryCondition;
+	gamesBox.list_mapType = list_mapType;
 	gamesBox.list_nPlayers = list_nPlayers;
 	gamesBox.list = list;
 	gamesBox.list_data = list_data;

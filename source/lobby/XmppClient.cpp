@@ -404,7 +404,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 	game->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
-	std::string name, mapName, mapSize, victoryCondition, nbp, tnbp, players;
+	std::string name, mapName, mapSize, mapType, victoryCondition, nbp, tnbp, players;
 	jsval dataval = data.get();
 
 	// Send IQ
@@ -416,6 +416,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 	SEND_STAT( name );
 	SEND_STAT( mapName );
 	SEND_STAT( mapSize );
+	SEND_STAT( mapType );
 	SEND_STAT( victoryCondition );
 	SEND_STAT( nbp );
 	SEND_STAT( players );
@@ -567,8 +568,8 @@ CScriptValRooted XmppClient::GUIGetGameList()
 		CScriptValRooted game;
 		m_ScriptInterface.Eval("({})", game);
 
-		const char* stats[] = { "name", "ip", "state", "nbp", "tnbp", "players", "mapName", "mapSize", "victoryCondition" };
-		short stats_length = 9;
+		const char* stats[] = { "name", "ip", "state", "nbp", "tnbp", "players", "mapName", "mapSize", "mapType", "victoryCondition" };
+		short stats_length = 10;
 		for (short i = 0; i < stats_length; i++)
 			m_ScriptInterface.SetProperty(game.get(), stats[i], (*it)->findAttribute(stats[i]).c_str());
 
