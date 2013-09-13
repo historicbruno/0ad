@@ -275,42 +275,47 @@ function selectGame(selected)
 	getGUIObjectByName("gameInfo").hidden = false;
 	getGUIObjectByName("gameInfoEmpty").hidden = true;
 
-	// Get the selected map's name
-	var gamesBox = getGUIObjectByName("gamesBox");
-	var g = gamesBox.list_data[selected];
-	var name = g_GameList[g].mapName;
-	getGUIObjectByName("sgMapName").caption = toTitleCase(name);
+	var g = getGUIObjectByName("gamesBox").list_data[selected];
 
-	var mapData = null;
+	// Get the selected map's name
+	getGUIObjectByName("sgMapName").caption = g_GameList[g].mapName;
 
 	// TODO: Don't we already know if the game is a scenario or a random map?
 	// If not we should pass this info to prevent name clashes when hosting the random map
 
 	// Search the selected map in the scenarios
-	if (fileExists("maps/scenarios/" + name + ".xml"))
-		mapData = Engine.LoadMapSettings("maps/scenarios/" + name + ".xml");
+	if (fileExists("maps/scenarios/" + g_GameList[g].mapName + ".xml"))
+	{
+		mapData = Engine.LoadMapSettings("maps/scenarios/" + g_GameList[g].mapName + ".xml");
+		mapType = "Scenario"
+	}
 
 	// Search for the selected map in the random maps
 	if(!mapData)
-		if (fileExists("maps/random/" + name + ".json"))
-			mapData = parseJSONData("maps/random/" + name + ".json");
+		if (fileExists("maps/random/" + g_GameList[g].mapName + ".json"))
+		{
+			mapData = parseJSONData("maps/random/" + g_GameList[g].mapName + ".json");
+			mapType = "Random";
+		}
 
+	// Return and warn the player if we can't find the map. TODO: Tell the player.
 	if(!mapData)
-		log("Map '"+ name +"'  not found");
+	{
+		warn("Map '"+ g_GameList[g].mapName +"'  not found");
+		return;
+	}
 
-	// Load the description from the map file, if there is one, and display it
-	var mapSettings = (mapData && mapData.settings ? deepcopy(mapData.settings) : {});
-	var description = mapSettings.Description || "Sorry, no description available.";
-	getGUIObjectByName("sgMapDescription").caption = description;
+	// Display map description if it exists, otherwise display a placeholder.
+	getGUIObjectByName("sgMapDescription").caption = description = mapData.settings.Description || "Sorry, no description available.";
 
-	// Set the number of players, the map size and the victory condition text boxes
+	// Set the number of players, the names of the players, the map size and the map type text boxes
 	getGUIObjectByName("sgNbPlayers").caption = g_GameList[g].nbp + "/" + g_GameList[g].tnbp;
 	getGUIObjectByName("sgPlayersNames").caption = g_GameList[g].players;
 	getGUIObjectByName("sgMapSize").caption = tilesToMapSize(g_GameList[g].mapSize);
-	getGUIObjectByName("sgVictoryCondition").caption = toTitleCase(g_GameList[g].victoryCondition);
+	getGUIObjectByName("sgMapType").caption = mapType;
 
 	// Set the map preview
-	var mapPreview = mapSettings.Preview || "nopreview.png";
+	var mapPreview = mapData.settings.Preview || "nopreview.png";
 	getGUIObjectByName("sgMapPreview").sprite = "cropped:(0.7812,0.5859)session/icons/mappreview/" + mapPreview;
 }
 

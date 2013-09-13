@@ -23,7 +23,7 @@
 				<object size="50%-110 50%-50 50%+110 50%+50" type="image" sprite="productLogo"/>
 			</object>
 			<object name="gameInfo" size="0 0 340 100%" type="image" sprite="ModernDarkBoxGold" hidden="true">
-				<object name="sgMapName" size="170 10 100%-10 30" type="text" style="ModernCenteredLabelText"/>
+				<object name="sgMapName" size="170 0 100%-10 30" type="text" style="ModernCenteredLabelText"/>
 				<object name="sgMapPreview" size="10 10 160 160"  type="image" sprite=""/>
 
 				<object size="160 30 100%-10 31" type="image" sprite="ModernGoldLine" z="25"/>
@@ -47,25 +47,25 @@
 
 				<object size="160 100 100%-10 101" type="image" sprite="ModernWhiteLine" z="25"/>
 
-				<!-- Map Size -->
+				<!-- Map Type -->
 				<object size="160 100 100% 130">
 					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
-						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map size:</object>
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map Type</object>
 					</object>
 					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
-						<object name="sgMapSize" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
+						<object name="sgMapType" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
 					</object>
 				</object>
 
 				<object size="160 130 100%-10 131" type="image" sprite="ModernWhiteLine" z="25"/>
 
-				<!-- Victory Condition -->
+				<!-- Map Size -->
 				<object size="160 130 100% 160">
 					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
-						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Victory:</object>
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map size:</object>
 					</object>
 					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
-						<object name="sgVictoryCondition" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
+						<object name="sgMapSize" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
 					</object>
 				</object>
 
