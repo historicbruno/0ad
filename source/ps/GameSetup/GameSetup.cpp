@@ -322,9 +322,6 @@ static void RegisterJavascriptInterfaces()
 	// maths
 	JSI_Vector3D::init();
 
-	// graphics
-	CGameView::ScriptingInit();
-
 	// renderer
 	CRenderer::ScriptingInit();
 
