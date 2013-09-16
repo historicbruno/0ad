@@ -51,9 +51,9 @@ class LeaderboardList():
       the Player model, or the one that already
       exists in the database.
     """
-    players = db.query(Player).filter_by(jid=JID)
+    players = db.query(Player).filter_by(jid=str(JID))
     if not players.first():
-      player = Player(jid=JID, rating=default_rating)
+      player = Player(jid=str(JID), rating=default_rating)
       db.add(player)
       db.commit()
       return player
