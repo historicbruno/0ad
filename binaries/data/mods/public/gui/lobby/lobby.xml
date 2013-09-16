@@ -155,7 +155,7 @@
 							getGUIObjectByName("filterPanel").hidden = false;
 							getGUIObjectByName("gamesBox").size="345 0 100% 100%-145";
 						}
-						else 
+						else
 						{
 							this.caption = ">>";
 							getGUIObjectByName("filterPanel").hidden = true;
@@ -224,7 +224,7 @@
 		</object>
 		<!-- END Navigation bar containing the 'Main menu' button -->
 
-		<!-- START Window for leaderboard stats -->		
+		<!-- START Window for leaderboard stats -->
 		<!-- Add a translucent black background to fade out the menu page -->
 		<object hidden="true" name="leaderboardFade" type="image" z="100" sprite="bkTranslucent"/>
 		<object hidden="true" name="leaderboard" type="image" style="StoneDialog" size="50%-175 50%-125 50%+175 50%+125" z="101">
@@ -236,7 +236,8 @@
 				tooltip_style="pgFloatingToolTip"
 				sprite_heading="colour:0 0 0 170">
 				<def id="rank" heading="Rank" color="255 255 255" width="50"/>
-				<def id="name" heading="Name" color="255 255 255" width="250"/>
+				<def id="name" heading="Name" color="255 255 255" width="150"/>
+				<def id="rating" heading="Rating" color="255 255 255" width="50"/>
 			</object>
 			<object type="button" style="StoneButton" size="50%+5 100%-53 50%+133 100%-25">
 				Back

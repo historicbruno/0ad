@@ -589,8 +589,10 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 		CScriptValRooted board;
 		m_ScriptInterface.Eval("({})", board);
 
-		m_ScriptInterface.SetProperty(board.get(), "name", (*it)->findAttribute("name").c_str());
-		m_ScriptInterface.SetProperty(board.get(), "rank", (*it)->findAttribute("rank").c_str());
+		const char* attributes[] = { "name", "rank", "rating" };
+		short attributes_length = 3;
+		for (short i = 0; i < attributes_length; i++)
+			m_ScriptInterface.SetProperty(board.get(), attributes[i], (*it)->findAttribute(attributes[i]).c_str());
 
 		m_ScriptInterface.CallFunctionVoid(boardList.get(), "push", board);
 	}

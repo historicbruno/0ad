@@ -223,8 +223,8 @@ class BoardListXmppPlugin(ElementBase):
   sub_interfaces = interfaces
   plugin_attrib = 'boardlist'
 
-  def addItem(self, name, rank):
-    itemXml = ET.Element("board", {"name":name, "rank":rank})
+  def addItem(self, name, rank, rating):
+    itemXml = ET.Element("board", {"name": name, "rank": rank, "rating": rating})
     self.xml.append(itemXml)
 
   def getItem(self):
@@ -427,7 +427,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     ## Pull leaderboard data and add it to the stanza
     board = self.leaderboard.getBoard()
     for i in board:
-      stz.addItem(board[i]['name'], board[i]['rank'])
+      stz.addItem(board[i]['name'], board[i]['rank'], board[i]['rating'])
 
     ## Set aditional IQ attributes
     iq = self.Iq()
