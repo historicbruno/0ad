@@ -32,8 +32,9 @@ from ELO import get_rating_adjustment
 from config import default_rating, leaderboard_minimum_games, leaderboard_active_games
 
 ## Class that contains and manages leaderboard data ##
-class LeaderboardList():
-  def __init__(self):
+class LeaderboardList(object):
+  def __init__(self, room):
+    self.room = room
     self.leaderboard = {}
 
     ## Add some Fake leaderboard figures for testing
@@ -261,7 +262,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.gameList = GameList()
 
     # Init leaderboard object
-    self.leaderboard = LeaderboardList()
+    self.leaderboard = LeaderboardList(room)
 
     # Store mapping of nicks and XmppIDs, attached via presence stanza
     self.nicks = {}
