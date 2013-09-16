@@ -239,11 +239,11 @@
 				<def id="name" heading="Name" color="255 255 255" width="150"/>
 				<def id="rating" heading="Rating" color="255 255 255" width="50"/>
 			</object>
-			<object type="button" style="StoneButton" size="50%+5 100%-53 50%+133 100%-25">
+			<object type="button" style="StoneButton" size="50%+5 100%-45 50%+133 100%-17">
 				Back
 				<action on="Press">getGUIObjectByName("leaderboard").hidden = true;getGUIObjectByName("leaderboardFade").hidden = true;</action>
 			</object>
-			<object type="button" style="StoneButton" size="50%-133 100%-53 50%-5 100%-25">
+			<object type="button" style="StoneButton" size="50%-133 100%-45 50%-5 100%-17">
 				Update
 				<action on="Press">Engine.SendGetBoardList();</action>
 			</object>
