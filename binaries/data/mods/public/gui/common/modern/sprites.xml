@@ -57,6 +57,44 @@
 			size = "50%+64 4 50%+98 37"
 		/>
 	</sprite>
+
+	<!--
+	==========================================
+	- Dialog -
+	==========================================
+	-->
+	<sprite name="ModernDialog">
+		<!-- background -->
+		<image texture = "global/modern/background.png"
+			texture_size = "0 0 512 512"
+			size = "4 0 100%-4 100%-4"
+		/>
+
+		<!-- top and bottom edge -->
+		<image texture = "global/modern/border-top.png"
+			texture_size = "0 0 1259 6"
+			size = "3 0%-3 100%-4 4"
+		/>
+		<image texture = "global/modern/border-bottom.png"
+			texture_size = "0 0 1259 6"
+			size = "3 100%-7 100%-4 100%-1"
+		/>
+
+		<!-- title frame -->
+		<image texture = "global/modern/titlebar-middle.png"
+			real_texture_placement = "0 0 138 23"
+			size = "50%-69 0%-11 50%+69 12"
+		/>
+		<image texture = "global/modern/titlebar-left.png"
+			real_texture_placement = "0 0 34 32"
+			size = "50%-98 0%-18 50%-64 15"
+		/>
+		<image texture = "global/modern/titlebar-right.png"
+			real_texture_placement = "0 0 34 32"
+			size = "50%+64 0%-18 50%+98 15"
+		/>
+	</sprite>
+
 	<!--
 	==========================================
 	- Box -

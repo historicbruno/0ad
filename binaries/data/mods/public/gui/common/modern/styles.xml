@@ -7,6 +7,12 @@
 		text_align = "left"
 		text_valign = "top"
 	/>
+	<style 	name = "ModernDialog"
+		sprite = "ModernDialog"
+		buffer_zone = "12"
+		text_align = "left"
+		text_valign = "top"
+	/>
 	<style 	name = "ModernList"
 		buffer_zone = "5"
 		font = "serif-bold-stroke-14"
