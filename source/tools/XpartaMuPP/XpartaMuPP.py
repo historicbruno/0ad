@@ -33,16 +33,6 @@ from config import default_rating, leaderboard_minimum_games, leaderboard_active
 
 ## Class that contains and manages leaderboard data ##
 class LeaderboardList():
-  def __init__(self):
-    self.leaderboard = {}
-
-    ## Add some Fake leaderboard figures for testing
-    ## ***remove when actual user reporting works***
-    self.leaderboard["666.666.666.666"] = {"name":"badmadblacksad", "rank":"1"}
-    self.leaderboard["666.666.666.665"] = {"name":"Josh", "rank":"2"}
-    self.leaderboard["666.666.666.664"] = {"name":"leper", "rank":"3"}
-    self.leaderboard["666.666.666.663"] = {"name":"alpha123", "rank":"4"}
-    self.leaderboard["666.666.666.662"] = {"name":"scythetwirler", "rank":"5"}
   def getOrCreatePlayer(self, JID):
     """
       Stores a player(JID) in the database if they
@@ -155,7 +145,11 @@ class LeaderboardList():
       Returns a dictionary of player rankings to
         JIDs for sending.
     """
-    return self.leaderboard
+    board = {}
+    players = db.query(Player).order_by(Player.rating.desc()).limit(100).all()
+    for rank, player in enumerate(players):
+      board[player.jid] = {'name': '@'.join(player.jid.split('@')[:-1]), 'rank': str(rank + 1), 'rating': str(player.rating)}
+    return board
 
 ## Class to tracks all games in the lobby ##
 class GameList():
