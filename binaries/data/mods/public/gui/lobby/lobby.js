@@ -25,9 +25,9 @@ function init(attribs)
 	playersNumberFilter.list = [2,3,4,5,6,7,8,"Any"];
 	playersNumberFilter.list_data = [2,3,4,5,6,7,8,""];
 
-	var victoryConditionFilter = getGUIObjectByName("victoryConditionFilter");
-	victoryConditionFilter.list = ["Conquest","Any"];
-	victoryConditionFilter.list_data = ["conquest",""];
+	var mapTypeFilter = getGUIObjectByName("mapTypeFilter");
+	mapTypeFilter.list = ["Random", "Scenario", "Any"];
+	mapTypeFilter.list_data = ["conquest", "scenario", ""];
 
 	Engine.LobbySetPlayerPresence("available");
 	Engine.SendGetGameList();
@@ -77,7 +77,7 @@ function resetFilters()
 	// Reset states of gui objects
 	getGUIObjectByName("mapSizeFilter").selected = getGUIObjectByName("mapSizeFilter").list.length - 1;
 	getGUIObjectByName("playersNumberFilter").selected = getGUIObjectByName("playersNumberFilter").list.length - 1;
-	getGUIObjectByName("victoryConditionFilter").selected = getGUIObjectByName("victoryConditionFilter").list.length - 1;
+	getGUIObjectByName("mapTypeFilter").selected = getGUIObjectByName("mapTypeFilter").list.length - 1;
 	getGUIObjectByName("hideFullFilter").checked = true;
 
 	// Update the list of games
@@ -96,11 +96,11 @@ function applyFilters()
 	selectGame(getGUIObjectByName("gamesBox").selected);
 }
 
-function displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilter, hideFullFilter)
+function displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter)
 {
 	if(mapSizeFilter != "" && g.mapSize != mapSizeFilter) return false;
 	if(playersNumberFilter != "" && g.tnbp != playersNumberFilter) return false;
-	if(victoryConditionFilter != "" && g.victoryCondition != victoryConditionFilter) return false;
+	if(mapTypeFilter != "" && g.mapType != mapTypeFilter) return false;
 	if(hideFullFilter && g.tnbp == g.nbp) return false;
 
 	return true;
@@ -175,34 +175,34 @@ function updateGameList()
 	var list_ip = [];
 	var list_mapName = [];
 	var list_mapSize = [];
-	var list_victoryCondition = [];
+	var list_mapType = [];
 	var list_nPlayers = [];
 	var list = [];
 	var list_data = [];
 
 	var mapSizeFilterDD = getGUIObjectByName("mapSizeFilter");
 	var playersNumberFilterDD = getGUIObjectByName("playersNumberFilter");
-	var victoryConditionFilterDD = getGUIObjectByName("victoryConditionFilter");
+	var mapTypeFilterDD = getGUIObjectByName("mapTypeFilter");
 	var hideFullFilterCB = getGUIObjectByName("hideFullFilter");
 
 	// Get filter values
 	mapSizeFilter = mapSizeFilterDD.selected >= 0 ? mapSizeFilterDD.list_data[mapSizeFilterDD.selected] : "";
 	playersNumberFilter = playersNumberFilterDD.selected >=0 ? playersNumberFilterDD.list_data[playersNumberFilterDD.selected] : "";
-	victoryConditionFilter = victoryConditionFilterDD.selected >= 0 ? victoryConditionFilterDD.list_data[victoryConditionFilterDD.selected] : "";
+	mapTypeFilter = mapTypeFilterDD.selected >= 0 ? mapTypeFilterDD.list_data[mapTypeFilterDD.selected] : "";
 	hideFullFilter = hideFullFilterCB.checked ? true : false;
 
 	var c = 0;
 	for each (g in gameList)
 	{
-		if(displayGame(g, mapSizeFilter, playersNumberFilter, victoryConditionFilter, hideFullFilter))
+		if(displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter))
 		{
 			// Highlight games 'waiting' for this player, otherwise display as green
-			var name = (g.state != 'waiting') ? '[color="0 125 0"]' + g.name + '[/color]' : '[color="orange"]' + toTitleCase(g.name) + '[/color]';
+			var name = (g.state != 'waiting') ? '[color="0 125 0"]' + g.name + '[/color]' : '[color="orange"]' + g.name + '[/color]';
 			list_name.push(name);
 			list_ip.push(g.ip);
-			list_mapName.push(toTitleCase(g.mapName));
+			list_mapName.push(g.mapName);
 			list_mapSize.push(tilesToMapSize(g.mapSize));
-			list_victoryCondition.push(toTitleCase(g.victoryCondition));
+			list_mapType.push(g.mapType);
 			list_nPlayers.push(g.nbp + "/" +g.tnbp);
 			list.push(g.name);
 			list_data.push(c);
@@ -214,7 +214,7 @@ function updateGameList()
 	// gamesBox.list_ip = list_ip;
 	gamesBox.list_mapName = list_mapName;
 	gamesBox.list_mapSize = list_mapSize;
-	gamesBox.list_victoryCondition = list_victoryCondition;
+	gamesBox.list_mapType = list_mapType;
 	gamesBox.list_nPlayers = list_nPlayers;
 	gamesBox.list = list;
 	gamesBox.list_data = list_data;
@@ -275,42 +275,47 @@ function selectGame(selected)
 	getGUIObjectByName("gameInfo").hidden = false;
 	getGUIObjectByName("gameInfoEmpty").hidden = true;
 
-	// Get the selected map's name
-	var gamesBox = getGUIObjectByName("gamesBox");
-	var g = gamesBox.list_data[selected];
-	var name = g_GameList[g].mapName;
-	getGUIObjectByName("sgMapName").caption = toTitleCase(name);
+	var g = getGUIObjectByName("gamesBox").list_data[selected];
 
-	var mapData = null;
+	// Get the selected map's name
+	getGUIObjectByName("sgMapName").caption = g_GameList[g].mapName;
 
 	// TODO: Don't we already know if the game is a scenario or a random map?
 	// If not we should pass this info to prevent name clashes when hosting the random map
 
 	// Search the selected map in the scenarios
-	if (fileExists("maps/scenarios/" + name + ".xml"))
-		mapData = Engine.LoadMapSettings("maps/scenarios/" + name + ".xml");
+	if (fileExists("maps/scenarios/" + g_GameList[g].mapName + ".xml"))
+	{
+		mapData = Engine.LoadMapSettings("maps/scenarios/" + g_GameList[g].mapName + ".xml");
+		mapType = "Scenario"
+	}
 
 	// Search for the selected map in the random maps
 	if(!mapData)
-		if (fileExists("maps/random/" + name + ".json"))
-			mapData = parseJSONData("maps/random/" + name + ".json");
+		if (fileExists("maps/random/" + g_GameList[g].mapName + ".json"))
+		{
+			mapData = parseJSONData("maps/random/" + g_GameList[g].mapName + ".json");
+			mapType = "Random";
+		}
 
+	// Return and warn the player if we can't find the map. TODO: Tell the player.
 	if(!mapData)
-		log("Map '"+ name +"'  not found");
+	{
+		warn("Map '"+ g_GameList[g].mapName +"'  not found");
+		return;
+	}
 
-	// Load the description from the map file, if there is one, and display it
-	var mapSettings = (mapData && mapData.settings ? deepcopy(mapData.settings) : {});
-	var description = mapSettings.Description || "Sorry, no description available.";
-	getGUIObjectByName("sgMapDescription").caption = description;
+	// Display map description if it exists, otherwise display a placeholder.
+	getGUIObjectByName("sgMapDescription").caption = description = mapData.settings.Description || "Sorry, no description available.";
 
-	// Set the number of players, the map size and the victory condition text boxes
+	// Set the number of players, the names of the players, the map size and the map type text boxes
 	getGUIObjectByName("sgNbPlayers").caption = g_GameList[g].nbp + "/" + g_GameList[g].tnbp;
 	getGUIObjectByName("sgPlayersNames").caption = g_GameList[g].players;
 	getGUIObjectByName("sgMapSize").caption = tilesToMapSize(g_GameList[g].mapSize);
-	getGUIObjectByName("sgVictoryCondition").caption = toTitleCase(g_GameList[g].victoryCondition);
+	getGUIObjectByName("sgMapType").caption = mapType;
 
 	// Set the map preview
-	var mapPreview = mapSettings.Preview || "nopreview.png";
+	var mapPreview = mapData.settings.Preview || "nopreview.png";
 	getGUIObjectByName("sgMapPreview").sprite = "cropped:(0.7812,0.5859)session/icons/mappreview/" + mapPreview;
 }
 

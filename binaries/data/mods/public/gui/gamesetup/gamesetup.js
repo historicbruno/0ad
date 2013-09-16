@@ -358,7 +358,7 @@ function handleNetMessage(message)
 		{
 		case "disconnected":
 			cancelSetup();
-			Engine.PopGuiPage();
+			Engine.SwitchGuiPage("page_pregame.xml")();
 			reportDisconnect(message.reason);
 			break;
 
@@ -1482,6 +1482,7 @@ function sendRegisterGameStanza()
 		"name":g_ServerName,
 		"mapName":g_GameAttributes.map,
 		"mapSize":mapSize,
+		"mapType":g_GameAttributes.mapType,
 		"victoryCondition":victoryCondition, 
 		"nbp":nbp,
 		"tnbp":tnbp,

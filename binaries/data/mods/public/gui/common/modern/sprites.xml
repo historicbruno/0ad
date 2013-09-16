@@ -27,16 +27,16 @@
 	<sprite name = "ModernWindow">
 
 		<!-- background -->
-		<image backcolor = "0 0 0"/>
+		<image backcolor = "12 12 12"/>
 		<image texture = "global/modern/background.png"
 			texture_size = "0 0 1024 1024"
-			size = "12 22 100%-12 100%-11"
+			size = "12 22 100%-12 100%-12"
 		/>
 
 		<!-- top and bottom edge -->
 		<image texture = "global/modern/border-top.png"
 			texture_size = "0 0 1259 6"
-			size = "10 18 100%-12 24"
+			size = "10 19 100%-12 25"
 		/>
 		<image texture = "global/modern/border-bottom.png"
 			texture_size = "0 0 1259 6"
@@ -57,6 +57,11 @@
 			size = "50%+64 4 50%+98 37"
 		/>
 	</sprite>
+	<!--
+	==========================================
+	- Box -
+	==========================================
+	-->
 	<sprite name="ModernDarkBoxGold">
 		<!-- borders -->
 		<image texture = "global/modern/gold-separator.png"
@@ -68,7 +73,7 @@
 			size = "0 100%-1 100% 100%"
 		/>
 		<!-- background -->
-		<image backcolor = "12 12 12 150"
+		<image backcolor = "12 12 12 100"
 			size = "0 1 100% 100%-1"
 		/>
 	</sprite>
@@ -83,26 +88,56 @@
 			size = "0 100%-1 100% 100%"
 		/>
 		<!-- background -->
-		<image backcolor = "12 12 12 150"
+		<image backcolor = "12 12 12 100"
 			size = "0 1 100% 100%-1"
 		/>
 	</sprite>
-	<sprite name = "ModernListHeader">
+	<sprite name = "ModernDarkBoxGoldNoBottom">
 		<image texture = "global/modern/gold-separator.png"
 			real_texture_placement = "0 0 806 1"
 			size = "0 0 100% 1"
 		/>
-		<image backcolor = "12 12 12 150"
+		<image backcolor = "12 12 12 100"
 			size = "0 1 100% 100%"
 		/>
 	</sprite>
-	<sprite name = "ModernListFooter">
+	<sprite name = "ModernDarkBoxGoldNoTop">
 		<image texture = "global/modern/gold-separator.png"
 			real_texture_placement = "0 0 806 1"
 			size = "0 100%-1 100% 100%"
 		/>
-		<image backcolor = "12 12 12 150"
+		<image backcolor = "12 12 12 100"
 			size = "0 0 100% 100%-1"
 		/>
+	</sprite>
+	<!--
+	==========================================
+	- Shading -
+	==========================================
+	-->
+	<sprite name = "ModernItemBackShadeLeft">
+		<image texture = "global/modern/item-shading-left.png"
+			real_texture_placement = "0 0 148 30"
+		/>
+	</sprite>
+	<sprite name = "ModernItemBackShadeRight">
+		<image texture = "global/modern/item-shading-right.png"
+			real_texture_placement = "0 0 148 30"
+		/>
+	</sprite>
+	<!--
+	==========================================
+	- Lines -
+	==========================================
+	-->
+	<sprite name = "ModernGoldLine">
+		<image texture = "global/modern/gold-separator.png"
+			real_texture_placement = "0 0 806 1"
+		/>
+	</sprite>
+	<sprite name="ModernWhiteLine">
+		<image texture = "global/modern/white-separator.png"
+			real_texture_placement = "0 0 806 1"
+			/>
 	</sprite>
 </sprites>

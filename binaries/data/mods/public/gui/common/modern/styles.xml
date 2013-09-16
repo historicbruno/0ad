@@ -3,7 +3,7 @@
 <styles>
 	<style 	name = "ModernWindow"
 		sprite = "ModernWindow"
-		buffer_zone = "10"
+		buffer_zone = "12"
 		text_align = "left"
 		text_valign = "top"
 	/>
@@ -12,13 +12,33 @@
 		font = "serif-bold-stroke-14"
 		scrollbar = "true"
 		scrollbar_style = "ModernScrollBar"
-		sprite = "ModernListFooter"
+		sprite = "ModernDarkBoxGoldNoTop"
 		sprite_selectarea = "ModernDarkBoxWhite"
-		sprite_heading = "ModernListHeader"
+		sprite_heading = "ModernDarkBoxGoldNoBottom"
 		textcolor = "white"
 		textcolor_selected = "white"
 		text_align = "left"
 		text_valign = "center"
 		sound_selected = "audio/interface/ui/ui_button_click.ogg"
+	/>
+	<style name="ModernLeftLabelText"
+		font="serif-bold-stroke-14"
+		textcolor="white"
+		text_align="left"
+		text_valign="center"
+	/>
+
+	<style name="ModernRightLabelText"
+		font="serif-bold-stroke-14"
+		textcolor="white"
+		text_align="right"
+		text_valign="center"
+	/>
+
+	<style name="ModernCenteredLabelText"
+		font="serif-bold-stroke-14"
+		textcolor="white"
+		text_align="center"
+		text_valign="center"
 	/>
 </styles>

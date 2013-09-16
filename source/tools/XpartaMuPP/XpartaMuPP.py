@@ -199,12 +199,12 @@ class GameList():
     """
       Converts game recived as a tuple and converts it to a dictionary
     """
-    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'victoryCondition':Tuple[5], 'nbp':Tuple[6], 'tnbp':Tuple[7], 'players':Tuple[8]}
+    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'mapType':Tuple[5], 'victoryCondition':Tuple[6], 'nbp':Tuple[7], 'tnbp':Tuple[8], 'players':Tuple[9]}
   def DicToTup(self, Dict):
     """
       Converts game saved as a dictionary to a tuple formatted for sending
     """
-    return Dict['name'], Dict['ip'], Dict['state'], Dict['nbp'], Dict['tnbp'], Dict['players'], Dict['mapName'], Dict['mapSize'], Dict['victoryCondition']
+    return Dict['name'], Dict['ip'], Dict['state'], Dict['nbp'], Dict['tnbp'], Dict['players'], Dict['mapName'], Dict['mapSize'], Dict['mapType'], Dict['victoryCondition']
 ## Class for custom gamelist stanza extension ##
 class GameListXmppPlugin(ElementBase):
   name = 'query'
@@ -214,12 +214,12 @@ class GameListXmppPlugin(ElementBase):
   plugin_attrib = 'gamelist'
 
   def addGame(self, data):
-    itemXml = ET.Element("game", {"name":data["name"], "ip":data["ip"], "state":data["state"], "nbp":data["nbp"], "tnbp":data["tnbp"], "players":data["players"], "mapName":data["mapName"], "mapSize":data["mapSize"], "victoryCondition":data["victoryCondition"]})
+    itemXml = ET.Element("game", {"name":data["name"], "ip":data["ip"], "state":data["state"], "nbp":data["nbp"], "tnbp":data["tnbp"], "players":data["players"], "mapName":data["mapName"], "mapSize":data["mapSize"], "mapType":data["mapType"], "victoryCondition":data["victoryCondition"]})
     self.xml.append(itemXml)
 
   def getGame(self):
     game = self.xml.find('{%s}game' % self.namespace)
-    return game.get("name"), game.get("ip"), game.get("state"), game.get("mapName"), game.get("mapSize"), game.get("victoryCondition"), game.get("nbp"), game.get("tnbp"), game.get("players")
+    return game.get("name"), game.get("ip"), game.get("state"), game.get("mapName"), game.get("mapSize"), game.get("mapType"), game.get("victoryCondition"), game.get("nbp"), game.get("tnbp"), game.get("players")
 
 ## Class for custom boardlist stanza extension ##
 class BoardListXmppPlugin(ElementBase):
