@@ -33,6 +33,8 @@ from config import default_rating, leaderboard_minimum_games, leaderboard_active
 
 ## Class that contains and manages leaderboard data ##
 class LeaderboardList():
+  def __init__(self, room):
+    self.room = room
   def getOrCreatePlayer(self, JID):
     """
       Stores a player(JID) in the database if they
@@ -255,7 +257,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.gameList = GameList()
 
     # Init leaderboard object
-    self.leaderboard = LeaderboardList()
+    self.leaderboard = LeaderboardList(room)
 
     # Store mapping of nicks and XmppIDs, attached via presence stanza
     self.nicks = {}
