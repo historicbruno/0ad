@@ -361,14 +361,12 @@ void XmppClient::SendIqGetBoardList()
 void XmppClient::SendIqGameReport(CScriptVal data)
 {
 #define SEND_STAT(stat) \
+	std::string stat; \
 	m_ScriptInterface.GetProperty( dataval, #stat, (stat) ); \
 	report->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
 
 	// Convert the values from the CScriptVal to std
-	std::string timeElapsed, playerStates, playerID, civs, mapName,
-		foodGathered, woodGathered, stoneGathered, metalGathered,
-		foodUsed, woodUsed, stoneUsed, metalUsed;
 	jsval dataval = data.get();
 	// Compose IQ
 	GameReport* game = new GameReport();
@@ -386,6 +384,27 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	SEND_STAT( woodUsed );
 	SEND_STAT( stoneUsed );
 	SEND_STAT( metalUsed );
+	SEND_STAT( unitsLost );
+	SEND_STAT( unitsTrained );
+	SEND_STAT( enemyUnitsKilled );
+	SEND_STAT( buildingsLost );
+	SEND_STAT( buildingsConstructed );
+	SEND_STAT( enemyBuildingsDestroyed );
+	SEND_STAT( foodBought );
+	SEND_STAT( woodBought );
+	SEND_STAT( stoneBought );
+	SEND_STAT( metalBought );
+	SEND_STAT( foodSold );
+	SEND_STAT( woodSold );
+	SEND_STAT( stoneSold );
+	SEND_STAT( metalSold );
+	SEND_STAT( tributeSent );
+	SEND_STAT( tributeReceived );
+	SEND_STAT( precentMapExplored );
+	SEND_STAT( civCentersBuilt );
+	SEND_STAT( enemyCivCentersDestroyed );
+	SEND_STAT( treasuresCollected );
+	SEND_STAT( tradeIncome );
 	game->m_GameReport.push_back( report );
 
 	// Send IQ
