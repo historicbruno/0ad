@@ -142,7 +142,7 @@ function pollAndHandleNetworkClient()
 					}
 					else
 					{
-						Engine.PushGuiPage("page_gamesetup.xml", { "type": g_GameType, "serverName": g_ServerName });
+						Engine.SwitchGuiPage("page_gamesetup.xml", { "type": g_GameType, "serverName": g_ServerName });
 						return; // don't process any more messages - leave them for the game GUI loop
 					}
 
