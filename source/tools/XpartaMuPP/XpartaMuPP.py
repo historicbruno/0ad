@@ -35,10 +35,10 @@ from config import default_rating, leaderboard_minimum_games, leaderboard_active
 class LeaderboardList():
   def __init__(self, room):
     self.room = room
+
   def getOrCreatePlayer(self, JID):
     """
-      Stores a player(JID) in the database if they
-        don't yet exist.
+      Stores a player(JID) in the database if they don't yet exist.
       Returns either the newly created instance of
       the Player model, or the one that already
       exists in the database.
@@ -50,6 +50,7 @@ class LeaderboardList():
       db.commit()
       return player
     return players.first()
+
   def removePlayer(self, JID):
     """
       Remove a player(JID) from database.
@@ -62,11 +63,11 @@ class LeaderboardList():
       return None
     players.delete()
     return player
+
   def addGame(self, gamereport):
     """
-      Adds a game (dictionary) to the database and
-        updates the data on a player(JID) from game
-        results.
+      Adds a game to the database and updates the data
+      on a player(JID) from game results.
       Returns the created Game object, or None if
       the creation failed for any reason.
       Side effects:
@@ -107,6 +108,7 @@ class LeaderboardList():
     db.add(game)
     db.commit()
     return game
+
   def rateGame(self, game):
     """
       Takes a game with 2 players and alters their ratings
@@ -129,14 +131,15 @@ class LeaderboardList():
     else:
       player1.rating -= rating_adjustment
       player2.rating += rating_adjustment
+    db.commit()
     return self
+
   def addAndRateGame(self, gamereport):
     """
       Calls addGame and if the game has only two
       players, also calls rateGame.
       Returns the result of addGame.
     """
-
     game = self.addGame(gamereport)
     if len(game.players) == 2:
       self.rateGame(game)
