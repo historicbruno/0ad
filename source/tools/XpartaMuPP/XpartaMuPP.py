@@ -224,7 +224,7 @@ class ReportManager(object):
     """
     processedGameReport = {}
     for key in rawGameReport:
-      if (string.find(",") == -1):
+      if (rawGameReport[key].find(",") == -1):
         processedGameReport[key] = dict[key]
       else:
         split = rawGameReport[key].split(", ")
@@ -262,9 +262,10 @@ class ReportManager(object):
       Returns int, the number of players.
     """
     for key in rawGameReport:
-      if (string.find(",") != -1):
-        split = dict[key].split(", ")
+      if (rawGameReport[key].find(",") != -1):
+        split = rawGameReport[key].split(", ")
         return split.length
+    return -1
 ## Class for custom gamelist stanza extension ##
 class GameListXmppPlugin(ElementBase):
   name = 'query'
@@ -306,6 +307,12 @@ class GameReportXmppPlugin(ElementBase):
   name = 'report'
   namespace = 'jabber:iq:gamereport'
   plugin_attrib = 'gamereport'
+  interfaces = set(('game'))
+  sub_interfaces = interfaces
+
+  def getGame(self): #TODO (Do we need this?)
+    game = self.xml.find('{%s}game' % self.namespace)
+    throw(NotImplementedError)
 
 ## Main class which handles IQ data and sends new data ##
 class XpartaMuPP(sleekxmpp.ClientXMPP):
