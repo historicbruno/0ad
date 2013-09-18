@@ -208,12 +208,12 @@ class ReportManager(object):
   def __init__(self, leaderboard):
     self.leaderboard = leaderboard
     self.interimTracker = {}
-  def addReport(JID, rawGameReport):
+  def addReport(self, JID, rawGameReport):
     """
       Adds a game to the interface between a raw report
         and the leaderboard database.
     """
-    self.interimTracker[JID] = rawGameReport
+    self.interimTracker[str(JID)] = rawGameReport
     self.clean()
     
   def expandReport(rawGameReport, JIDs):
@@ -223,40 +223,40 @@ class ReportManager(object):
       Returns a processed gameReport of type dict.
     """
     processedGameReport = {}
-    for key in dict:
+    for key in rawGameReport:
       if (string.find(",") == -1):
         processedGameReport[key] = dict[key]
       else:
-        split = dict[key].split(", ")
-        for key in split.length:
-          processedGameReport[key] = {JIDs[key]:split[key]}
+        split = rawGameReport[key].split(", ")
+        for i in split.length:
+          processedGameReport[key] = {JIDs[i]:split[i]}
     processedGameReport["numPlayers"] = getNumPlayers(rawGameReport)
     return processedGameReport
   def clean(self):
     """
       Searches internal database to check if enough
         reports have been submitted to add a game to
-        the leaderbaord. If so, the report will be 
+        the leaderboard. If so, the report will be 
         interpolated and addAndRateGame will be
         called with the result.
     """
     # This is not performance considerate, TODO
     blacklist = {}
-    for JID, report in interimTracker.items():
+    for JID, report in self.interimTracker.items():
       if report not in blacklist:
         numPlayers = self.getNumPlayers(report)
         reportCount = 0
         orderedPlayers = []
-        for JID2, report2 in interimTracker.items():
+        for JID2, report2 in self.interimTracker.items():
           if report2 == report:
             reportCount += 1
-            orderedPlayers[report2["playerID"]-1] = JID2
+            orderedPlayers[int(report2["playerID"])-1] = JID2
         if reportCount == numPlayers:
           self.leaderboard.addAndRateGame(self.expandReport(report, orderedPlayers))
           for JID2 in orderedPlayers:
             del self.interimTracker[JID]
             blacklist.append(report)
-  def getNumPlayers(rawGameReport):
+  def getNumPlayers(self, rawGameReport):
     """
       Computes the number of players in a raw gameReport.
       Returns int, the number of players.
@@ -406,7 +406,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         self.sendGameList(iq['from'])
         self.sendBoardList(iq['from'])
       except:
-        logging.error("Failed to send data to %s" % iq['from'].bare)
+        logging.error("Failed to initilize %s" % iq['from'].bare)
     elif iq['type'] == 'result':
       """
       Iq successfully received
