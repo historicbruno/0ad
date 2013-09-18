@@ -241,7 +241,7 @@ class ReportManager(object):
         called with the result.
     """
     # This is not performance considerate, TODO
-    blacklist = {}
+    blacklist = []
     for JID, report in self.interimTracker.items():
       if report not in blacklist:
         numPlayers = self.getNumPlayers(report)
@@ -301,6 +301,7 @@ class BoardListXmppPlugin(ElementBase):
     command = self.xml.find('{%s}command' % self.namespace)
     return command
 
+## Class for custom gamereport stanza extension ##
 class GameReportXmppPlugin(ElementBase):
   name = 'report'
   namespace = 'jabber:iq:gamereport'
@@ -446,9 +447,9 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         try:
           self.reportManager.addReport(iq['from'], iq['gamereport']['game'])
         except:
-          logging.error("Failed to update post-game statistics for %s" % iq['from'].bare)
+          logging.error("Failed to update game statistics for %s" % iq['from'].bare)
     else:
-       logging.error("Failed to process type '%s' received from %s" % iq['type'], iq['from'].bare)
+       logging.error("Failed to process stanza type '%s' received from %s" % iq['type'], iq['from'].bare)
 
   def sendGameList(self, to):
     """
