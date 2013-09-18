@@ -202,12 +202,13 @@ class GameList():
     """
     return Dict['name'], Dict['ip'], Dict['state'], Dict['nbp'], Dict['tnbp'], Dict['players'], Dict['mapName'], Dict['mapSize'], Dict['mapType'], Dict['victoryCondition']
 
-## Class which manages diffrent game reports from clients ##
+## Class which manages different game reports from clients ##
 ##   and calls leaderboard functions as appropriate.      ##
-class ReportManager(object):
+class ReportManager():
   def __init__(self, leaderboard):
     self.leaderboard = leaderboard
     self.interimTracker = {}
+
   def addReport(self, JID, rawGameReport):
     """
       Adds a game to the interface between a raw report
@@ -215,8 +216,8 @@ class ReportManager(object):
     """
     self.interimTracker[str(JID)] = rawGameReport
     self.clean()
-    
-  def expandReport(rawGameReport, JIDs):
+
+  def expandReport(self, rawGameReport, JIDs):
     """
       Takes an raw game report and re-formats it into
         Python data structures leaving JIDs empty.
@@ -224,19 +225,20 @@ class ReportManager(object):
     """
     processedGameReport = {}
     for key in rawGameReport:
-      if (rawGameReport[key].find(",") == -1):
-        processedGameReport[key] = dict[key]
+      if rawGameReport[key].find(",") == -1:
+        processedGameReport[key] = rawGameReport[key]
       else:
         split = rawGameReport[key].split(", ")
-        for i in split.length:
-          processedGameReport[key] = {JIDs[i]:split[i]}
-    processedGameReport["numPlayers"] = getNumPlayers(rawGameReport)
+        for i, part in enumerate(split):
+          processedGameReport[key] = {JIDs[i]: part}
+    processedGameReport["numPlayers"] = self.getNumPlayers(rawGameReport)
     return processedGameReport
+
   def clean(self):
     """
       Searches internal database to check if enough
         reports have been submitted to add a game to
-        the leaderboard. If so, the report will be 
+        the leaderboard. If so, the report will be
         interpolated and addAndRateGame will be
         called with the result.
     """
@@ -250,22 +252,23 @@ class ReportManager(object):
         for JID2, report2 in self.interimTracker.items():
           if report2 == report:
             reportCount += 1
-            orderedPlayers[int(report2["playerID"])-1] = JID2
+            orderedPlayers[int(report2["playerID"]) - 1] = JID2
         if reportCount == numPlayers:
           self.leaderboard.addAndRateGame(self.expandReport(report, orderedPlayers))
           for JID2 in orderedPlayers:
             del self.interimTracker[JID]
             blacklist.append(report)
+
   def getNumPlayers(self, rawGameReport):
     """
       Computes the number of players in a raw gameReport.
       Returns int, the number of players.
     """
     for key in rawGameReport:
-      if (rawGameReport[key].find(",") != -1):
-        split = rawGameReport[key].split(", ")
-        return split.length
+      if rawGameReport[key].find(",") != -1:
+        return len(rawGameReport[key].split(", "))
     return -1
+
 ## Class for custom gamelist stanza extension ##
 class GameListXmppPlugin(ElementBase):
   name = 'query'
@@ -336,7 +339,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.leaderboard = LeaderboardList(room)
 
     # gameReport to leaderboard abstraction
-    self.reportManager = ReportManager(self.leaderboard) 
+    self.reportManager = ReportManager(self.leaderboard)
 
     # Store mapping of nicks and XmppIDs, attached via presence stanza
     self.nicks = {}
