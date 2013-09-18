@@ -246,7 +246,7 @@ class ReportManager(object):
       if report not in blacklist:
         numPlayers = self.getNumPlayers(report)
         reportCount = 0
-        orderedPlayers = []
+        orderedPlayers = {}
         for JID2, report2 in self.interimTracker.items():
           if report2 == report:
             reportCount += 1
@@ -279,6 +279,10 @@ class GameListXmppPlugin(ElementBase):
     self.xml.append(itemXml)
 
   def getGame(self):
+    """
+      Required to parse incoming stanzas with this
+        extension.
+    """
     game = self.xml.find('{%s}game' % self.namespace)
     return game.get("name"), game.get("ip"), game.get("state"), game.get("mapName"), game.get("mapSize"), game.get("mapType"), game.get("victoryCondition"), game.get("nbp"), game.get("tnbp"), game.get("players")
 
@@ -298,21 +302,21 @@ class BoardListXmppPlugin(ElementBase):
     board = self.xml.find('{%s}board' % self.namespace)
     return board.get("name"), board.get("ip")
 
-  def getCommand(self):
-    command = self.xml.find('{%s}command' % self.namespace)
-    return command
-
 ## Class for custom gamereport stanza extension ##
 class GameReportXmppPlugin(ElementBase):
   name = 'report'
   namespace = 'jabber:iq:gamereport'
   plugin_attrib = 'gamereport'
-  interfaces = set(('game'))
+  interfaces = ('game')
   sub_interfaces = interfaces
 
-  def getGame(self): #TODO (Do we need this?)
+  def getGame(self):
+    """
+      Required to parse incoming stanzas with this
+        extension.
+    """
     game = self.xml.find('{%s}game' % self.namespace)
-    throw(NotImplementedError)
+    return {"playerID" : game.get("playerID")} #TODO (shouldn't have to hardcode the statistic names)
 
 ## Main class which handles IQ data and sends new data ##
 class XpartaMuPP(sleekxmpp.ClientXMPP):
