@@ -399,6 +399,13 @@ void OpenURL(void* UNUSED(cbdata), std::string url)
 	sys_open_url(url);
 }
 
+int GetMatchRandomSeed(void* UNUSED(cbdata))
+{
+	u32 rng = 0;
+	sys_generate_random_bytes((u8*)&rng, sizeof(rng));
+	return (int)rng;
+}
+
 void RestartInAtlas(void* UNUSED(cbdata))
 {
 	restart_mainloop_in_atlas();
@@ -499,7 +506,7 @@ entity_id_t GetFollowedEntity(void* UNUSED(cbdata))
 {
 	if (g_Game && g_Game->GetView())
 		return g_Game->GetView()->GetFollowedEntity();
-	
+
 	return INVALID_ENTITY;
 }
 
@@ -672,7 +679,7 @@ void ConnectXmppClient(void* UNUSED(cbdata))
 }
 
 void DisconnectXmppClient(void* UNUSED(cbdata))
-{  
+{
 	ENSURE(g_XmppClient);
 	g_XmppClient->disconnect();
 }
@@ -869,22 +876,22 @@ void SecureHash(const std::string& saltIn, std::string& text)
 {
         const int DIGESTSIZE = CryptoPP::SHA256::DIGESTSIZE;
         const int ITERATIONS = 10000;
- 
+
         static const byte salt[DIGESTSIZE] = {
                 244, 243, 249, 244, 32, 33, 34, 35, 10, 11, 12, 13, 14, 15, 16, 17,
                 18, 19, 20, 32, 33, 244, 224, 127, 129, 130, 140, 153, 133, 123, 234, 123 };
-       
+
         // initialize buffer
         byte buffer[DIGESTSIZE];
         CryptoPP::SHA256 hash;
         hash.Update((byte*)saltIn.c_str(), saltIn.length());
         hash.Update((byte*)text.c_str(), text.length());
         hash.Final(buffer);
- 
+
         // PBKDF2 to transform the buffer:
         CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256>().DeriveKey(
                 buffer, DIGESTSIZE, 0, buffer, DIGESTSIZE, salt, DIGESTSIZE, ITERATIONS);
- 
+
         static const char base16[] = "0123456789ABCDEF";
         char hex[2 * DIGESTSIZE];
         for(int i = 0; i < DIGESTSIZE; ++i)
@@ -894,7 +901,7 @@ void SecureHash(const std::string& saltIn, std::string& text)
         }
         text.assign(hex, sizeof(hex));
 }
- 
+
 // Public hash interface.
 std::string EncryptPassword(void* UNUSED(cbdata), std::string user, std::string pass)
 {
@@ -954,6 +961,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<std::wstring, &GetDefaultMPServer>("GetDefaultMPServer");
 	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SaveMPConfig>("SaveMPConfig");
 	scriptInterface.RegisterFunction<void, std::string, &OpenURL>("OpenURL");
+	scriptInterface.RegisterFunction<int, &GetMatchRandomSeed>("GetMatchRandomSeed");
 	scriptInterface.RegisterFunction<void, &RestartInAtlas>("RestartInAtlas");
 	scriptInterface.RegisterFunction<bool, &AtlasIsAvailable>("AtlasIsAvailable");
 	scriptInterface.RegisterFunction<bool, &IsAtlasRunning>("IsAtlasRunning");

@@ -83,7 +83,7 @@ function init(attribs)
 	default:
 		error("Unexpected 'type' in gamesetup init: "+attribs.type);
 	}
-	
+
         if (attribs.serverName)
 		g_ServerName = attribs.serverName;
 
@@ -99,7 +99,7 @@ function init(attribs)
 		cancelButton.caption = "Quit";
 		cancelButton.tooltip = "Return to the lobby."
 	}
- 
+
 }
 
 // Called after the map data is loaded and cached
@@ -146,6 +146,10 @@ function initMain()
 	{
 		mapTypes.selected = 0;
 		mapFilters.selected = 0;
+
+		// Create a unique ID for this match, to be used for identifying the same game reports
+		// for the lobby. Could also be used as the random seed for the AI.
+		g_GameAttributes.matchID = Engine.GetMatchRandomSeed();
 
 		initMapNameList();
 
@@ -464,11 +468,11 @@ function initCivNameList()
 
 	// Extract name/code, and skip civs that are explicitly disabled
 	// (intended for unusable incomplete civs)
-	var civList = [ 
-		{ "name": civ.Name, "code": civ.Code } 
-		for each (civ in g_CivData) 
-			if (civ.SelectableInGameSetup !== false) 
-	]; 
+	var civList = [
+		{ "name": civ.Name, "code": civ.Code }
+		for each (civ in g_CivData)
+			if (civ.SelectableInGameSetup !== false)
+	];
 
 	// Alphabetically sort the list, ignoring case
 	civList.sort(sortNameIgnoreCase);
@@ -476,9 +480,9 @@ function initCivNameList()
 	var civListNames = [ civ.name for each (civ in civList) ];
 	var civListCodes = [ civ.code for each (civ in civList) ];
 
-	//  Add random civ to beginning of list 
-	civListNames.unshift("[color=\"orange\"]Random"); 
-	civListCodes.unshift("random"); 
+	//  Add random civ to beginning of list
+	civListNames.unshift("[color=\"orange\"]Random");
+	civListCodes.unshift("random");
 
 	// Update the dropdowns
 	for (var i = 0; i < MAX_PLAYERS; ++i)
@@ -803,9 +807,9 @@ function launchGame()
 			(getGUIObjectByName("mapSelection").list.length - 1)) + 1]);
 
 	g_GameAttributes.settings.mapType = g_GameAttributes.mapType;
-	var numPlayers = g_GameAttributes.settings.PlayerData.length; 
-	// Assign random civilizations to players with that choice 
-	//  (this is synchronized because we're the host) 
+	var numPlayers = g_GameAttributes.settings.PlayerData.length;
+	// Assign random civilizations to players with that choice
+	//  (this is synchronized because we're the host)
 	var cultures = [];
 	for each (var civ in g_CivData)
 		if (civ.Culture !== undefined && cultures.indexOf(civ.Culture) < 0 && (civ.SelectableInGameSetup === undefined || civ.SelectableInGameSetup))
@@ -818,12 +822,12 @@ function launchGame()
 			allcivs[cultures.indexOf(civ.Culture)].push(civ.Code);
 
 	const romanNumbers = [undefined, "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
-	for (var i = 0; i < numPlayers; ++i) 
-	{ 
+	for (var i = 0; i < numPlayers; ++i)
+	{
 		civs = allcivs[Math.floor(Math.random()*allcivs.length)];
 
-		if (g_GameAttributes.settings.PlayerData[i].Civ == "random") 
-			g_GameAttributes.settings.PlayerData[i].Civ = civs[Math.floor(Math.random()*civs.length)]; 
+		if (g_GameAttributes.settings.PlayerData[i].Civ == "random")
+			g_GameAttributes.settings.PlayerData[i].Civ = civs[Math.floor(Math.random()*civs.length)];
 		// Setting names for AI players. Check if the player is AI and the match is not a scenario
 		if (g_GameAttributes.mapType !== "scenario" && g_GameAttributes.settings.PlayerData[i].AI)
 		{
@@ -836,9 +840,9 @@ function launchGame()
 			var usedName = 0;
 			if (i < civAINames.length)
 				var chosenName = civAINames[i];
-			else 
+			else
 				var chosenName = civAINames[Math.floor(Math.random() * civAINames.length)];
-			for (var j = 0; j < numPlayers; ++j) 
+			for (var j = 0; j < numPlayers; ++j)
 				if (g_GameAttributes.settings.PlayerData[j].Name.indexOf(chosenName) !== -1)
 					usedName++;
 
@@ -848,8 +852,8 @@ function launchGame()
 			else
 				g_GameAttributes.settings.PlayerData[i].Name = chosenName;
 		}
-	} 
-	
+	}
+
 	if (g_IsNetworked)
 	{
 		Engine.SetNetworkGameAttributes(g_GameAttributes);
@@ -916,7 +920,7 @@ function onGameAttributesChange()
 	var enableCheats = getGUIObjectByName("enableCheats");
 	var populationCap = getGUIObjectByName("populationCap");
 	var startingResources = getGUIObjectByName("startingResources");
-	
+
 	var numPlayersText= getGUIObjectByName("numPlayersText");
 	var mapSizeText = getGUIObjectByName("mapSizeText");
 	var revealMapText = getGUIObjectByName("revealMapText");
@@ -952,7 +956,7 @@ function onGameAttributesChange()
 			lockTeams.hidden = false;
 			populationCap.hidden = false;
 			startingResources.hidden = false;
-			
+
 			numPlayersText.hidden = true;
 			mapSizeText.hidden = true;
 			revealMapText.hidden = true;
@@ -960,10 +964,10 @@ function onGameAttributesChange()
 			lockTeamsText.hidden = true;
 			populationCapText.hidden = true;
 			startingResourcesText.hidden = true;
-			
+
 			// Update map preview
 			getGUIObjectByName("mapPreview").sprite = "cropped:(0.78125,0.5859375)session/icons/mappreview/" + getMapPreview(mapName);
-			
+
 			mapSizeText.caption = "Map size:";
 			mapSize.selected = sizeIdx;
 			revealMapText.caption = "Reveal map:";
@@ -1014,7 +1018,7 @@ function onGameAttributesChange()
 		populationCapText.hidden = false;
 		startingResources.hidden = true;
 		startingResourcesText.hidden = false;
-		
+
 		// Update map preview
 		getGUIObjectByName("mapPreview").sprite = "cropped:(0.78125,0.5859375)session/icons/mappreview/" + getMapPreview(mapName);
 		numPlayersText.caption = numPlayers;
@@ -1033,7 +1037,7 @@ function onGameAttributesChange()
 
 	// Display map name
 	getGUIObjectByName("mapInfoName").caption = getMapDisplayName(mapName);
-	
+
 	// Load the description from the map file, if there is one
 	var description = mapSettings.Description || "Sorry, no description available.";
 
@@ -1150,7 +1154,7 @@ function updatePlayerList()
 
 	for each (var ai in g_AIs)
 	{
-		if (ai.data.hidden) 
+		if (ai.data.hidden)
 		{
 			// If the map uses a hidden AI then don't hide it
 			var usedByMap = false;
@@ -1483,7 +1487,7 @@ function sendRegisterGameStanza()
 		"mapName":g_GameAttributes.map,
 		"mapSize":mapSize,
 		"mapType":g_GameAttributes.mapType,
-		"victoryCondition":victoryCondition, 
+		"victoryCondition":victoryCondition,
 		"nbp":nbp,
 		"tnbp":tnbp,
 		"players":players
