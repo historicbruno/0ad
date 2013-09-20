@@ -247,7 +247,11 @@ class ReportManager():
       if rawGameReport[key].find(",") == -1:
         processedGameReport[key] = rawGameReport[key]
       else:
-        split = rawGameReport[key].split(", ")
+        split = rawGameReport[key].split(",")
+        # Remove the false split positive.
+        split.pop()
+        # We just delete gaia for now.
+        split.pop(0)
         for i, part in enumerate(split):
           processedGameReport[key] = {JIDs[i]: part}
     processedGameReport["numPlayers"] = self.getNumPlayers(rawGameReport)
@@ -285,8 +289,8 @@ class ReportManager():
     # Find a key in the report which holds values for multiple players
     for key in rawGameReport:
       if rawGameReport[key].find(",") != -1:
-        # Count the number of values
-        return len(rawGameReport[key].split(","))-1
+        # Count the number of values, minus one for gaia and one for the false split positive.
+        return len(rawGameReport[key].split(","))-2
     # Return -1 in case of failure
     return -1
 
