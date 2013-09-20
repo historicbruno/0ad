@@ -218,18 +218,22 @@ class ReportManager():
       Adds a game to the interface between a raw report
         and the leaderboard database.
     """
-    if rawGameReport not in self.interimReportTracker:
-      # Store the game
+    # cleanRawGameReport is a copy of rawGameReport with all reporter specific information removed.
+    cleanRawGameReport = rawGameReport[:]
+    del cleanRawGameReport["playerID"]
+
+    if cleanRawGameReport not in self.interimReportTracker:
+      # Store the game.
       appendIndex = len(self.interimReportTracker)
-      self.interimReportTracker.append (rawGameReport)
-      # Initilize the JIDs and store the initial JID
+      self.interimReportTracker.append(cleanRawGameReport)
+      # Initilize the JIDs and store the initial JID.
       JIDs = [None] * self.getNumPlayers(rawGameReport)
       JIDs[int(rawGameReport["playerID"])] = str(JID)
       self.interimJIDTracker.append(JIDs)
     else:
-      # We get the index at which the JIDs coresponding to the game are stored
-      index = self.interimReportTracker.indexOf(rawGameReport)
-      # We insert the new report JID into the acending list of JIDs for the game
+      # We get the index at which the JIDs coresponding to the game are stored.
+      index = self.interimReportTracker.indexOf(cleanRawGameReport)
+      # We insert the new report JID into the acending list of JIDs for the game.
       JIDs = self.interimJIDTracker[index]
       JIDs[int(rawGameReport["playerID"])] = str(JID)
       self.interimJIDTracker[index] = JIDs
@@ -286,12 +290,12 @@ class ReportManager():
       Computes the number of players in a raw gameReport.
       Returns int, the number of players.
     """
-    # Find a key in the report which holds values for multiple players
+    # Find a key in the report which holds values for multiple players.
     for key in rawGameReport:
       if rawGameReport[key].find(",") != -1:
         # Count the number of values, minus one for gaia and one for the false split positive.
         return len(rawGameReport[key].split(","))-2
-    # Return -1 in case of failure
+    # Return -1 in case of failure.
     return -1
 
 ## Class for custom gamelist stanza extension ##
