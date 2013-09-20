@@ -47,6 +47,7 @@
 #include "ps/ConfigDB.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
 #include "lobby/XmppClient.h"
+#include "lobby/sha.h"
 
 #include "simulation2/Simulation2.h"
 #include "simulation2/components/ICmpAIManager.h"
@@ -58,8 +59,6 @@
 #include "simulation2/helpers/Selection.h"
 
 #include "js/jsapi.h"
-
-#include "lib/external_libraries/cryptopp.h"
 /*
  * This file defines a set of functions that are available to GUI scripts, to allow
  * interaction with the rest of the engine.
@@ -871,41 +870,41 @@ void SetBoundingBoxDebugOverlay(void* UNUSED(cbdata), bool enabled)
 	ICmpSelectable::ms_EnableDebugOverlays = enabled;
 }
 
-// Non-public secure PBKDF2 hash function with salting and 10,000 iterations
-void SecureHash(const std::string& saltIn, std::string& text)
+// Non-public secure PBKDF2 hash function with salting and 1,337 iterations
+void EncryptPassword(const std::string& username, std::string& password)
 {
-        const int DIGESTSIZE = CryptoPP::SHA256::DIGESTSIZE;
-        const int ITERATIONS = 10000;
-
-        static const byte salt[DIGESTSIZE] = {
+        const int DIGESTSIZE = SHA_DIGEST_SIZE;
+        const int ITERATIONS = 1337;
+ 
+        static const byte salt_base[DIGESTSIZE] = {
                 244, 243, 249, 244, 32, 33, 34, 35, 10, 11, 12, 13, 14, 15, 16, 17,
                 18, 19, 20, 32, 33, 244, 224, 127, 129, 130, 140, 153, 133, 123, 234, 123 };
-
-        // initialize buffer
-        byte buffer[DIGESTSIZE];
-        CryptoPP::SHA256 hash;
-        hash.Update((byte*)saltIn.c_str(), saltIn.length());
-        hash.Update((byte*)text.c_str(), text.length());
-        hash.Final(buffer);
-
-        // PBKDF2 to transform the buffer:
-        CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256>().DeriveKey(
-                buffer, DIGESTSIZE, 0, buffer, DIGESTSIZE, salt, DIGESTSIZE, ITERATIONS);
+ 
+        // initialize the salt buffer
+        byte salt_buffer[DIGESTSIZE] = {0};
+        SHA256 hash;
+        hash.update(salt_base, username.length());
+        hash.update(username.c_str(), username.length());
+        hash.finish(salt_buffer);
+ 
+        // PBKDF2 to create the buffer
+        byte encrypted[DIGESTSIZE];
+        pbkdf2(encrypted, (byte*)password.c_str(), password.length(), salt_buffer, DIGESTSIZE, ITERATIONS);
 
         static const char base16[] = "0123456789ABCDEF";
         char hex[2 * DIGESTSIZE];
         for(int i = 0; i < DIGESTSIZE; ++i)
         {
-                hex[i*2] = base16[buffer[i] >> 4];              // 4 high bits
-                hex[i*2 + 1] = base16[buffer[i] & 0x0F];// 4 low bits
+                hex[i*2] = base16[encrypted[i] >> 4];           // 4 high bits
+                hex[i*2 + 1] = base16[encrypted[i] & 0x0F];// 4 low bits
         }
-        text.assign(hex, sizeof(hex));
+        password.assign(hex, sizeof(hex));
 }
 
 // Public hash interface.
 std::string EncryptPassword(void* UNUSED(cbdata), std::string user, std::string pass)
 {
-        SecureHash(user, pass);
+        EncryptPassword(user, pass);
         return pass;
 }
 
