@@ -540,7 +540,6 @@ function setup_all_libs ()
 	extern_libs = {
 		"spidermonkey",
 		"gloox",
-		"cryptopp",
 		"boost",
 	}
 	setup_static_lib_project("lobby", source_dirs, extern_libs, {})
@@ -598,8 +597,7 @@ function setup_all_libs ()
 		"boost",
 		"enet",
 		"libcurl",
-		"gloox",
-		"cryptopp"
+		"gloox"
 	}
 	
 	if not _OPTIONS["without-audio"] then
@@ -649,8 +647,7 @@ function setup_all_libs ()
 		"sdl",	-- key definitions
 		"opengl",
 		"boost",
-		"gloox",
-		"cryptopp"
+		"gloox"
 	}
 	setup_static_lib_project("gui", source_dirs, extern_libs, {})
 
@@ -775,8 +772,7 @@ used_extern_libs = {
 
 	"valgrind",
 
-	"gloox",
-	"cryptopp"
+	"gloox"
 }
 
 if not os.is("windows") and not _OPTIONS["android"] and not os.is("macosx") then
