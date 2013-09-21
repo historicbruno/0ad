@@ -374,6 +374,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	SEND_STAT( timeElapsed );
 	SEND_STAT( playerStates );
 	SEND_STAT( playerID );
+	SEND_STAT( matchID );
 	SEND_STAT( civs );
 	SEND_STAT( mapName );
 	SEND_STAT( foodGathered );
