@@ -306,7 +306,10 @@
 			<action on="Press">
 				<![CDATA[
 					cancelSetup();
-					Engine.SwitchGuiPage("page_pregame.xml");
+					if(!Engine.HasXmppClient())
+						Engine.SwitchGuiPage("page_pregame.xml");
+					else
+						Engine.SwitchGuiPage("page_lobby.xml");
 				]]>
 			</action>
 		</object>
