@@ -125,12 +125,8 @@ class LeaderboardList():
     result = 1 if player1 == game.winner else -1
     rating_adjustment = get_rating_adjustment(player1.rating, player2.rating,
       len(player1.games), len(player2.games), result)
-    if result == 1:
-      player1.rating += rating_adjustment
-      player2.rating -= rating_adjustment
-    else:
-      player1.rating -= rating_adjustment
-      player2.rating += rating_adjustment
+    player1.rating += rating_adjustment
+    player2.rating -= rating_adjustment
     db.commit()
     return self
 
@@ -225,7 +221,7 @@ class ReportManager():
       JIDs = self.interimJIDTracker[index]
       JIDs[int(rawGameReport["playerID"])-1] = str(JID)
       self.interimJIDTracker[index] = JIDs
-      
+
     self.checkFull()
 
   def expandReport(self, rawGameReport, JIDs):
