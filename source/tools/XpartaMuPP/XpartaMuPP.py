@@ -86,7 +86,7 @@ class LeaderboardList():
                                   if state == 'won'}))[0]
 
     def get(stat, jid):
-      return gamereport[stat]['playerStates'][jid]
+      return gamereport[stat][jid]
 
     stats = {'civ': 'civs', 'foodGathered': 'foodGathered', 'foodUsed': 'foodUsed',
              'woodGathered': 'woodGathered', 'woodUsed': 'woodUsed',
@@ -503,7 +503,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       g = games[JID]
       # Only send the games that are in the 'init' state and games
       # that are in the 'waiting' state which the receiving player is in. TODO
-      if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[to] in g['players-init']):
+      if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[str(to)] in g['players-init']):
         stz.addGame(g)
 
     ## Set additional IQ attributes
