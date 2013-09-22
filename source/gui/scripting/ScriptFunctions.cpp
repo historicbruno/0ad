@@ -35,6 +35,7 @@
 #include "ps/CConsole.h"
 #include "ps/Errors.h"
 #include "ps/Game.h"
+#include "ps/GUID.h"
 #include "ps/World.h"
 #include "ps/Hotkey.h"
 #include "ps/Overlay.h"
@@ -398,15 +399,9 @@ void OpenURL(void* UNUSED(cbdata), std::string url)
 	sys_open_url(url);
 }
 
-std::string GetMatchID(void* UNUSED(cbdata))
+std::wstring GetMatchID(void* UNUSED(cbdata))
 {
-	u32 rng;
-	std::stringstream matchID;
-	for (short i = 0; i < 2; i++) {
-		sys_generate_random_bytes((u8*)&rng, sizeof(rng));
-		matchID << std::hex << rng;
-	}
-	return std::string(matchID.str());
+	return ps_generate_guid().FromUTF8();
 }
 
 void RestartInAtlas(void* UNUSED(cbdata))
@@ -964,7 +959,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<std::wstring, &GetDefaultMPServer>("GetDefaultMPServer");
 	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SaveMPConfig>("SaveMPConfig");
 	scriptInterface.RegisterFunction<void, std::string, &OpenURL>("OpenURL");
-	scriptInterface.RegisterFunction<std::string, &GetMatchID>("GetMatchID");
+	scriptInterface.RegisterFunction<std::wstring, &GetMatchID>("GetMatchID");
 	scriptInterface.RegisterFunction<void, &RestartInAtlas>("RestartInAtlas");
 	scriptInterface.RegisterFunction<bool, &AtlasIsAvailable>("AtlasIsAvailable");
 	scriptInterface.RegisterFunction<bool, &IsAtlasRunning>("IsAtlasRunning");
