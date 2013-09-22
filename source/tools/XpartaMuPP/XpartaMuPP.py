@@ -141,7 +141,7 @@ class LeaderboardList():
       Returns the result of addGame.
     """
     game = self.addGame(gamereport)
-    if len(game.players) == 2:
+    if game and len(game.players) == 2:
       self.rateGame(game)
     return game
 
@@ -194,7 +194,7 @@ class GameList():
         self.gameList[JID]['state'] = 'running'
 
 ## Class which manages different game reports from clients ##
-##   and calls leaderboard functions as appropriate.      ##
+##   and calls leaderboard functions as appropriate.       ##
 class ReportManager():
   def __init__(self, leaderboard):
     self.leaderboard = leaderboard
@@ -244,9 +244,11 @@ class ReportManager():
         split.pop()
         # We just delete gaia for now.
         split.pop(0)
+        statToJID = {}
         for i, part in enumerate(split):
-          processedGameReport[key] = {JIDs[i]: part}
-    processedGameReport["numPlayers"] = self.getNumPlayers(rawGameReport)
+           statToJID[JIDs[i]] = part
+        processedGameReport[key] = statToJID
+    #processedGameReport["numPlayers"] = self.getNumPlayers(rawGameReport)
     return processedGameReport
 
   def checkFull(self):
