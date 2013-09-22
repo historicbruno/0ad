@@ -398,11 +398,15 @@ void OpenURL(void* UNUSED(cbdata), std::string url)
 	sys_open_url(url);
 }
 
-int GetMatchRandomSeed(void* UNUSED(cbdata))
+std::string GetMatchID(void* UNUSED(cbdata))
 {
-	u32 rng = 0;
-	sys_generate_random_bytes((u8*)&rng, sizeof(rng));
-	return (int)rng;
+	u32 rng;
+	std::stringstream matchID;
+	for (short i = 0; i < 2; i++) {
+		sys_generate_random_bytes((u8*)&rng, sizeof(rng));
+		matchID << std::hex << rng;
+	}
+	return std::string(matchID.str());
 }
 
 void RestartInAtlas(void* UNUSED(cbdata))
@@ -875,18 +879,18 @@ void EncryptPassword(const std::string& username, std::string& password)
 {
         const int DIGESTSIZE = SHA_DIGEST_SIZE;
         const int ITERATIONS = 1337;
- 
+
         static const byte salt_base[DIGESTSIZE] = {
                 244, 243, 249, 244, 32, 33, 34, 35, 10, 11, 12, 13, 14, 15, 16, 17,
                 18, 19, 20, 32, 33, 244, 224, 127, 129, 130, 140, 153, 133, 123, 234, 123 };
- 
+
         // initialize the salt buffer
         byte salt_buffer[DIGESTSIZE] = {0};
         SHA256 hash;
         hash.update(salt_base, username.length());
         hash.update(username.c_str(), username.length());
         hash.finish(salt_buffer);
- 
+
         // PBKDF2 to create the buffer
         byte encrypted[DIGESTSIZE];
         pbkdf2(encrypted, (byte*)password.c_str(), password.length(), salt_buffer, DIGESTSIZE, ITERATIONS);
@@ -960,7 +964,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<std::wstring, &GetDefaultMPServer>("GetDefaultMPServer");
 	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SaveMPConfig>("SaveMPConfig");
 	scriptInterface.RegisterFunction<void, std::string, &OpenURL>("OpenURL");
-	scriptInterface.RegisterFunction<int, &GetMatchRandomSeed>("GetMatchRandomSeed");
+	scriptInterface.RegisterFunction<std::string, &GetMatchID>("GetMatchID");
 	scriptInterface.RegisterFunction<void, &RestartInAtlas>("RestartInAtlas");
 	scriptInterface.RegisterFunction<bool, &AtlasIsAvailable>("AtlasIsAvailable");
 	scriptInterface.RegisterFunction<bool, &IsAtlasRunning>("IsAtlasRunning");

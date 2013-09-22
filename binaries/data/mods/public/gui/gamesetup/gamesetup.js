@@ -148,8 +148,8 @@ function initMain()
 		mapFilters.selected = 0;
 
 		// Create a unique ID for this match, to be used for identifying the same game reports
-		// for the lobby. Could also be used as the random seed for the AI.
-		g_GameAttributes.matchID = Engine.GetMatchRandomSeed();
+		// for the lobby.
+		g_GameAttributes.matchID = Engine.GetMatchID();
 
 		initMapNameList();
 
