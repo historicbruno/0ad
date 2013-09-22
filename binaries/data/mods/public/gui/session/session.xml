@@ -1246,7 +1246,7 @@
 		size="50%-84 50%+128 50%+84 50%+160"
 		tooltip_style="sessionToolTip"
 	>
-	    <object size="0 0 100% 100%" type="text" style="CenteredButtonText" name="disconnectedExitButtonText" ghost="true">Return to Main Menu</object>
+	    <object size="0 0 100% 100%" type="text" style="CenteredButtonText" name="disconnectedExitButtonText" ghost="true">Exit</object>
 	    <action on="Press">leaveGame()</action>
 	</object>
 
