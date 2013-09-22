@@ -347,71 +347,68 @@ function checkPlayerState()
 	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 
-	if (!g_GameEnded)
+	var tempStates = "";
+	for each (var player in simState.players) {tempStates += player.state + ",";}
+	if (g_CachedLastStates != tempStates)
 	{
-		var tempStates;
-		for each (var player in simState.players) {tempStates += player.state + ",";}
-		if (g_CachedLastStates != tempStates)
+		g_CachedLastStates = tempStates;
+		reportGame(Engine.GuiInterfaceCall("GetExtendedSimulationState"));
+	}
+	// If the game is about to end, disable the ability to resign.
+	if (playerState.state != "active")
+		getGUIObjectByName("menuResignButton").enabled = false;
+	else
+		return;
+
+	if (playerState.state == "defeated")
+	{
+		g_GameEnded = true;
+		// TODO: DEFEAT_CUE is missing?
+		global.music.setState(global.music.states.DEFEAT);
+
+		closeMenu();
+		closeOpenDialogs();
+
+		if (Engine.IsAtlasRunning())
 		{
-			g_CachedLastStates = tempStates;
-			reportGame(Engine.GuiInterfaceCall("GetExtendedSimulationState"));
+			// If we're in Atlas, we can't leave the game
+			var btCaptions = ["OK"];
+			var btCode = [null];
+			var message = "Press OK to continue";
 		}
-		// If the game is about to end, disable the ability to resign.
-		if (playerState.state != "active")
-			getGUIObjectByName("menuResignButton").enabled = false;
 		else
-			return;
-
-		if (playerState.state == "defeated")
 		{
-			g_GameEnded = true;
-			// TODO: DEFEAT_CUE is missing?
-			global.music.setState(global.music.states.DEFEAT);
-
-			closeMenu();
-			closeOpenDialogs();
-
-			if (Engine.IsAtlasRunning())
-			{
-				// If we're in Atlas, we can't leave the game
-				var btCaptions = ["OK"];
-				var btCode = [null];
-				var message = "Press OK to continue";
-			}
-			else
-			{
-				var btCaptions = ["Yes", "No"];
-				var btCode = [leaveGame, null];
-				var message = "Do you want to quit?";
-			}
-			messageBox(400, 200, message, "DEFEATED!", 0, btCaptions, btCode);
+			var btCaptions = ["Yes", "No"];
+			var btCode = [leaveGame, null];
+			var message = "Do you want to quit?";
 		}
-		else if (playerState.state == "won")
+		messageBox(400, 200, message, "DEFEATED!", 0, btCaptions, btCode);
+	}
+	else if (playerState.state == "won")
+	{
+		g_GameEnded = true;
+		global.music.setState(global.music.states.VICTORY);
+
+		closeMenu();
+		closeOpenDialogs();
+
+		if (!getGUIObjectByName("devCommandsRevealMap").checked)
+			getGUIObjectByName("devCommandsRevealMap").checked = true;
+
+		if (Engine.IsAtlasRunning())
 		{
-			g_GameEnded = true;
-			global.music.setState(global.music.states.VICTORY);
-
-			closeMenu();
-			closeOpenDialogs();
-
-			if (!getGUIObjectByName("devCommandsRevealMap").checked)
-				getGUIObjectByName("devCommandsRevealMap").checked = true;
-
-			if (Engine.IsAtlasRunning())
-			{
-				// If we're in Atlas, we can't leave the game
-				var btCaptions = ["OK"];
-				var btCode = [null];
-				var message = "Press OK to continue";
-			}
-			else
-			{
-				var btCaptions = ["Yes", "No"];
-				var btCode = [leaveGame, null];
-				var message = "Do you want to quit?";
-			}
-			messageBox(400, 200, message, "VICTORIOUS!", 0, btCaptions, btCode);
+			// If we're in Atlas, we can't leave the game
+			var btCaptions = ["OK"];
+			var btCode = [null];
+			var message = "Press OK to continue";
 		}
+		else
+		{
+			var btCaptions = ["Yes", "No"];
+			var btCode = [leaveGame, null];
+			var message = "Do you want to quit?";
+		}
+		messageBox(400, 200, message, "VICTORIOUS!", 0, btCaptions, btCode);
 	}
 }
 
