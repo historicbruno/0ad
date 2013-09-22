@@ -153,22 +153,21 @@ class LeaderboardList():
     board = {}
     players = db.query(Player).order_by(Player.rating.desc()).limit(100).all()
     for rank, player in enumerate(players):
-      board[player.jid] = {'name': '@'.join(player.jid.split('@')[:-1]), 'rank': str(rank + 1), 'rating': str(player.rating)}
+      board[player.jid] = {'name': '@'.join(player.jid.split('@')[:-1]), 'rating': str(player.rating)}
     return board
 
 ## Class to tracks all games in the lobby ##
 class GameList():
   def __init__(self):
     self.gameList = {}
-  def addGame(self, JID, dataTup):
+  def addGame(self, JID, data):
     """
       Add a game
     """
-    dataDic = self.TupToDic(dataTup)
-    dataDic['players-init'] = dataDic['players']
-    dataDic['nbp-init'] = dataDic['nbp']
-    dataDic['state'] = 'init'
-    self.gameList[str(JID)] = dataDic
+    data['players-init'] = data['players']
+    data['nbp-init'] = data['nbp']
+    data['state'] = 'init'
+    self.gameList[str(JID)] = data
   def removeGame(self, JID):
     """
       Remove a game attached to a JID
@@ -184,7 +183,6 @@ class GameList():
       Switch game state between running and waiting
     """
     JID = str(JID)
-    data = self.TupToDic(data)
     if JID in self.gameList:
       if self.gameList[JID]['nbp-init'] > data['nbp']:
         logging.debug("change game (%s) state from %s to %s", JID, self.gameList[JID]['state'], 'waiting')
@@ -194,16 +192,6 @@ class GameList():
         logging.debug("change game (%s) state from %s to %s", JID, self.gameList[JID]['state'], 'running')
         self.gameList[JID]['nbp'] = data['nbp']
         self.gameList[JID]['state'] = 'running'
-  def TupToDic(self, Tuple):
-    """
-      Converts game recived as a tuple and converts it to a dictionary
-    """
-    return {'name':Tuple[0], 'ip':Tuple[1], 'state':Tuple[2], 'mapName':Tuple[3], 'mapSize':Tuple[4], 'mapType':Tuple[5], 'victoryCondition':Tuple[6], 'nbp':Tuple[7], 'tnbp':Tuple[8], 'players':Tuple[9]}
-  def DicToTup(self, Dict):
-    """
-      Converts game saved as a dictionary to a tuple formatted for sending
-    """
-    return Dict['name'], Dict['ip'], Dict['state'], Dict['nbp'], Dict['tnbp'], Dict['players'], Dict['mapName'], Dict['mapSize'], Dict['mapType'], Dict['victoryCondition']
 
 ## Class which manages different game reports from clients ##
 ##   and calls leaderboard functions as appropriate.      ##
@@ -219,7 +207,7 @@ class ReportManager():
         and the leaderboard database.
     """
     # cleanRawGameReport is a copy of rawGameReport with all reporter specific information removed.
-    cleanRawGameReport = rawGameReport[:]
+    cleanRawGameReport = rawGameReport.copy()
     del cleanRawGameReport["playerID"]
 
     if cleanRawGameReport not in self.interimReportTracker:
@@ -228,14 +216,14 @@ class ReportManager():
       self.interimReportTracker.append(cleanRawGameReport)
       # Initilize the JIDs and store the initial JID.
       JIDs = [None] * self.getNumPlayers(rawGameReport)
-      JIDs[int(rawGameReport["playerID"])] = str(JID)
+      JIDs[int(rawGameReport["playerID"])-1] = str(JID)
       self.interimJIDTracker.append(JIDs)
     else:
       # We get the index at which the JIDs coresponding to the game are stored.
-      index = self.interimReportTracker.indexOf(cleanRawGameReport)
+      index = self.interimReportTracker.index(cleanRawGameReport)
       # We insert the new report JID into the acending list of JIDs for the game.
       JIDs = self.interimJIDTracker[index]
-      JIDs[int(rawGameReport["playerID"])] = str(JID)
+      JIDs[int(rawGameReport["playerID"])-1] = str(JID)
       self.interimJIDTracker[index] = JIDs
       
     self.checkFull()
@@ -278,7 +266,7 @@ class ReportManager():
         if JID != None:
           numReports += 1
       if numReports == numPlayers:
-        self.leaderboard.addAndRateGame(self.expandReport(report, self.interimJIDTracker[i]))
+        self.leaderboard.addAndRateGame(self.expandReport(self.interimReportTracker[i], self.interimJIDTracker[i]))
         del self.interimJIDTracker[i]
         del self.interimReportTracker[i]
         length -= 1
@@ -316,23 +304,22 @@ class GameListXmppPlugin(ElementBase):
         extension.
     """
     game = self.xml.find('{%s}game' % self.namespace)
-    return game.get("name"), game.get("ip"), game.get("state"), game.get("mapName"), game.get("mapSize"), game.get("mapType"), game.get("victoryCondition"), game.get("nbp"), game.get("tnbp"), game.get("players")
+    data = {}
+    for key, item in game.items():
+      data[key] = item
+    return data
 
 ## Class for custom boardlist stanza extension ##
 class BoardListXmppPlugin(ElementBase):
   name = 'query'
   namespace = 'jabber:iq:boardlist'
-  interfaces = set(('board'))
+  interfaces = ('board')
   sub_interfaces = interfaces
   plugin_attrib = 'boardlist'
 
-  def addItem(self, name, rank, rating):
-    itemXml = ET.Element("board", {"name": name, "rank": rank, "rating": rating})
+  def addItem(self, name, rating):
+    itemXml = ET.Element("board", {"name": name, "rating": rating})
     self.xml.append(itemXml)
-
-  def getItem(self):
-    board = self.xml.find('{%s}board' % self.namespace)
-    return board.get("name"), board.get("ip")
 
 ## Class for custom gamereport stanza extension ##
 class GameReportXmppPlugin(ElementBase):
@@ -348,7 +335,10 @@ class GameReportXmppPlugin(ElementBase):
         extension.
     """
     game = self.xml.find('{%s}game' % self.namespace)
-    return {"playerID" : game.get("playerID"), "playerStates" : game.get("playerStates")} #TODO (shouldn't have to hardcode the statistic names)
+    data = {}
+    for key, item in game.items():
+      data[key] = item
+    return data
 
 ## Main class which handles IQ data and sends new data ##
 class XpartaMuPP(sleekxmpp.ClientXMPP):
@@ -487,10 +477,10 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         """
         Client is reporting end of game statistics
         """
-        try:
-          self.reportManager.addReport(iq['from'], iq['gamereport']['game'])
-        except:
-          logging.error("Failed to update game statistics for %s" % iq['from'].bare)
+        #try:
+        self.reportManager.addReport(iq['from'], iq['gamereport']['game'])
+        #except:
+        #  logging.error("Failed to update game statistics for %s" % iq['from'].bare)
     else:
        logging.error("Failed to process stanza type '%s' received from %s" % iq['type'], iq['from'].bare)
 
@@ -540,7 +530,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     ## Pull leaderboard data and add it to the stanza
     board = self.leaderboard.getBoard()
     for i in board:
-      stz.addItem(board[i]['name'], board[i]['rank'], board[i]['rating'])
+      stz.addItem(board[i]['name'], board[i]['rating'])
 
     ## Set aditional IQ attributes
     iq = self.Iq()
@@ -604,7 +594,7 @@ if __name__ == '__main__':
   if xmpp.connect():
     xmpp.process(block=False)
     while True:
-      time.sleep(5)
+      time.sleep(2)
       logging.debug('Sending GameList')
       for to in xmpp.JIDs:
         xmpp.sendGameList(to)

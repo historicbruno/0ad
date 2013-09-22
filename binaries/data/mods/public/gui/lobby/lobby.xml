@@ -235,9 +235,8 @@
 				size="19 19 100%-19 100%-58"
 				tooltip_style="pgFloatingToolTip"
 				sprite_heading="colour:0 0 0 170">
-				<def id="rank" heading="Rank" color="255 255 255" width="50"/>
-				<def id="name" heading="Name" color="255 255 255" width="150"/>
-				<def id="rating" heading="Rating" color="255 255 255" width="50"/>
+				<def id="rating" heading="Rating" color="255 255 255" width="75"/>
+				<def id="name" heading="Name" color="255 255 255" width="225"/>
 			</object>
 			<object type="button" style="StoneButton" size="50%+5 100%-45 50%+133 100%-17">
 				Back

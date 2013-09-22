@@ -133,24 +133,21 @@ function updateBoardList()
 	var boardList = Engine.GetBoardList();
 	// Get GUI leaderboard object
 	var leaderboard = getGUIObjectByName("leaderboardBox");
-	// Sort list in decending order by rank
-	boardList.sort(function(a, b) a.rank - b.rank);
+	// Sort list in acending order by rating
+	boardList.sort(function(a, b) b.rating - a.rating);
 
 	var list = [];
 	var list_name = [];
-	var list_rank = [];
 	var list_rating = [];
 
 	// Push changes
 	for (var i = 0; i < boardList.length; i++)
 	{
-		list_rank.push(boardList[i].rank);
 		list_name.push(boardList[i].name);
 		list_rating.push(boardList[i].rating);
 		list.push(boardList[i].name);
 	}
 
-	leaderboard.list_rank = list_rank;
 	leaderboard.list_name = list_name;
 	leaderboard.list_rating = list_rating;
 	leaderboard.list = list;
