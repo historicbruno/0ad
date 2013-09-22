@@ -293,7 +293,7 @@ class GameListXmppPlugin(ElementBase):
   plugin_attrib = 'gamelist'
 
   def addGame(self, data):
-    itemXml = ET.Element("game", {"name":data["name"], "ip":data["ip"], "state":data["state"], "nbp":data["nbp"], "tnbp":data["tnbp"], "players":data["players"], "mapName":data["mapName"], "mapSize":data["mapSize"], "mapType":data["mapType"], "victoryCondition":data["victoryCondition"]})
+    itemXml = ET.Element("game", data)
     self.xml.append(itemXml)
 
   def getGame(self):
