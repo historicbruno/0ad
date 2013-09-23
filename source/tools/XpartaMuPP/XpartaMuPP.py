@@ -362,6 +362,8 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     self.nicks = {}
     # Store client JIDs, attached via client request
     self.JIDs = []
+    
+    self.lastLeft = ""
 
     register_stanza_plugin(Iq, GameListXmppPlugin)
     register_stanza_plugin(Iq, BoardListXmppPlugin)
@@ -398,13 +400,14 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
     Process presence stanza from a chat room.
     """
     if presence['muc']['nick'] != self.nick:
-      self.send_message(mto=presence['from'], mbody="Hello %s, welcome to the 0 A.D. lobby. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
-      # Store player JID with room prefix
-      if str(presence['from']) not in self.nicks:
-        self.nicks[str(presence['from'])] = presence['muc']['nick']
-      logging.debug("Player '%s (%s - %s)' connected" %(presence['muc']['nick'], presence['muc']['jid'], presence['muc']['jid'].bare))
-      # Send Gamelist to new player
-      self.sendGameList(presence['from'])
+      # Check the jid isn't already in the lobby.
+      if str(presence['muc']['jid']) != self.lastLeft:
+        self.send_message(mto=presence['from'], mbody="Hello %s, welcome to the 0 A.D. lobby. Polish your weapons and get ready to fight!" %(presence['muc']['nick']), mtype='')
+        # Send Gamelist to new player
+        self.sendGameList(presence['muc']['jid'])
+      # Store player JID mapped to their nick
+      self.nicks[str(presence['muc']['jid'])] = presence['muc']['nick']
+      logging.debug("Client '%s' connected with a nick of '%s'." %(presence['muc']['jid'], presence['muc']['nick']))
 
   def muc_offline(self, presence):
     """
@@ -416,7 +419,8 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         if self.gameList.getAllGames()[JID]['players'].split(',')[0] == presence['muc']['nick']:
           self.gameList.removeGame(JID)
           break
-      del self.nicks[str(presence['from'])]
+      self.lastLeft = str(presence['muc']['jid'])
+      del self.nicks[str(presence['muc']['jid'])]
 
   def iqhandler(self, iq):
     """
