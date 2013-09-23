@@ -202,7 +202,7 @@ function updateGameList()
 			list_ip.push(g.ip);
 			list_mapName.push(g.mapName);
 			list_mapSize.push(tilesToMapSize(g.mapSize));
-			list_mapType.push(g.mapType);
+			list_mapType.push(toTitleCase(g.mapType));
 			list_nPlayers.push(g.nbp + "/" +g.tnbp);
 			list.push(g.name);
 			list_data.push(c);
@@ -312,7 +312,7 @@ function selectGame(selected)
 	getGUIObjectByName("sgNbPlayers").caption = g_GameList[g].nbp + "/" + g_GameList[g].tnbp;
 	getGUIObjectByName("sgPlayersNames").caption = g_GameList[g].players;
 	getGUIObjectByName("sgMapSize").caption = tilesToMapSize(g_GameList[g].mapSize);
-	getGUIObjectByName("sgMapType").caption = mapType;
+	getGUIObjectByName("sgMapType").caption = toTitleCase(mapType);
 
 	// Set the map preview
 	var mapPreview = mapData.settings.Preview || "nopreview.png";

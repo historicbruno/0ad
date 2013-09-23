@@ -117,8 +117,8 @@ function onTick()
 		else if (message.type == "system" && message.text == "registered")
 		{
 			// Great, we are registered. Switch to the connection window.
-			getGUIObjectByName("registerFeedback").caption = message.text;
-			getGUIObjectByName("connectFeedback").caption = message.text;
+			getGUIObjectByName("registerFeedback").caption = toTitleCase(message.text);
+			getGUIObjectByName("connectFeedback").caption = toTitleCase(message.text);
 			Engine.StopXmppClient();
 			g_LobbyIsConnecting = false;
 			getGUIObjectByName("pageRegister").hidden = true;
@@ -126,8 +126,8 @@ function onTick()
 		}
 		else if(message.type == "system" && (message.level == "error" || message.text == "disconnected"))
 		{
-			getGUIObjectByName("connectFeedback").caption = message.text;
-			getGUIObjectByName("registerFeedback").caption = message.text;
+			getGUIObjectByName("connectFeedback").caption = toTitleCase(message.text);
+			getGUIObjectByName("registerFeedback").caption = toTitleCase(message.text);
 			Engine.StopXmppClient();
 			g_LobbyIsConnecting = false;
 		}
