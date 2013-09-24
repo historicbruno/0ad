@@ -60,35 +60,26 @@
                 <action on="Press">g_ConfigDB.user["sound.musicgain"] = String(getGUIObjectByName("SMusicCFG").caption);</action>
             </object>
         </object>
-            <!--
-            <object size="0 10 100%-80 35" type="text" style="RightLabelText" ghost="true">Enable Shadows</object>
-            <object name="shadowsCheckbox" size="100%-56 15 100%-30 40" type="checkbox" style="StoneCrossBox" checked="true">
-                <action on="Load">this.checked = true;</action>
-                <action on="Press">my_bool_setting = this.checked;</action>
-           </object>
-
-
-
-
+<!--
              Settings / shadows 
             <object size="0 10 100%-80 35" type="text" style="RightLabelText" ghost="true">Enable Shadows</object>
             <object name="shadowsCheckbox" size="100%-56 15 100%-30 40" type="checkbox" style="StoneCrossBox" checked="true">
-                    <action on="Load">if (renderer.shadows) this.checked = true; else this.checked = false;</action>
-                    <action on="Press">renderer.shadows = this.checked;</action>
+                    <action on="Load">this.checked = Engine.Renderer_GetShadowsEnabled();</action>
+                    <action on="Press">Engine.Renderer_SetShadowsEnabled(this.checked);</action>
             </object>	
              Settings / Shadow PCF 
             <object size="0 35 100%-80 60" type="text" style="RightLabelText" ghost="true">Enable Shadow Filtering</object>
             <object name="shadowPCFCheckbox" size="100%-56 40 100%-30 65" type="checkbox" style="StoneCrossBox" checked="true">
-                    <action on="Load">if (renderer.shadowPCF) this.checked = true; else this.checked = false;</action>
-                    <action on="Press">renderer.shadowPCF = this.checked;</action>
+                    <action on="Load">this.checked = Engine.Renderer_GetShadowPCFEnabled();</action>
+                    <action on="Press">Engine.Renderer_SetShadowPCFEnabled(this.checked);</action>
             </object>
 
-                        <Settings / Water 
-                        <object size="0 60 100%-80 85" type="text" style="RightLabelText" ghost="true">Enable Water Reflections</object>
-                        <object name="fancyWaterCheckbox" size="100%-56 65 100%-30 90"  type="checkbox" style="StoneCrossBox" checked="true">
-                                <action on="Load">if (renderer.fancyWater) this.checked = true; else this.checked = false;</action>
-                                <action on="Press">renderer.fancyWater = this.checked;</action>
-                        </object>
+             Settings / Water 
+            <object size="0 60 100%-80 85" type="text" style="RightLabelText" ghost="true">Enable Water Reflections</object>
+            <object name="fancyWaterCheckbox" size="100%-56 65 100%-30 90"  type="checkbox" style="StoneCrossBox" checked="true">
+                    <action on="Load">this.checked = Engine.Renderer_GetWaterNormalEnabled();</action>
+                    <action on="Press">Engine.Renderer_SetWaterNormalEnabled(this.checked);</action>
+            </object>
 
              Settings / Music
             <object size="0 60 100%-80 85" type="text" style="RightLabelText" ghost="true">Enable Music</object>
@@ -96,11 +87,12 @@
                     <action on="Press">if (this.checked) startMusic(); else stopMusic();</action>
             </object>
 
-                        Settings / Dev Overlay 
-                       <object size="0 110 100%-80 135" type="text" style="RightLabelText" ghost="true">Developer Overlay</object>
-                                <object size="100%-56 115 100%-30 140" type="checkbox" style="StoneCrossBox" checked="false">
-                                <action on="Press">toggleDeveloperOverlay();</action>
-                        </object>-->
+             Settings / Dev Overlay 
+            <object size="0 110 100%-80 135" type="text" style="RightLabelText" ghost="true">Developer Overlay</object>
+                    <object size="100%-56 115 100%-30 140" type="checkbox" style="StoneCrossBox" checked="false">
+                    <action on="Press">toggleDeveloperOverlay();</action>
+            </object>
+-->
         <object type="button" style="StoneButton" size="50%+16 100%-64 50%+144 100%-32">
             Cancel
             <action on="Press">Engine.PopGuiPage();</action>

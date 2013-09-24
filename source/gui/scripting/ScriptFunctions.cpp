@@ -42,10 +42,12 @@
 #include "ps/ProfileViewer.h"
 #include "ps/Pyrogenesis.h"
 #include "ps/SavedGame.h"
+#include "ps/scripting/JSInterface_Console.h"
 #include "ps/UserReport.h"
 #include "ps/GameSetup/Atlas.h"
 #include "ps/GameSetup/Config.h"
 #include "ps/ConfigDB.h"
+#include "renderer/scripting/JSInterface_Renderer.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
 #include "lobby/XmppClient.h"
 #include "lobby/sha.h"
@@ -912,6 +914,8 @@ std::string EncryptPassword(void* UNUSED(cbdata), std::string user, std::string 
 void GuiScriptingInit(ScriptInterface& scriptInterface)
 {
 	JSI_GameView::RegisterScriptFunctions(scriptInterface);
+	JSI_Renderer::RegisterScriptFunctions(scriptInterface);
+	JSI_Console::RegisterScriptFunctions(scriptInterface);
 
 	// GUI manager functions:
 	scriptInterface.RegisterFunction<CScriptVal, &GetActiveGui>("GetActiveGui");
