@@ -99,7 +99,7 @@
 			</object>
 
 			<!-- START Filter panel -->
-			<object name="filterPanel" size="480 100%-140 805 100%-10" type="image" sprite="ModernDarkBoxWhite" hidden="true">
+			<object name="filterPanel" size="480 100%-130 805 100%" type="image" sprite="ModernDarkBoxWhite" hidden="true">
 				<object type="text" size="10 10 110 30" text_align="left" textcolor="white">Map size :</object>
 				<object name="mapSizeFilter"
 					type="dropdown"
@@ -153,13 +153,13 @@
 						{
 							this.caption = "<<";
 							getGUIObjectByName("filterPanel").hidden = false;
-							getGUIObjectByName("gamesBox").size="345 0 100% 100%-145";
+							getGUIObjectByName("gamesBox").size="345 0 100% 100%-135";
 						}
 						else
 						{
 							this.caption = ">>";
 							getGUIObjectByName("filterPanel").hidden = true;
-							getGUIObjectByName("gamesBox").size="345 0 100% 100%-35";
+							getGUIObjectByName("gamesBox").size="345 0 100% 100%-25";
 						}
 					]]></action>
 				</object>
