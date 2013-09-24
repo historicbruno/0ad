@@ -138,6 +138,7 @@ function updateBoardList()
 
 	var list = [];
 	var list_name = [];
+	var list_rank = [];
 	var list_rating = [];
 
 	// Push changes
@@ -145,11 +146,13 @@ function updateBoardList()
 	{
 		list_name.push(boardList[i].name);
 		list_rating.push(boardList[i].rating);
+		list_rank.push(i+1);
 		list.push(boardList[i].name);
 	}
 
 	leaderboard.list_name = list_name;
 	leaderboard.list_rating = list_rating;
+	leaderboard.list_rank = list_rank;
 	leaderboard.list = list;
 
 	if (leaderboard.selected >= leaderboard.list.length)

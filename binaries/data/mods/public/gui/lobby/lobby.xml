@@ -143,7 +143,7 @@
 
 			<object name="gamesBar" size="345 100%-20 100% 100%">
 				<object type="button" style="StoneButton" size="0 0 100 20">
-					Leaderboards
+					Leaderboard
 					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
 				</object>
 				<object type="button" style="StoneButton" size="105 0 130 20">
@@ -226,17 +226,16 @@
 
 		<!-- START Window for leaderboard stats -->
 		<!-- Add a translucent black background to fade out the menu page -->
-		<object hidden="true" name="leaderboardFade" type="image" z="100" sprite="bkTranslucent"/>
-		<object hidden="true" name="leaderboard" type="image" style="ModernDialog" size="50%-175 50%-150 50%+175 50%+125" z="101">
-			<object style="TitleText" type="text" size="50%-128 0%-16 50%+128 16">Leaderboards</object>
+		<object hidden="true" name="leaderboardFade" type="image" z="100" sprite="modernFade"/>
+		<object hidden="true" name="leaderboard" type="image" style="ModernDialog" size="50%-224 50%-160 50%+224 50%+160" z="101">
+			<object style="TitleText" type="text" size="50%-128 0%-16 50%+128 16">Leaderboard</object>
 			<object name="leaderboardBox"
 				style="ModernList"
 				type="olist"
-				size="19 19 100%-19 100%-58"
-				tooltip_style="pgFloatingToolTip"
-				sprite_heading="colour:0 0 0 170">
-				<def id="rating" heading="Rating" color="255 255 255" width="75"/>
-				<def id="name" heading="Name" color="255 255 255" width="225"/>
+				size="19 19 100%-19 100%-58">
+				<def id="rank" heading="Rank" color="255 255 255" width="60"/>
+				<def id="rating" heading="Rating" color="255 255 255" width="90"/>
+				<def id="name" heading="Name" color="255 255 255" width="260"/>
 			</object>
 			<object type="button" style="StoneButton" size="50%+5 100%-45 50%+133 100%-17">
 				Back
