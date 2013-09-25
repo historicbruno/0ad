@@ -99,20 +99,20 @@
 			</object>
 
 			<!-- START Filter panel -->
-			<object name="filterPanel" size="480 100%-130 805 100%" type="image" sprite="ModernDarkBoxWhite" hidden="true">
+			<object name="filterPanel" size="480 100%-130 780 100%" type="image" sprite="ModernDarkBoxWhite" hidden="true">
 				<object type="text" size="10 10 110 30" text_align="left" textcolor="white">Map size :</object>
 				<object name="mapSizeFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="120 10 310 30">
+					size="100 10 280 30">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 40 150 60" text_align="left" textcolor="white">Number of players :</object>
+				<object type="text" size="10 40 150 60" text_align="left" textcolor="white">Players :</object>
 				<object name="playersNumberFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="160 40 310 60">
+					size="100 40 280 60">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
@@ -120,20 +120,20 @@
 				<object name="mapTypeFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="160 70 310 90">
+					size="100 70 280 90">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 100 130 120" text_align="left" textcolor="white">Hide full games :</object>
+				<object type="text" size="10 100 130 120" text_align="left" textcolor="white">Hide full:</object>
 				<object name="hideFullFilter"
 					type="checkbox"
 					checked="true"
 					style="StoneCrossBox"
-					size="140 105 150 120">
+					size="100 103 120 117">
 					<action on="Press">applyFilters();</action>
 				</object>
 
-				<object type="button" style="StoneButton" size="100%-110 100%-30 100%-10 100%-10">
+				<object type="button" style="StoneButton" size="180 100 280 120">
 					Reset
 					<action on="Press">resetFilters();</action>
 				</object>
