@@ -41,6 +41,9 @@
 				<action on="Load">
 				this.caption = Engine.GetDefaultLobbyPlayerPassword();
 				</action>
+				<action on="Press">
+					lobbyStart();
+				</action>
 			</object>
 			<object name="nickPanel" size="64 120 100%-32 144" hidden="true">
 				<object type="text" size="0 0 136 100%" style="RightLabelText">
@@ -90,7 +93,11 @@
 			<object type="text" size="0 40 200 70" style="RightLabelText">
 				Password again:
 			</object>
-			<object name="registerPasswordAgain" type="input" size="210 40 100%-32 64" style="StoneInput"/>
+			<object name="registerPasswordAgain" type="input" size="210 40 100%-32 64" style="StoneInput">
+				<action on="Press">
+					lobbyStartRegister()
+				</action>
+			</object>
 			<object name="registerFeedback" type="text" style="CenteredLabelText" size="32 150 100%-32 180" textcolor="red"/>
 			<object type="button" size="32 100%-60 122 100%-32" style="StoneButton">
 				Back
