@@ -11,6 +11,9 @@ var g_mapSizes = {};
 
 function init(attribs)
 {
+	// Play menu music
+	global.music.setState(global.music.states.MENU);
+
 	g_Name = Engine.LobbyGetNick();
 
 	g_mapSizes = initMapSizes();
