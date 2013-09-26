@@ -23,30 +23,4 @@
 		text_align="left"
 		text_valign="top"
 	/>
-
-	<style 	name="SmallStoneDropDown"
-		dropdown_buffer="1"
-		font="serif-14"
-		textcolor="white"
-		text_align="center"
-		text_valign="center"
-
-		sprite="StoneButton"
-		sprite_over="StoneButtonOver"
-		sprite_pressed="StoneButtonGlow"
-
-		button_width="15"
-		sprite2="StoneArrowDn"
-		sprite2_pressed="StoneArrowDnOver"
-
-		buffer_zone="5"
-		dropdown_size="200"
-		sprite_list="BackgroundListBox"
-		sprite_selectarea="BackgroundSelectArea"
-		textcolor_selected="white"
-
-		scrollbar="true"
-		scrollbar_style="wheatScrollBar"
-	/>
-
 </styles>

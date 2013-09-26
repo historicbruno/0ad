@@ -27,6 +27,31 @@
 		text_valign = "center"
 		sound_selected = "audio/interface/ui/ui_button_click.ogg"
 	/>
+	<style 	name="ModernDropDown"
+		dropdown_buffer="1"
+		font="serif-14"
+		textcolor="white"
+		text_align="left"
+		text_valign="center"
+
+		sprite="colour:0 0 0"
+		button_width="16"
+		sprite2="ModernDropDownArrow"
+		sprite2_pressed="ModernDropDownArrowHighlight"
+
+		buffer_zone="5"
+		dropdown_size="200"
+		sprite_list="colour:12 12 12"
+		sprite_selectarea="ModernDarkBoxWhite"
+		textcolor_selected="white"
+
+		scrollbar="true"
+		scrollbar_style="ModernScrollBar"
+
+		sound_opened="audio/interface/ui/ui_button_click.ogg"
+		sound_closed="audio/interface/ui/ui_button_click.ogg"
+		sound_selected="audio/interface/ui/ui_button_click.ogg"
+	/>
 	<style name="ModernLeftLabelText"
 		font="serif-bold-stroke-14"
 		textcolor="white"

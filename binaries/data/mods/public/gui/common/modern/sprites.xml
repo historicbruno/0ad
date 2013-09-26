@@ -241,4 +241,19 @@
 			real_texture_placement = "0 0 806 1"
 			/>
 	</sprite>
+	<!--
+	==========================================
+	- Misc. -
+	==========================================
+	-->
+	<sprite name = "ModernDropDownArrow">
+		<image texture = "global/modern/dropdown-arrow.png"
+			real_texture_placement = "0 0 16 16"
+		/>
+	</sprite>
+	<sprite name = "ModernDropDownArrowHighlight">
+		<image texture = "global/modern/dropdown-arrow.png"
+			real_texture_placement = "0 0 16 16"
+		/>
+	</sprite>
 </sprites>
