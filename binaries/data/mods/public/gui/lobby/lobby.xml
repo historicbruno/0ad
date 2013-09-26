@@ -17,12 +17,15 @@
 			onTick();
 		</action>
 
+		<!--  Top right 'last updated' text -->
+		<object name="updateStatusText" size="100%-225 25 100%-25 45" type="text" style="RightLabelText"/>
+
 		<!-- START Upper part of the gui containing the list of games and some details about the selected game -->
 		<object size="25 50 100%-25 0%+390">
-			<object name="gameInfoEmpty" size="0 0 340 100%" type="image" sprite="ModernDarkBoxGold" hidden="false">
+			<object name="gameInfoEmpty" size="0 0 340 100%-25" type="image" sprite="ModernDarkBoxGold" hidden="false">
 				<object size="50%-110 50%-50 50%+110 50%+50" type="image" sprite="productLogo"/>
 			</object>
-			<object name="gameInfo" size="0 0 340 100%" type="image" sprite="ModernDarkBoxGold" hidden="true">
+			<object name="gameInfo" size="0 0 340 100%-25" type="image" sprite="ModernDarkBoxGold" hidden="true">
 				<object name="sgMapName" size="170 0 100%-10 30" type="text" style="ModernCenteredLabelText"/>
 				<object name="sgMapPreview" size="10 10 160 160"  type="image" sprite=""/>
 
@@ -88,7 +91,7 @@
 			<object name="gamesBox"
 				style="ModernList"
 				type="olist"
-				size="345 0 100% 100%-25">
+				size="345 0 100% 100%">
 				<action on="SelectionChange"> selectGame(this.selected);</action>
 				<def id="name" heading="Name" color="0 60 0" width="180"/>
 				<!--<def id="ip" heading="IP" color="0 128 128" width="170"/>-->
@@ -98,42 +101,42 @@
 				<def id="nPlayers" heading="Players" color="0 128 128" width="30"/>
 			</object>
 
-			<!-- START Filter panel -->
-			<object name="filterPanel" size="480 100%-130 780 100%" type="image" sprite="ModernDarkBoxWhite" hidden="true">
-				<object type="text" size="10 10 110 30" text_align="left" textcolor="white">Map size :</object>
+			<!-- START Filter panel type="image" sprite="ModernDarkBoxWhite" -->
+			<object name="filterPanel" size="345 100%-20 100% 100%" hidden="true">
+				<object type="text" size="0 0 75 100%" text_align="left" textcolor="white">Map size:</object>
 				<object name="mapSizeFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="100 10 280 30">
+					size="75 0 150 100%">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 40 150 60" text_align="left" textcolor="white">Players :</object>
+				<object type="text" size="150 0 225 100%" text_align="left" textcolor="white">Players:</object>
 				<object name="playersNumberFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="100 40 280 60">
+					size="225 0 300 100%">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 70 150 90" text_align="left" textcolor="white">Map type :</object>
+				<object type="text" size="300 0 375 100%" text_align="left" textcolor="white">Map type:</object>
 				<object name="mapTypeFilter"
 					type="dropdown"
 					style="SmallStoneDropDown"
-					size="100 70 280 90">
+					size="375 0 450 100%">
 					<action on="SelectionChange">applyFilters();</action>
 				</object>
 
-				<object type="text" size="10 100 130 120" text_align="left" textcolor="white">Hide full:</object>
+				<object type="text" size="450 0 525 100%" text_align="left" textcolor="white">Hide full:</object>
 				<object name="hideFullFilter"
 					type="checkbox"
 					checked="true"
 					style="StoneCrossBox"
-					size="100 103 120 117">
+					size="525 3 540 100%-3">
 					<action on="Press">applyFilters();</action>
 				</object>
 
-				<object type="button" style="StoneButton" size="180 100 280 120">
+				<object type="button" style="StoneButton" size="555 0 630 100%">
 					Reset
 					<action on="Press">resetFilters();</action>
 				</object>
@@ -141,25 +144,39 @@
 			</object>
 			<!-- END Filter panel -->
 
-			<object name="gamesBar" size="345 100%-20 100% 100%">
+			<object name="gamesBar" size="0 100%-20 340 100%">
 				<object type="button" style="StoneButton" size="0 0 100 20">
 					Leaderboard
 					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
 				</object>
-				<object type="button" style="StoneButton" size="105 0 130 20">
+				<object name="hostButton" type="button" style="StoneButton" size="105 0 205 20">
+					Host Game
+					<action on="Press">
+						// Open Multiplayer connection window with host option.
+						Engine.PushGuiPage("page_gamesetup_mp.xml", { multiplayerGameType: "host", name: g_Name });
+					</action>
+				</object>
+				<object type="button" style="StoneButton" size="210 0 310 20">
+					Main Menu
+					<action on="Press">
+						lobbyStop();
+						Engine.SwitchGuiPage("page_pregame.xml");
+					</action>
+				</object>
+				<object type="button" style="StoneButton" size="315 0 340 20">
 					>>
 					<action on="Press"><![CDATA[
 						if(this.caption == ">>")
 						{
 							this.caption = "<<";
 							getGUIObjectByName("filterPanel").hidden = false;
-							getGUIObjectByName("gamesBox").size="345 0 100% 100%-135";
+							getGUIObjectByName("gamesBox").size="345 0 100% 100%-25";
 						}
 						else
 						{
 							this.caption = ">>";
 							getGUIObjectByName("filterPanel").hidden = true;
-							getGUIObjectByName("gamesBox").size="345 0 100% 100%-25";
+							getGUIObjectByName("gamesBox").size="345 0 100% 100%";
 						}
 					]]></action>
 				</object>
@@ -190,39 +207,6 @@
 			</object>
 		</object>
 		<!-- END Lower part of the gui containing the chat and the list of players -->
-
-		<!-- START Navigation bar containing the 'Main menu' button -->
-		<object name="navBar" size="20 25 100%-25 45">
-			<object name="updateStatusText" size="100%-410 0 100%-210 20" type="text" style="RightLabelText"/>
-			<object name="hostButton" type="button" style="StoneButton" size="100%-205 0 100%-105 20">
-				Host Game
-				<action on="Press">
-					// Open Multiplayer connection window with host option.
-					Engine.PushGuiPage("page_gamesetup_mp.xml", { multiplayerGameType: "host", name: g_Name });
-				</action>
-			</object>
-
-			<!--
-			<object type="button" style="StoneButton" size="100%-340 0 100%-240 20">
-				Connect
-				<action on="Press">lobbyConnect();</action>
-			</object>
-
-			<object type="button" style="StoneButton" size="100%-220 0 100%-120 20">
-				Disconnect
-				<action on="Press">lobbyDisconnect();</action>
-			</object>
-			-->
-
-			<object type="button" style="StoneButton" size="100%-100 0 100% 20">
-				Main Menu
-				<action on="Press">
-					lobbyStop();
-					Engine.SwitchGuiPage("page_pregame.xml");
-				</action>
-			</object>
-		</object>
-		<!-- END Navigation bar containing the 'Main menu' button -->
 
 		<!-- START Window for leaderboard stats -->
 		<!-- Add a translucent black background to fade out the menu page -->

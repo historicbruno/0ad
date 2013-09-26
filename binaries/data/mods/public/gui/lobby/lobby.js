@@ -17,11 +17,11 @@ function init(attribs)
 	g_Name = Engine.LobbyGetNick();
 
 	g_mapSizes = initMapSizes();
-	g_mapSizes.names.push("Any");
+	g_mapSizes.shortNames.push("Any");
 	g_mapSizes.tiles.push("");
 
 	var mapSizeFilter = getGUIObjectByName("mapSizeFilter");
-	mapSizeFilter.list = g_mapSizes.names;
+	mapSizeFilter.list = g_mapSizes.shortNames;
 	mapSizeFilter.list_data = g_mapSizes.tiles;
 
 	var playersNumberFilter = getGUIObjectByName("playersNumberFilter");

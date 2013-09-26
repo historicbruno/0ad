@@ -180,6 +180,7 @@ function initPlayerDefaults()
 function initMapSizes()
 {
 	var sizes = {
+		"shortNames":[],
 		"names":[],
 		"tiles": [],
 		"default": 0
@@ -192,6 +193,7 @@ function initMapSizes()
 	{
 		for (var i = 0; i < data.Sizes.length; ++i)
 		{
+			sizes.shortNames.push(data.Sizes[i].Name);
 			sizes.names.push(data.Sizes[i].LongName);
 			sizes.tiles.push(data.Sizes[i].Tiles);
 
