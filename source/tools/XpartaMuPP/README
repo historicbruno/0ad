@@ -60,20 +60,23 @@ You also need the SleekXmpp Python library
 Go to to github and follow their instructions
 https://github.com/fritzy/SleekXMPP
 
+Then execute the following command to setup the database
+$ ./source/tools/LobbyRankings.py
+
 Then execute the following command to run the script with default options
 $ ./source/tools/XpartaMuPP.py
 
 or rather a similar command to run a properly configured program
-$ ./source/tools/XpartaMuPP.py --domain localhost --password XXXXXX --nickname XpartaMuCC
+$ ./source/tools/XpartaMuPP.py --domain localhost --password XXXXXX --nickname WFGbot
 
 Run ./source/tools/XpartaMuPP.py -h for the full list of options
 
 If everything is fine you should see something along these lines in your console
-<<<< 
+<<<<
 INFO     Negotiating TLS
 INFO     Using SSL version: 3
-INFO     Node set to: xpartamupp@localhost/CC
-xpartamupp started
+INFO     Node set to: xpartamupp@lobby.wildfiregames.com/CC
+INFO     XpartaMuPP started
 <<<<
 
 Congratulations, you are running XpartaMuPP - the 0ad Multiplayer Game Manager.

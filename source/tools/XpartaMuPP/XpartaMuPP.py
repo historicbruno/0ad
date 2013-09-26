@@ -418,6 +418,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
       for JID in self.gameList.getAllGames():
         if self.gameList.getAllGames()[JID]['players'].split(',')[0] == presence['muc']['nick']:
           self.gameList.removeGame(JID)
+          self.sendGameList()
           break
       self.lastLeft = str(presence['muc']['jid'])
       del self.nicks[str(presence['muc']['jid'])]
@@ -458,12 +459,14 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
           # Add game
           try:
             self.gameList.addGame(iq['from'], iq['gamelist']['game'])
+            self.sendGameList()
           except:
             logging.error("Failed to process game registration data")
         elif command == 'unregister':
           # Remove game
           try:
             self.gameList.removeGame(iq['from'])
+            self.sendGameList()
           except:
             logging.error("Failed to process game unregistration data")
 
@@ -471,6 +474,7 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
           # Change game status (waiting/running)
           try:
             self.gameList.changeGameState(iq['from'], iq['gamelist']['game'])
+            self.sendGameList()
           except:
             logging.error("Failed to process changestate data")
         else:
@@ -479,72 +483,85 @@ class XpartaMuPP(sleekxmpp.ClientXMPP):
         """
         Client is reporting end of game statistics
         """
-        #try:
-        self.reportManager.addReport(iq['from'], iq['gamereport']['game'])
-        #except:
-        #  logging.error("Failed to update game statistics for %s" % iq['from'].bare)
+        try:
+          self.reportManager.addReport(iq['from'], iq['gamereport']['game'])
+          self.sendBoardList()
+        except:
+          logging.error("Failed to update game statistics for %s" % iq['from'].bare)
     else:
        logging.error("Failed to process stanza type '%s' received from %s" % iq['type'], iq['from'].bare)
 
-  def sendGameList(self, to):
+  def sendGameList(self, to = ""):
     """
-    Send a massive stanza with the whole game list
+      Send a massive stanza with the whole game list.
+      If no target is passed the gamelist is broadcasted
+        to all clients.
     """
-    ## Check recipient exists
-    if to not in self.JIDs:
-      logging.error("No player with the xmpp id '%s' known" % to.bare)
-      return
+    if to != "":
+      ## Check recipient exists
+      if to not in self.JIDs:
+        logging.error("No player with the xmpp id '%s' known" % to.bare)
+        return
 
-    stz = GameListXmppPlugin()
+      stz = GameListXmppPlugin()
 
-    ## Pull games and add each to the stanza
-    games = self.gameList.getAllGames()
-    for JID in games:
-      g = games[JID]
-      # Only send the games that are in the 'init' state and games
-      # that are in the 'waiting' state which the receiving player is in. TODO
-      if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[str(to)] in g['players-init']):
-        stz.addGame(g)
+      ## Pull games and add each to the stanza
+      games = self.gameList.getAllGames()
+      for JID in games:
+        g = games[JID]
+        # Only send the games that are in the 'init' state and games
+        # that are in the 'waiting' state which the receiving player is in. TODO
+        if g['state'] == 'init' or (g['state'] == 'waiting' and self.nicks[str(to)] in g['players-init']):
+          stz.addGame(g)
 
-    ## Set additional IQ attributes
-    iq = self.Iq()
-    iq['type'] = 'result'
-    iq['to'] = to
-    iq.setPayload(stz)
+      ## Set additional IQ attributes
+      iq = self.Iq()
+      iq['type'] = 'result'
+      iq['to'] = to
+      iq.setPayload(stz)
 
-    ## Try sending the stanza
-    try:
-      iq.send()
-    except:
-      logging.error("Failed to send game list")
+      ## Try sending the stanza
+      try:
+        iq.send()
+      except:
+        logging.error("Failed to send game list")
+    else:
+      for JID in self.JIDs:
+        self.sendGameList(JID)
 
-  def sendBoardList(self, to):
+  def sendBoardList(self, to = ""):
     """
-    Send the whole leaderboard list
+      Send the whole leaderboard list.
+      If no target is passed the boardlist is broadcasted
+        to all clients.
     """
-    ## Check recipiant exists
-    if to not in self.JIDs:
-      logging.error("No player with the XmPP ID '%s' known" % to.bare)
-      return
+    if to != "":
+      ## Check recipiant exists
+      if to not in self.JIDs:
+        logging.error("No player with the XmPP ID '%s' known" % to.bare)
+        return
 
-    stz = BoardListXmppPlugin()
+      stz = BoardListXmppPlugin()
 
-    ## Pull leaderboard data and add it to the stanza
-    board = self.leaderboard.getBoard()
-    for i in board:
-      stz.addItem(board[i]['name'], board[i]['rating'])
+      ## Pull leaderboard data and add it to the stanza
+      board = self.leaderboard.getBoard()
+      for i in board:
+        stz.addItem(board[i]['name'], board[i]['rating'])
 
-    ## Set aditional IQ attributes
-    iq = self.Iq()
-    iq['type'] = 'result'
-    iq['to'] = to
-    iq.setPayload(stz)
+      ## Set aditional IQ attributes
+      iq = self.Iq()
+      iq['type'] = 'result'
+      iq['to'] = to
+      iq.setPayload(stz)
 
-    ## Try sending the stanza
-    try:
-      iq.send()
-    except:
-      logging.error("Failed to send leaderboard list")
+      ## Try sending the stanza
+      try:
+        iq.send()
+      except:
+        logging.error("Failed to send leaderboard list")
+    else:
+      for JID in self.JIDs:
+        self.sendBoardList(JID)
 
 ## Main Program ##
 if __name__ == '__main__':
@@ -595,10 +612,5 @@ if __name__ == '__main__':
 
   if xmpp.connect():
     xmpp.process(block=False)
-    while True:
-      time.sleep(2)
-      logging.debug('Sending GameList')
-      for to in xmpp.JIDs:
-        xmpp.sendGameList(to)
   else:
     logging.error("Unable to connect")
