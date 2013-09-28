@@ -978,7 +978,6 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<bool, std::string, &HotkeyIsPressed_>("HotkeyIsPressed");
 	scriptInterface.RegisterFunction<void, std::wstring, &DisplayErrorDialog>("DisplayErrorDialog");
 	scriptInterface.RegisterFunction<CScriptVal, &GetProfilerState>("GetProfilerState");
-	scriptInterface.RegisterFunction<std::string, std::string, std::string, &EncryptPassword>("EncryptPassword");
 
 	// User report functions
 	scriptInterface.RegisterFunction<bool, &IsUserReportEnabled>("IsUserReportEnabled");
@@ -1004,6 +1003,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, &RewindTimeWarp>("RewindTimeWarp");
 	scriptInterface.RegisterFunction<void, bool, &SetBoundingBoxDebugOverlay>("SetBoundingBoxDebugOverlay");
 
+#if CONFIG2_LOBBY // Allow the lobby to be disabled
 	// Lobby functions
 	scriptInterface.RegisterFunction<void, std::string, std::string, std::string, std::string, &StartXmppClient>("StartXmppClient");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &StartRegisterXmppClient>("StartRegisterXmppClient");
@@ -1032,4 +1032,6 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, std::string, std::string, &LobbyKick>("LobbyKick");
 	scriptInterface.RegisterFunction<void, std::string, std::string, &LobbyBan>("LobbyBan");
 	scriptInterface.RegisterFunction<std::string, std::string, &LobbyGetPlayerPresence>("LobbyGetPlayerPresence");
+	scriptInterface.RegisterFunction<std::string, std::string, std::string, &EncryptPassword>("EncryptPassword");
+#endif // CONFIG2_LOBBY
 }
