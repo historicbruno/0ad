@@ -186,5 +186,6 @@ private:
 };
 
 extern XmppClient *g_XmppClient;
+extern bool g_rankedGame;
 
 #endif // XMPPCLIENT_H

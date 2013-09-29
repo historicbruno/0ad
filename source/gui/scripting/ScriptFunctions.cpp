@@ -650,6 +650,7 @@ void StartXmppClient(void* cbdata, std::string sUsername, std::string sPassword,
 	ENSURE(!g_XmppClient);
 
 	g_XmppClient = new XmppClient(guiManager->GetScriptInterface(), sUsername, sPassword, sRoom, sNick);
+	g_rankedGame = true;
 }
 
 void StartRegisterXmppClient(void* cbdata, std::string sUsername, std::string sPassword)
@@ -670,6 +671,7 @@ void StopXmppClient(void* UNUSED(cbdata))
 {
 	ENSURE(g_XmppClient);
 	SAFE_DELETE(g_XmppClient);
+	g_rankedGame = false;
 }
 
 void ConnectXmppClient(void* UNUSED(cbdata))
@@ -909,6 +911,16 @@ std::string EncryptPassword(void* UNUSED(cbdata), std::string user, std::string 
         return pass;
 }
 
+bool IsRankedGame(void* UNUSED(cbdata))
+{
+	return g_rankedGame;
+}
+
+void SetRankedGame(void* UNUSED(cbdata), bool isRanked)
+{
+	g_rankedGame = isRanked;
+}
+
 } // namespace
 
 void GuiScriptingInit(ScriptInterface& scriptInterface)
@@ -1033,5 +1045,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, std::string, std::string, &LobbyBan>("LobbyBan");
 	scriptInterface.RegisterFunction<std::string, std::string, &LobbyGetPlayerPresence>("LobbyGetPlayerPresence");
 	scriptInterface.RegisterFunction<std::string, std::string, std::string, &EncryptPassword>("EncryptPassword");
+	scriptInterface.RegisterFunction<bool, &IsRankedGame>("IsRankedGame");
+	scriptInterface.RegisterFunction<void, bool, &SetRankedGame>("SetRankedGame");
 #endif // CONFIG2_LOBBY
 }

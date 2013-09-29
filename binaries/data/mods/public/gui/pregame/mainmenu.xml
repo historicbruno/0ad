@@ -261,9 +261,8 @@ Status: $status.
 					<action on="load">
 						if (!Engine.StartXmppClient)
 						{
-							var self = getGUIObjectByName("subMenuMultiplayerLobbyButton");
-							self.enabled = false;
-							self.tooltip = "Launch the multiplayer lobby. [DISABLED BY BUILD]";
+							this.enabled = false;
+							this.tooltip = "Launch the multiplayer lobby. [DISABLED BY BUILD]";
 						}
 					</action>
 				</object>
