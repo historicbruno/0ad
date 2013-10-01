@@ -23,4 +23,15 @@
 		text_align="left"
 		text_valign="top"
 	/>
+
+	<style name="MapPlayerList"
+		buffer_zone="8"
+		font="serif-14"
+		scrollbar="true"
+		scrollbar_style="ModernScrollBar"
+		scroll_bottom="true"
+		textcolor="white"
+		text_align="left"
+		text_valign="top"
+	/>
 </styles>

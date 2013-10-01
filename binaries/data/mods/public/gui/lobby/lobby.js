@@ -81,7 +81,7 @@ function resetFilters()
 	getGUIObjectByName("mapSizeFilter").selected = getGUIObjectByName("mapSizeFilter").list.length - 1;
 	getGUIObjectByName("playersNumberFilter").selected = getGUIObjectByName("playersNumberFilter").list.length - 1;
 	getGUIObjectByName("mapTypeFilter").selected = getGUIObjectByName("mapTypeFilter").list.length - 1;
-	getGUIObjectByName("hideFullFilter").checked = true;
+	getGUIObjectByName("showFullFilter").checked = false;
 
 	// Update the list of games
 	updateGameList();
@@ -99,12 +99,12 @@ function applyFilters()
 	selectGame(getGUIObjectByName("gamesBox").selected);
 }
 
-function displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter)
+function displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, showFullFilter)
 {
 	if(mapSizeFilter != "" && g.mapSize != mapSizeFilter) return false;
 	if(playersNumberFilter != "" && g.tnbp != playersNumberFilter) return false;
 	if(mapTypeFilter != "" && g.mapType != mapTypeFilter) return false;
-	if(hideFullFilter && g.tnbp == g.nbp) return false;
+	if(!showFullFilter && g.tnbp == g.nbp) return false;
 
 	return true;
 }
@@ -189,18 +189,18 @@ function updateGameList()
 	var mapSizeFilterDD = getGUIObjectByName("mapSizeFilter");
 	var playersNumberFilterDD = getGUIObjectByName("playersNumberFilter");
 	var mapTypeFilterDD = getGUIObjectByName("mapTypeFilter");
-	var hideFullFilterCB = getGUIObjectByName("hideFullFilter");
+	var showFullFilterCB = getGUIObjectByName("showFullFilter");
 
 	// Get filter values
-	mapSizeFilter = mapSizeFilterDD.selected >= 0 ? mapSizeFilterDD.list_data[mapSizeFilterDD.selected] : "";
-	playersNumberFilter = playersNumberFilterDD.selected >=0 ? playersNumberFilterDD.list_data[playersNumberFilterDD.selected] : "";
-	mapTypeFilter = mapTypeFilterDD.selected >= 0 ? mapTypeFilterDD.list_data[mapTypeFilterDD.selected] : "";
-	hideFullFilter = hideFullFilterCB.checked ? true : false;
+	var mapSizeFilter = mapSizeFilterDD.selected >= 0 ? mapSizeFilterDD.list_data[mapSizeFilterDD.selected] : "";
+	var playersNumberFilter = playersNumberFilterDD.selected >=0 ? playersNumberFilterDD.list_data[playersNumberFilterDD.selected] : "";
+	var mapTypeFilter = mapTypeFilterDD.selected >= 0 ? mapTypeFilterDD.list_data[mapTypeFilterDD.selected] : "";
+	var showFullFilter = showFullFilterCB.checked;
 
 	var c = 0;
 	for each (g in gameList)
 	{
-		if(displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, hideFullFilter))
+		if(displayGame(g, mapSizeFilter, playersNumberFilter, mapTypeFilter, showFullFilter))
 		{
 			// Highlight games 'waiting' for this player, otherwise display as green
 			var name = (g.state != 'waiting') ? '[color="0 125 0"]' + g.name + '[/color]' : '[color="orange"]' + g.name + '[/color]';
@@ -269,19 +269,21 @@ function formatPlayerListEntry(nickname, presence)
 
 function selectGame(selected)
 {
-	if(selected == -1)
+	if (selected == -1)
 	{
 		// Hide the game info panel if not game is selected
 		getGUIObjectByName("gameInfo").hidden = true;
 		getGUIObjectByName("gameInfoEmpty").hidden = false;
-		getGUIObjectByName("JoinGameButton").enabled = false;
+		getGUIObjectByName("joinGameButton").hidden = true;
+		getGUIObjectByName("rightPanel").size = "78% 5% 98.2% 89%";
 		return;
 	}
 
 	// Show the game info panel if a game is selected
 	getGUIObjectByName("gameInfo").hidden = false;
 	getGUIObjectByName("gameInfoEmpty").hidden = true;
-	getGUIObjectByName("JoinGameButton").enabled = true;
+	getGUIObjectByName("joinGameButton").hidden = false;
+		getGUIObjectByName("rightPanel").size = "78% 5% 98.2% 85%";
 
 	var g = getGUIObjectByName("gamesBox").list_data[selected];
 	var mapData;
@@ -357,7 +359,7 @@ function tilesToMapSize(tiles)
 {
 	var s = g_mapSizes.tiles.indexOf(Number(tiles));
 	if (s == 0 || s == -1)
-		return "";
+		return "Default";
 	return g_mapSizes.names[s].split(" ")[0];
 }
 
@@ -809,4 +811,7 @@ fixedColors["Apple Bloom"] = r(2, "f4f49b") + r(2, "e7e793") + r(2, "dac582") +
 	r(2, "f46091") + r(2, "f8415f") + r(1, "c52451");
 fixedColors["Scootaloo"] = r(2, "fbba64") + r(2, "f2ab56") + r(2, "f37003") +
 	r(2, "bf5d95") + r(1, "bf1f79");
+fixedColors["Luna"] = r(1, "7ca7fa") + r(1, "5d6fc1") + r(1, "656cb9") + r(1, "393993");
+fixedColors["Celestia"] = r(1, "fdfafc") + r(1, "f7eaf2") + r(1, "d99ec5") +
+	r(1, "00aec5") + r(1, "f7c6dc") + r(1, "98d9ef") + r(1, "ced7ed") + r(1, "fed17b");
 })();
