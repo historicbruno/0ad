@@ -72,4 +72,10 @@
 		text_align="center"
 		text_valign="center"
 	/>
+	<style  name="ModernInput"
+		sprite="ModernDarkBoxWhite"
+		sprite_selectarea="colour:150 0 0"
+		textcolor="white"
+		textcolor_selected="white"
+	/>
 </styles>

@@ -274,14 +274,17 @@ function selectGame(selected)
 		// Hide the game info panel if not game is selected
 		getGUIObjectByName("gameInfo").hidden = true;
 		getGUIObjectByName("gameInfoEmpty").hidden = false;
+		getGUIObjectByName("JoinGameButton").enabled = false;
 		return;
 	}
 
 	// Show the game info panel if a game is selected
 	getGUIObjectByName("gameInfo").hidden = false;
 	getGUIObjectByName("gameInfoEmpty").hidden = true;
+	getGUIObjectByName("JoinGameButton").enabled = true;
 
 	var g = getGUIObjectByName("gamesBox").list_data[selected];
+	var mapData;
 
 	// Get the selected map's name
 	getGUIObjectByName("sgMapName").caption = g_GameList[g].mapName;
@@ -354,7 +357,7 @@ function tilesToMapSize(tiles)
 {
 	var s = g_mapSizes.tiles.indexOf(Number(tiles));
 	if (s == 0 || s == -1)
-		return "-";
+		return "";
 	return g_mapSizes.names[s].split(" ")[0];
 }
 
