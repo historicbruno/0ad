@@ -10,6 +10,7 @@ newoption { trigger = "minimal-flags", description = "Only set compiler/linker f
 newoption { trigger = "without-nvtt", description = "Disable use of NVTT" }
 newoption { trigger = "without-tests", description = "Disable generation of test projects" }
 newoption { trigger = "without-pch", description = "Disable generation and usage of precompiled headers" }
+newoption { trigger = "without-lobby", description = "Disable the use of gloox and the multiplayer lobby" }
 newoption { trigger = "with-system-nvtt", description = "Search standard paths for nvidia-texture-tools library, instead of using bundled copy" }
 newoption { trigger = "with-system-enet", description = "Search standard paths for libenet, instead of using bundled copy" }
 newoption { trigger = "with-system-mozjs185", description = "Search standard paths for libmozjs185, instead of using bundled copy" }
@@ -144,6 +145,12 @@ function project_set_build_flags()
 		flags { "ExtraWarnings" } -- this causes far too many warnings/remarks on ICC
 	end
 
+	-- disable Windows debug heap, since it makes malloc/free hugely slower when
+	-- running inside a debugger
+	if os.is("windows") then
+		flags { "NoDebugHeap" }
+	end
+
 	configuration "Debug"
 		defines { "DEBUG" }
 
@@ -165,6 +172,10 @@ function project_set_build_flags()
 
 	if _OPTIONS["without-nvtt"] then
 		defines { "CONFIG2_NVTT=0" }
+	end
+
+	if _OPTIONS["without-lobby"] then
+		defines { "CONFIG2_LOBBY=0" }
 	end
 
 	-- required for the lowlevel library. must be set from all projects that use it, otherwise it assumes it is
@@ -533,16 +544,18 @@ function setup_all_libs ()
 	}
 	setup_static_lib_project("network", source_dirs, extern_libs, {})
 
+	if not _OPTIONS["without-lobby"] then
+		source_dirs = {
+			"lobby",
+		}
 
-	source_dirs = {
-		"lobby",
-	}
-	extern_libs = {
-		"spidermonkey",
-		"gloox",
-		"boost",
-	}
-	setup_static_lib_project("lobby", source_dirs, extern_libs, {})
+		extern_libs = {
+			"spidermonkey",
+			"boost",
+			"gloox",
+		}
+		setup_static_lib_project("lobby", source_dirs, extern_libs, {})
+	end
 
 
 	source_dirs = {
@@ -597,7 +610,6 @@ function setup_all_libs ()
 		"boost",
 		"enet",
 		"libcurl",
-		"gloox"
 	}
 	
 	if not _OPTIONS["without-audio"] then
@@ -648,7 +660,6 @@ function setup_all_libs ()
 		"sdl",	-- key definitions
 		"opengl",
 		"boost",
-		"gloox"
 	}
 	setup_static_lib_project("gui", source_dirs, extern_libs, {})
 
@@ -772,8 +783,6 @@ used_extern_libs = {
 	"libcurl",
 
 	"valgrind",
-
-	"gloox"
 }
 
 if not os.is("windows") and not _OPTIONS["android"] and not os.is("macosx") then
@@ -789,6 +798,10 @@ end
 
 if not _OPTIONS["without-nvtt"] then
 	table.insert(used_extern_libs, "nvtt")
+end
+
+if not _OPTIONS["without-lobby"] then
+	table.insert(used_extern_libs, "gloox")
 end
 
 -- Bundles static libs together with main.cpp and builds game executable.

@@ -23,9 +23,6 @@
 			onTick();
 		</action>
 
-		<!--  Top right 'last updated' text -->
-		<object name="updateStatusText" size="100%-225 25 100%-25 45" type="text" style="RightLabelText"/>
-
 		<!-- START Upper part of the gui containing the list of games and some details about the selected game -->
 		<object size="25 50 100%-25 0%+390">
 			<object name="gameInfoEmpty" size="0 0 340 100%-25" type="image" sprite="ModernDarkBoxGold" hidden="false">
@@ -71,7 +68,7 @@
 				<!-- Map Size -->
 				<object size="160 130 100% 160">
 					<object size="0 0 90 100%" type="image" sprite="ModernItemBackShadeLeft">
-						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map size:</object>
+						<object size="0 0 100%-10 100%" type="text" style="ModernRightLabelText">Map Size:</object>
 					</object>
 					<object size="90 0 100% 100%" type="image" sprite="ModernItemBackShadeRight">
 						<object name="sgMapSize" size="0 0 100% 100%" type="text" style="ModernLeftLabelText"/>
@@ -81,16 +78,8 @@
 				<object size="160 160 100%-10 161" type="image" sprite="ModernWhiteLine" z="25"/>
 
 				<!-- Map Description -->
-				<object type="image" sprite="ModernDarkBoxWhite" size="10 170 100%-10 100%-40">
+				<object type="image" sprite="ModernDarkBoxWhite" size="10 170 100%-10 100%-10">
 					<object name="sgMapDescription" type="text" style="MapDescription" size="0 0 100% 100%"/>
-				</object>
-
-				<!-- Buttons -->
-				<object type="button" style="StoneButton" size="100%-100 100%-30 100%-10 100%-10">
-					Join
-					<action on="Press">
-						joinSelectedGame();
-					</action>
 				</object>
 			</object>
 
@@ -101,8 +90,8 @@
 				<action on="SelectionChange"> selectGame(this.selected);</action>
 				<def id="name" heading="Name" color="0 60 0" width="180"/>
 				<!--<def id="ip" heading="IP" color="0 128 128" width="170"/>-->
-				<def id="mapName" heading="Map name" color="128 128 128" width="140"/>
-				<def id="mapSize" heading="Map size" color="128 128 128" width="100"/>
+				<def id="mapName" heading="Map Name" color="128 128 128" width="140"/>
+				<def id="mapSize" heading="Map Size" color="128 128 128" width="100"/>
 				<def id="mapType" heading="Map Type" color="0 128 128" width="100"/>
 				<def id="nPlayers" heading="Players" color="0 128 128" width="30"/>
 			</object>
@@ -151,22 +140,21 @@
 			<!-- END Filter panel -->
 
 			<object name="gamesBar" size="0 100%-20 340 100%">
-				<object type="button" style="StoneButton" size="0 0 100 20">
-					Leaderboard
-					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
-				</object>
-				<object name="hostButton" type="button" style="StoneButton" size="105 0 205 20">
+				<object name="hostButton" type="button" style="StoneButton" size="0 0 100 20">
 					Host Game
 					<action on="Press">
 						// Open Multiplayer connection window with host option.
 						Engine.PushGuiPage("page_gamesetup_mp.xml", { multiplayerGameType: "host", name: g_Name });
 					</action>
 				</object>
-				<object type="button" style="StoneButton" size="210 0 310 20">
-					Main Menu
+				<object type="button" style="StoneButton" size="105 0 205 20">
+					Leaderboard
+					<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
+				</object>
+				<object name="JoinGameButton" type="button" style="StoneButton" size="210 0 310 20" enabled="false">
+					Join
 					<action on="Press">
-						lobbyStop();
-						Engine.SwitchGuiPage("page_pregame.xml");
+						joinSelectedGame();
 					</action>
 				</object>
 				<object type="button" style="StoneButton" size="315 0 340 20">
@@ -191,23 +179,26 @@
 		<!-- END Upper part of the gui containing the list of games and some details about the selected game -->
 
 		<!-- START Lower part of the gui containing the chat and the list of players -->
-		<object size="25 0%+395 100%-25 100%-25">
+		<object size="25 395 100%-25 100%-25">
 			<object name="playersBox"
 				style="ModernList"
 				type="olist"
-				size="100%-210 0 100% 100%">
+				size="100%-210 0 100% 100%-33">
 				<def id="status" heading="Status" width="60"/>
 				<def id="name" heading="Name" width="50"/>
 			</object>
+			
+			<object type="button" style="StoneButton" size="100%-210 100%-28 100% 100%">
+				Main Menu
+				<action on="Press">
+					lobbyStop();
+					Engine.SwitchGuiPage("page_pregame.xml");
+				</action>
+			</object>
 
 			<object name="chatPanel" size="0 0 100%-215 100%" type="image" sprite="ModernDarkBoxGold">
-				<object name="chatText" size="1 1 100%-1 100%-25" type="text" style="ChatPanel"/>
-				<object name="chatInput" size="0 100%-26 100%-66 100%-1" type="input" style="StoneInput">
-					<action on="Press">submitChatInput();</action>
-				</object>
-
-				<object size="100%-65 100%-26 100%-1 100%-1" type="button" style="StoneButton">
-					Send
+				<object name="chatText" size="0 0 100% 100%-28" type="text" style="ChatPanel"/>
+				<object name="chatInput" size="0 100%-28 100% 100%" type="input" style="ModernInput">
 					<action on="Press">submitChatInput();</action>
 				</object>
 			</object>

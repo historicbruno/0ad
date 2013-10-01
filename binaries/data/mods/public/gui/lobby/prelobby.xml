@@ -31,7 +31,7 @@
 			</object>
 			<object name="connectUsername" type="input" size="210 40 100%-32 64" style="StoneInput">
 				<action on="Load">
-					this.caption = Engine.GetDefaultLobbyPlayerUsername();
+					this.caption = Engine.ConfigDB_GetValue("user", "lobby.login");
 				</action>
 			</object>
 			<object type="text" size="0 80 200 110" style="RightLabelText">
@@ -39,7 +39,7 @@
 			</object>
 			<object name="connectPassword" type="input" size="210 80 100%-32 104" style="StoneInput">
 				<action on="Load">
-				this.caption = Engine.GetDefaultLobbyPlayerPassword();
+				this.caption = Engine.ConfigDB_GetValue("user", "lobby.password");
 				</action>
 				<action on="Press">
 					lobbyStart();
@@ -51,7 +51,7 @@
 				</object>
 				<object name="joinPlayerName" type="input" size="146 0 100% 100%" style="StoneInput">
 					<action on="Load">
-						this.caption = Engine.GetDefaultPlayerName();
+						this.caption = Engine.ConfigDB_GetValue("user", "playername");
 					</action>
 				</object>
 			</object>

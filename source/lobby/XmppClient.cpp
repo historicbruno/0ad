@@ -39,6 +39,7 @@ using namespace gloox;
 
 //global
 XmppClient *g_XmppClient = NULL;
+bool g_rankedGame = false;
 
 //debug
 #if 1

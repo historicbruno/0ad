@@ -258,6 +258,13 @@ Status: $status.
 						// Open Multiplayer game lobby.
 						Engine.PushGuiPage("page_prelobby.xml", []);
 					</action>
+					<action on="load">
+						if (!Engine.StartXmppClient)
+						{
+							this.enabled = false;
+							this.tooltip = "Launch the multiplayer lobby. [DISABLED BY BUILD]";
+						}
+					</action>
 				</object>
 				</object>
 

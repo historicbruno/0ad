@@ -4,8 +4,8 @@ var g_InitialPassword = "";
 
 function init()
 {
-	g_InitialUsername = g_ConfigDB.user["lobby.login"];
-	g_InitialPassword = g_ConfigDB.user["lobby.password"];
+	g_InitialUsername = Engine.ConfigDB_GetValue("user", "lobby.login");
+	g_InitialPassword = Engine.ConfigDB_GetValue("user", "lobby.password");
 }
 
 function lobbyStop()
@@ -107,10 +107,11 @@ function onTick()
 
 			// Switch to lobby
 			Engine.SwitchGuiPage("page_lobby.xml");
-			// Store latest player name
-			Engine.SaveMPConfig(nick, Engine.GetDefaultMPServer());
-			// Store latest username and password
-			Engine.SetDefaultLobbyPlayerPair(username, password);
+			// Store nick, login, and password
+			Engine.ConfigDB_CreateValue("user", "playername", nick);
+			Engine.ConfigDB_CreateValue("user", "lobby.login", username);
+			Engine.ConfigDB_CreateValue("user", "lobby.password", password);
+			Engine.ConfigDB_WriteFile("user", "config/user.cfg");
 
 			return;
 		}

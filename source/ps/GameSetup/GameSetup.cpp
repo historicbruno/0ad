@@ -685,7 +685,9 @@ void Shutdown(int UNUSED(flags))
 {
 	EndGame();
 
-	SAFE_DELETE(g_XmppClient);
+	#if CONFIG2_LOBBY
+		SAFE_DELETE(g_XmppClient);
+	#endif
 
 	ShutdownPs(); // Must delete g_GUI before g_ScriptingHost
 
@@ -921,8 +923,6 @@ void Init(const CmdLineArgs& args, int flags)
 		g_DebuggingServer = new CDebuggingServer();
 
 	InitScripting();	// before GUI
-
-	g_ConfigDB.RegisterJSConfigDB(); 	// after scripting 
 
 	// Optionally start profiler HTTP output automatically
 	// (By default it's only enabled by a hotkey, for security/performance)
