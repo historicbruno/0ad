@@ -17,9 +17,6 @@
 			onTick();
 		</action>
 
-		<!--  Top right 'last updated' text -->
-		<object name="updateStatusText" size="100%-225 25 100%-25 45" type="text" style="RightLabelText"/>
-
 		<!-- START Upper part of the gui containing the list of games and some details about the selected game -->
 		<object size="25 50 100%-25 0%+390">
 			<object name="gameInfoEmpty" size="0 0 340 100%-25" type="image" sprite="ModernDarkBoxGold" hidden="false">

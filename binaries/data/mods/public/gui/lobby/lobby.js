@@ -478,9 +478,6 @@ function onTick()
 				{
 				case "gamelist updated":
 					updateGameList();
-					var t = new Date(Date.now());
-					var time = t.getHours() % 12 + ":" + twoDigits(t.getMinutes()) + ":" + twoDigits(t.getSeconds());
-					getGUIObjectByName("updateStatusText").caption = "Updated at " + time;
 					break;
 				case "boardlist updated":
 					updateBoardList();
