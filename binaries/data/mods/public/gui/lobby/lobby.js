@@ -4,7 +4,7 @@ var g_GameList = {};
 var g_specialKey = Math.random();
 var g_spamMonitor = {};
 var g_spammers = {};
-var g_timestamp = g_ConfigDB.user["lobby.chattimestamp"] == "true";
+var g_timestamp = Engine.ConfigDB_GetValue("user", "lobby.chattimestamp") == "true";
 var g_mapSizes = {};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -180,35 +180,6 @@ void SetPlayerID(void* UNUSED(cbdata), int id)
 		g_Game->SetPlayerID(id);
 }
 
-std::wstring GetDefaultPlayerName(void* UNUSED(cbdata))
-{
-	CStr playername;
-	CFG_GET_VAL("playername", String, playername);
-	std::wstring name = playername.FromUTF8();
-	if (!name.empty())
-		return name;
-
-	name = sys_get_user_name();
-	if (!name.empty())
-		return name;
-
-	return L"anonymous";
-}
-
-std::wstring GetDefaultMPServer(void* UNUSED(cbdata))
-{
-	CStr server;
-	CFG_GET_VAL("multiplayerserver", String, server);
-	return server.FromUTF8();
-}
-
-void SaveMPConfig(void* UNUSED(cbdata), std::wstring playerName, std::wstring server)
-{
-	g_ConfigDB.CreateValue(CFG_USER, "playername")->m_String = CStrW(playerName).ToUTF8();
-	g_ConfigDB.CreateValue(CFG_USER, "multiplayerserver")->m_String = CStrW(server).ToUTF8();
-	g_ConfigDB.WriteFile(CFG_USER);
-}
-
 void StartNetworkGame(void* UNUSED(cbdata))
 {
 	ENSURE(g_NetServer);
@@ -784,27 +755,6 @@ void LobbySendMessage(void* UNUSED(cbdata), std::string message)
 	g_XmppClient->SendMUCMessage(message);
 }
 
-std::string GetDefaultLobbyPlayerUsername(void* UNUSED(cbdata))
-{
-	std::string username;
-	CFG_GET_VAL("lobby.login", String, username);
-	return username;
-}
-
-std::string GetDefaultLobbyPlayerPassword(void* UNUSED(cbdata))
-{
-	std::string password;
-	CFG_GET_VAL("lobby.password", String, password);
-	return password;
-}
-
-void SetDefaultLobbyPlayerPair(void * UNUSED(cbdata), std::string username, std::string password)
-{
-	g_ConfigDB.CreateValue(CFG_USER, "lobby.login")->m_String = username;
-	g_ConfigDB.CreateValue(CFG_USER, "lobby.password")->m_String = password;
-	g_ConfigDB.WriteFile(CFG_USER);
-}
-
 void LobbySetPlayerPresence(void* UNUSED(cbdata), std::string presence)
 {
 	if (!g_XmppClient)
@@ -973,9 +923,6 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<std::wstring, std::wstring, &SetCursor>("SetCursor");
 	scriptInterface.RegisterFunction<int, &GetPlayerID>("GetPlayerID");
 	scriptInterface.RegisterFunction<void, int, &SetPlayerID>("SetPlayerID");
-	scriptInterface.RegisterFunction<std::wstring, &GetDefaultPlayerName>("GetDefaultPlayerName");
-	scriptInterface.RegisterFunction<std::wstring, &GetDefaultMPServer>("GetDefaultMPServer");
-	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SaveMPConfig>("SaveMPConfig");
 	scriptInterface.RegisterFunction<void, std::string, &OpenURL>("OpenURL");
 	scriptInterface.RegisterFunction<std::wstring, &GetMatchID>("GetMatchID");
 	scriptInterface.RegisterFunction<void, &RestartInAtlas>("RestartInAtlas");
@@ -1037,9 +984,6 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<CScriptVal, &GetBoardList>("GetBoardList");
 	scriptInterface.RegisterFunction<CScriptVal, &LobbyGuiPollMessage>("LobbyGuiPollMessage");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySendMessage>("LobbySendMessage");
-	scriptInterface.RegisterFunction<std::string, &GetDefaultLobbyPlayerUsername>("GetDefaultLobbyPlayerUsername");
-	scriptInterface.RegisterFunction<std::string, &GetDefaultLobbyPlayerPassword>("GetDefaultLobbyPlayerPassword");
-	scriptInterface.RegisterFunction<void, std::string, std::string, &SetDefaultLobbyPlayerPair>("SetDefaultLobbyPlayerPair");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySetPlayerPresence>("LobbySetPlayerPresence");
 	scriptInterface.RegisterFunction<void, std::string, &LobbySetNick>("LobbySetNick");
 	scriptInterface.RegisterFunction<std::string, &LobbyGetNick>("LobbyGetNick");
