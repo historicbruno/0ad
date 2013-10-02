@@ -26,8 +26,8 @@
 		<!-- Left panel: Player list. -->
 		<object name="leftPanel" size="20 30 15% 100%-50">
 			<object name="playersBox" style="ModernList" type="olist" size="0 0 100% 100%">
-				<def id="status" heading="Status" width="60"/>
-				<def id="name" heading="Name" width="50"/>
+				<def id="status" heading="Status" width="40%"/>
+				<def id="name" heading="Name" width="60%"/>
 			</object>
 		</object>
 
