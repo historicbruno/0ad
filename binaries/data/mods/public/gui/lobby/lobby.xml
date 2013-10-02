@@ -107,12 +107,12 @@
 		<object name="middlePanel" size="16% 5% 77% 97.2%">
 			<object name="gamesBox" style="ModernList" type="olist" size="0 25 100% 48%">
 				<action on="SelectionChange">selectGame(this.selected);</action>
-				<def id="name" heading="Name" color="0 60 0" width="180"/>
+				<def id="name" heading="Name" color="0 60 0" width="30%"/>
 				<!--<def id="ip" heading="IP" color="0 128 128" width="170"/>-->
-				<def id="mapName" heading="Map Name" color="128 128 128" width="140"/>
-				<def id="mapSize" heading="Map Size" color="128 128 128" width="100"/>
-				<def id="mapType" heading="Map Type" color="0 128 128" width="100"/>
-				<def id="nPlayers" heading="Players" color="0 128 128" width="30"/>
+				<def id="mapName" heading="Map Name" color="128 128 128" width="20%"/>
+				<def id="mapSize" heading="Map Size" color="128 128 128" width="20%"/>
+				<def id="mapType" heading="Map Type" color="0 128 128" width="20%"/>
+				<def id="nPlayers" heading="Players" color="0 128 128" width="10%"/>
 			</object>
 
 			<object name="filterPanel" size="0 0 100% 20">
@@ -164,9 +164,9 @@
 				style="ModernList"
 				type="olist"
 				size="19 19 100%-19 100%-58">
-				<def id="rank" heading="Rank" color="255 255 255" width="60"/>
-				<def id="rating" heading="Rating" color="255 255 255" width="90"/>
-				<def id="name" heading="Name" color="255 255 255" width="260"/>
+				<def id="rank" heading="Rank" color="255 255 255" width="15%"/>
+				<def id="rating" heading="Rating" color="255 255 255" width="20%"/>
+				<def id="name" heading="Name" color="255 255 255" width="65%"/>
 			</object>
 			<object type="button" style="StoneButton" size="50%+5 100%-45 50%+133 100%-17">
 				Back
