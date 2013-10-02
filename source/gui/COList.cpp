@@ -47,6 +47,9 @@ void COList::SetupText()
 	if (scrollbar && GetScrollBar(0).GetStyle())
 		width -= GetScrollBar(0).GetStyle()->m_Width;
 
+	// Cache width for other use
+	m_TotalAvalibleColumnWidth = width;
+
 	float buffer_zone=0.f;
 	GUI<float>::GetSetting(this, "buffer_zone", buffer_zone);
 
@@ -157,11 +160,18 @@ bool COList::HandleAdditionalChildren(const XMBElement& child, CXeromyces* pFile
 			}
 			else if (attr_name == "width")
 			{
-				int width;
-				if (!GUI<int>::ParseString(attr_value.FromUTF8(), width))
+				float width;
+				if (!GUI<float>::ParseString(attr_value.FromUTF8(), width))
 					LOGERROR(L"GUI: Error parsing '%hs' (\"%ls\")", attr_name.c_str(), attr_value.c_str());
 				else
+				{
+					// Check if it's a relative value, and save as decimal if so.
+					if (attr_value.FromUTF8().find(L"%") != std::string::npos)
+					{
+						width = width / 100.f;
+					}
 					oDef.m_Width = width;
+				}
 			}
 			else if (attr_name == "heading")
 			{
@@ -266,7 +276,11 @@ void COList::DrawList(const int &selected,
 		for (unsigned int def=0; def< m_ObjectsDefs.size(); ++def)
 		{
 			DrawText(def, color, m_CachedActualSize.TopLeft() + CPos(xpos, 4), bz+0.1f, rect_head);
-			xpos += m_ObjectsDefs[def].m_Width;
+			// Check if it's a decimal value, and if so, assume relative positioning.
+			if (m_ObjectsDefs[def].m_Width < 1 && m_ObjectsDefs[def].m_Width > 0)
+				xpos += m_ObjectsDefs[def].m_Width * m_TotalAvalibleColumnWidth;
+			else
+				xpos += m_ObjectsDefs[def].m_Width;
 		}
 
 		for (int i=0; i<(int)pList->m_Items.size(); ++i)
@@ -293,7 +307,11 @@ void COList::DrawList(const int &selected,
 			for (unsigned int def=0; def< m_ObjectsDefs.size(); ++def)
 			{
 				DrawText(m_ObjectsDefs.size() * (i+/*Heading*/1) + def, m_ObjectsDefs[def].m_TextColor, rect.TopLeft() + CPos(xpos, -scroll + m_ItemsYPositions[i]), bz+0.1f, cliparea);
-				xpos += m_ObjectsDefs[def].m_Width;
+				// Check if it's a decimal value, and if so, assume relative positioning.
+				if (m_ObjectsDefs[def].m_Width < 1 && m_ObjectsDefs[def].m_Width > 0)
+					xpos += m_ObjectsDefs[def].m_Width * m_TotalAvalibleColumnWidth;
+				else
+					xpos += m_ObjectsDefs[def].m_Width;
 			}
 		}
 	}

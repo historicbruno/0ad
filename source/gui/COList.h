@@ -23,7 +23,7 @@ struct ObjectDef
 {
   CColor m_TextColor;
   CStr m_Id;
-  int m_Width;
+  float m_Width;
   CStrW m_Heading;
 
 };
@@ -57,7 +57,8 @@ protected:
 
 private:
 	float m_HeadingHeight;
-
+	// Width of space avalible for columns
+	float m_TotalAvalibleColumnWidth;
 };
 
 #endif // INCLUDED_COLIST
