@@ -24,28 +24,26 @@
 		</action>
 
 		<!-- Left panel: Player list. -->
-		<object name="leftPanel" size="1.8% 5% 15% 93%">
+		<object name="leftPanel" size="20 30 15% 100%-50">
 			<object name="playersBox" style="ModernList" type="olist" size="0 0 100% 100%">
 				<def id="status" heading="Status" width="60"/>
 				<def id="name" heading="Name" width="50"/>
 			</object>
 		</object>
 
-		<object name="leftButtonPanel" size="1.8% 86% 15% 98%">
-			<object type="button" style="StoneButton" size="0 66% 100% 94%">
+		<object name="leftButtonPanel" size="20 100%-45 15% 100%-20">
+			<object type="button" style="StoneButton" size="0 0 100% 100%">
 				Leaderboard
 				<action on="Press">getGUIObjectByName("leaderboard").hidden = false;getGUIObjectByName("leaderboardFade").hidden = false;</action>
 			</object>
 		</object>
 
 		<!-- Right panel: Game details. -->
-		<!-- Note: the size of this gets set in lobby.js as well, so if you
-			 plan to change it, search for rightPanel in that file. -->
-		<object name="rightPanel" size="78% 5% 98.2% 85%">
-			<object name="gameInfoEmpty" size="0 0 100% 100%" type="image" sprite="ModernDarkBoxGold" hidden="false">
+		<object name="rightPanel" size="100%-300 30 100%-20 100%-20">
+			<object name="gameInfoEmpty" size="0 0 100% 100%-60" type="image" sprite="ModernDarkBoxGold" hidden="false">
 				<object size="50%-110 50%-50 50%+110 50%+50" type="image" sprite="productLogo"/>
 			</object>
-			<object name="gameInfo" size="0 0 100% 100%" type="image" sprite="ModernDarkBoxGold" hidden="true">
+			<object name="gameInfo" size="0 0 100% 100%-90" type="image" sprite="ModernDarkBoxGold" hidden="true">
 				<object name="sgMapName" size="0 0 100% 4%" type="text" style="ModernCenteredLabelText"/>
 
 				<!-- Map Type -->
@@ -76,17 +74,13 @@
 					<object name="sgPlayersNames" size="0 15% 100% 100%" type="text" style="MapPlayerList"/>
 				</object>
 			</object>
-		</object>
-
-		<object name="rightButtonPanel" size="78% 86% 98% 98%">
-			<object name="joinGameButton" type="button" style="StoneButton" size="0 0 100% 28%" hidden="true">
+			<object name="joinGameButton" type="button" style="StoneButton" size="0 100%-85 100% 100%-60" hidden="true">
 				Join Game
 				<action on="Press">
 					joinSelectedGame();
 				</action>
 			</object>
-
-			<object name="hostButton" type="button" style="StoneButton" size="0 33% 100% 61%">
+			<object name="hostButton" type="button" style="StoneButton" size="0 100%-55 100% 100%-30">
 				Host Game
 				<action on="Press">
 					// Open Multiplayer connection window with host option.
@@ -94,7 +88,7 @@
 				</action>
 			</object>
 
-			<object type="button" style="StoneButton" size="0 66% 100% 94%">
+			<object type="button" style="StoneButton" size="0 100%-25 100% 100%">
 				Main Menu
 				<action on="Press">
 					lobbyStop();
@@ -104,7 +98,7 @@
 		</object>
 
 		<!-- Middle panel: Filters, game list, chat box. -->
-		<object name="middlePanel" size="16% 5% 77% 97.2%">
+		<object name="middlePanel" size="15%+5 5% 100%-305 97.2%">
 			<object name="gamesBox" style="ModernList" type="olist" size="0 25 100% 48%">
 				<action on="SelectionChange">selectGame(this.selected);</action>
 				<def id="name" heading="Name" color="0 60 0" width="30%"/>

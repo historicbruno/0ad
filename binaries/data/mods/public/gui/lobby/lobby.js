@@ -275,7 +275,6 @@ function selectGame(selected)
 		getGUIObjectByName("gameInfo").hidden = true;
 		getGUIObjectByName("gameInfoEmpty").hidden = false;
 		getGUIObjectByName("joinGameButton").hidden = true;
-		getGUIObjectByName("rightPanel").size = "78% 5% 98.2% 89%";
 		return;
 	}
 
@@ -283,7 +282,6 @@ function selectGame(selected)
 	getGUIObjectByName("gameInfo").hidden = false;
 	getGUIObjectByName("gameInfoEmpty").hidden = true;
 	getGUIObjectByName("joinGameButton").hidden = false;
-		getGUIObjectByName("rightPanel").size = "78% 5% 98.2% 85%";
 
 	var g = getGUIObjectByName("gamesBox").list_data[selected];
 	var mapData;
