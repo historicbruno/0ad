@@ -166,7 +166,7 @@ bool COList::HandleAdditionalChildren(const XMBElement& child, CXeromyces* pFile
 				else
 				{
 					// Check if it's a relative value, and save as decimal if so.
-					if (attr_value.FromUTF8().find(L"%") != std::string::npos)
+					if (attr_value.find("%") != std::string::npos)
 					{
 						width = width / 100.f;
 					}
