@@ -14,24 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with 0 A.D.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef STANZAEXTENSIONS_H
 #define STANZAEXTENSIONS_H
 
 #include <gloox/client.h>
 
-//Global Gamelist Extension
+/// Global Gamelist Extension
 #define ExtGameListQuery 1403
 const std::string XMLNS_GAMELIST = "jabber:iq:gamelist";
 
-//Global Boardlist Extension
+/// Global Boardlist Extension
 #define ExtBoardListQuery 1404
 const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
 
-//Global Boardlist Extension
+/// Global Boardlist Extension
 #define ExtGameReport 1405
 const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
-
 
 typedef gloox::Tag PlayerData;
 typedef gloox::Tag GameData;
@@ -41,14 +39,15 @@ class GameReport : public gloox::StanzaExtension
 {
 public:
 	GameReport(const gloox::Tag* tag = 0);
+
 	// Following four methods are all required by gloox
 	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
 	{
 		return new GameReport(tag);
 	}
+	virtual const std::string& filterString() const;
 	virtual gloox::Tag* tag() const;
 	virtual gloox::StanzaExtension* clone() const;
-	virtual const std::string& filterString() const;
 
 	std::list<const GameReportData*> m_GameReport;
 };
@@ -58,25 +57,19 @@ class GameListQuery : public gloox::StanzaExtension
 public:
 	GameListQuery(const gloox::Tag* tag = 0);
 
-	~GameListQuery();
-
-	// reimplemented from StanzaExtension
-	virtual const std::string& filterString() const;
-
-	// reimplemented from StanzaExtension
+	// Following four methods are all required by gloox
 	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
 	{
-		return new GameListQuery( tag );
+		return new GameListQuery(tag);
 	}
-
-	// reimplemented from StanzaExtension
+	virtual const std::string& filterString() const;
 	virtual gloox::Tag* tag() const;
-
-	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
+	~GameListQuery();
+
 	std::string m_Command;
-	std::list<const GameData*> m_IQGameList;
+	std::list<const GameData*> m_GameList;
 };
 
 class BoardListQuery : public gloox::StanzaExtension
@@ -84,23 +77,17 @@ class BoardListQuery : public gloox::StanzaExtension
 public:
 	BoardListQuery(const gloox::Tag* tag = 0);
 
-	~BoardListQuery();
-
-	// reimplemented from StanzaExtension
-	virtual const std::string& filterString() const;
-
-	// reimplemented from StanzaExtension
+	// Following four methods are all required by gloox
 	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
 	{
-		return new BoardListQuery( tag );
+		return new BoardListQuery(tag);
 	}
-
-	// reimplemented from StanzaExtension
+	virtual const std::string& filterString() const;
 	virtual gloox::Tag* tag() const;
-
-	// reimplemented from StanzaExtension
 	virtual gloox::StanzaExtension* clone() const;
 
-	std::list<const PlayerData*> m_IQBoardList;
+	~BoardListQuery();
+
+	std::list<const PlayerData*> m_BoardList;
 };
 #endif

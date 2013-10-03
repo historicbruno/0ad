@@ -17,20 +17,20 @@
 #include "precompiled.h"
 #include "StanzaExtensions.h"
 
-#include <gloox/rostermanager.h>
-
-/****************************************************
+/******************************************************
  * GameReport, fairly generic custom stanza extension used
  * to report game statistics.
  */
-GameReport::GameReport( const gloox::Tag* tag ):StanzaExtension(ExtGameReport)
+GameReport::GameReport( const gloox::Tag* tag ):StanzaExtension( ExtGameReport )
 {
 	if( !tag || tag->name() != "report" || tag->xmlns() != XMLNS_GAMEREPORT )
 		return;
 	// TODO if we want to handle receiving this stanza extension.
 };
 
-// Function used by gloox to serialize the object into XML for sending
+/**
+ * Required by gloox, used to serialize the GameReport into XML for sending.
+ */
 gloox::Tag* GameReport::tag() const
 {
 	gloox::Tag* t = new gloox::Tag( "report" );
@@ -43,14 +43,15 @@ gloox::Tag* GameReport::tag() const
 	return t;
 }
 
-/* Required by gloox, used to find the extension in a recived IQ */
+/**
+ * Required by gloox, used to find the GameReport element in a recived IQ.
+ */
 const std::string& GameReport::filterString() const
 {
 	static const std::string filter = "/iq/report[@xmlns='" + XMLNS_GAMEREPORT + "']";
 	return filter;
 }
 
-/* Required by gloox */
 gloox::StanzaExtension* GameReport::clone() const
 {
 	GameReport* q = new GameReport();
@@ -58,12 +59,10 @@ gloox::StanzaExtension* GameReport::clone() const
 }
 
 /******************************************************
- *  BoardListQuery, custom IQ Stanza, used solely to
- *  request and receive leaderboard from server. This
- *  could probably be cleaned up some.
+ * BoardListQuery, custom IQ Stanza, used solely to
+ * request and receive leaderboard data from server.
  */
-BoardListQuery::BoardListQuery( const gloox::Tag* tag )
-: StanzaExtension( ExtBoardListQuery )
+BoardListQuery::BoardListQuery( const gloox::Tag* tag ):StanzaExtension( ExtBoardListQuery )
 {
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
@@ -71,28 +70,28 @@ BoardListQuery::BoardListQuery( const gloox::Tag* tag )
 	const gloox::ConstTagList boardTags = tag->findTagList( "query/board" );
 	gloox::ConstTagList::const_iterator it = boardTags.begin();
 	for ( ; it != boardTags.end(); ++it )
-		m_IQBoardList.push_back( (*it)->clone() );
+		m_BoardList.push_back( (*it)->clone() );
 }
 
-BoardListQuery::~BoardListQuery()
-{
-	m_IQBoardList.clear();
-}
-
+/**
+ * Required by gloox, used to find the BoardList element in a recived IQ.
+ */
 const std::string& BoardListQuery::filterString() const
 {
 	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_BOARDLIST + "']";
 	return filter;
 }
 
-// Function used by gloox to serialize the object into XML for sending
+/**
+ * Required by gloox, used to serialize the BoardList request into XML for sending.
+ */
 gloox::Tag* BoardListQuery::tag() const
 {
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::list<const PlayerData*>::const_iterator it = m_IQBoardList.begin();
-	for( ; it != m_IQBoardList.end(); ++it )
+	std::list<const PlayerData*>::const_iterator it = m_BoardList.begin();
+	for( ; it != m_BoardList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
 	return t;
@@ -101,16 +100,20 @@ gloox::Tag* BoardListQuery::tag() const
 gloox::StanzaExtension* BoardListQuery::clone() const
 {
 	BoardListQuery* q = new BoardListQuery();
-
 	return q;
 }
 
-/*
- *  GameListQuery, custom IQ Stanza
- */
+BoardListQuery::~BoardListQuery()
+{
+	m_BoardList.clear();
+}
 
-GameListQuery::GameListQuery( const gloox::Tag* tag )
-: StanzaExtension( ExtGameListQuery )
+/******************************************************
+ * GameListQuery, custom IQ Stanza, used to receive
+ * the listing of games from the server, and register/
+ * unregister/changestate games on the server. 
+ */
+GameListQuery::GameListQuery( const gloox::Tag* tag ):StanzaExtension( ExtGameListQuery )
 {
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_GAMELIST )
 		return;
@@ -122,37 +125,32 @@ GameListQuery::GameListQuery( const gloox::Tag* tag )
 	const gloox::ConstTagList games = tag->findTagList( "query/game" );
 	gloox::ConstTagList::const_iterator it = games.begin();
 	for ( ; it != games.end(); ++it )
-		m_IQGameList.push_back( (*it)->clone() );
+		m_GameList.push_back( (*it)->clone() );
 }
 
-GameListQuery::~GameListQuery()
-{
-	m_IQGameList.clear();
-}
-
+/**
+ * Required by gloox, used to find the GameList element in a recived IQ.
+ */
 const std::string& GameListQuery::filterString() const
 {
 	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_GAMELIST + "']";
 	return filter;
 }
 
-// Function used by gloox to serialize the object into XML for sending
+/**
+ * Required by gloox, used to serialize the game object into XML for sending.
+ */
 gloox::Tag* GameListQuery::tag() const
 {
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_GAMELIST );
-/*
-	RosterData::const_iterator it = m_roster.begin();
-	for( ; it != m_roster.end(); ++it )
-		t->addChild( (*it)->tag() );
-*/
 
-	// register / unregister command
+	// Check for register / unregister command
 	if(!m_Command.empty())
 		t->addChild(new gloox::Tag("command", m_Command));
 
-	std::list<const GameData*>::const_iterator it = m_IQGameList.begin();
-	for( ; it != m_IQGameList.end(); ++it )
+	std::list<const GameData*>::const_iterator it = m_GameList.begin();
+	for( ; it != m_GameList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
 	return t;
@@ -161,7 +159,10 @@ gloox::Tag* GameListQuery::tag() const
 gloox::StanzaExtension* GameListQuery::clone() const
 {
 	GameListQuery* q = new GameListQuery();
-
 	return q;
 }
 
+GameListQuery::~GameListQuery()
+{
+	m_GameList.clear();
+}

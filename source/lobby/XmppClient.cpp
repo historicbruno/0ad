@@ -256,8 +256,8 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(gq)
 		{
 			m_GameList.clear();
-			std::list<const GameData*>::const_iterator it = gq->m_IQGameList.begin();
-			for(; it != gq->m_IQGameList.end(); ++it)
+			std::list<const GameData*>::const_iterator it = gq->m_GameList.begin();
+			for(; it != gq->m_GameList.end(); ++it)
 			{
 				m_GameList.push_back(*it);
 			}
@@ -266,8 +266,8 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(bq)
 		{
 			m_BoardList.clear();
-			std::list<const PlayerData*>::const_iterator it = bq->m_IQBoardList.begin();
-			for(; it != bq->m_IQBoardList.end(); ++it)
+			std::list<const PlayerData*>::const_iterator it = bq->m_BoardList.begin();
+			for(; it != bq->m_BoardList.end(); ++it)
 			{
 				m_BoardList.push_back(*it);
 			}
@@ -442,7 +442,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 	SEND_STAT( nbp );
 	SEND_STAT( players );
 	SEND_STAT( tnbp );
-	g->m_IQGameList.push_back( game );
+	g->m_GameList.push_back( game );
 
 	IQ iq( gloox::IQ::Set, xpartamuppJid );
 	iq.addExtension( g );
@@ -459,7 +459,7 @@ void XmppClient::SendIqUnregisterGame()
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "unregister";
-	g->m_IQGameList.push_back( new GameData( "game" ) );
+	g->m_GameList.push_back( new GameData( "game" ) );
 
 	IQ iq( gloox::IQ::Set, xpartamuppJid );
 	iq.addExtension( g );
@@ -476,10 +476,10 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "changestate";
-	GameData* game = new GameData( "game" );
-	game->addAttribute( "nbp", nbp );
-	game->addAttribute( "players", players );
-	g->m_IQGameList.push_back( game );
+	GameData* game = new GameData("game");
+	game->addAttribute("nbp", nbp);
+	game->addAttribute("players", players);
+	g->m_GameList.push_back(game);
 
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
@@ -495,7 +495,7 @@ void XmppClient::handleRegistrationFields( const JID& /*from*/, int fields, std:
 	RegistrationFields vals;
 	vals.username = _username;
 	vals.password = _password;
-	_registration->createAccount( fields, vals );
+	_registration->createAccount(fields, vals);
 }
 
 void XmppClient::handleRegistrationResult( const JID& /*from*/, RegistrationResult result )
