@@ -61,9 +61,7 @@ void IGUIScrollBar::SetupBarSize()
 
 	// Check min and max are valid
 	if (min > length)
-	{
 		min = 0.f;
-	}
 	if (max < min)
 		max = length;
 
