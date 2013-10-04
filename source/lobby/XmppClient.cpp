@@ -43,6 +43,8 @@ bool g_rankedGame = false;
 
 //debug
 #if 1
+#define DbgXMPP(x)
+#else
 #define DbgXMPP(x) std::cout << x << std::endl;
 #endif
 
