@@ -19,20 +19,20 @@
 #include "XmppClient.h"
 #include "StanzaExtensions.h"
 
-//debug
+// Debug
+// TODO: Use builtin error/warning/logging functions.
 #include <iostream>
+#include "ps/CLogger.h"
 
-//Gloox
+// Gloox
 #include <gloox/rostermanager.h>
 #include <gloox/rosteritem.h>
 #include <gloox/error.h>
 
-//Game - script
+// Game - script
 #include "scriptinterface/ScriptInterface.h"
 
-#include "ps/CLogger.h"
-
-//Configuration
+// Configuration
 #include "ps/ConfigDB.h"
 
 using namespace gloox;
@@ -43,8 +43,6 @@ bool g_rankedGame = false;
 
 //debug
 #if 1
-#define DbgXMPP(x)
-#else
 #define DbgXMPP(x) std::cout << x << std::endl;
 #endif
 
@@ -55,43 +53,9 @@ const std::string gloox::EmptyString = "";
 #endif
 #endif
 
-//utils
-std::string StanzaErrorToString(StanzaError& err)
-{
-	std::string msg;
-#define CASE(X, Y) case X: return Y
-	switch (err)
-	{
-	CASE(StanzaErrorBadRequest, "Bad request");
-	CASE(StanzaErrorConflict, "Player name already in use");
-	CASE(StanzaErrorFeatureNotImplemented, "Feature not implemented");
-	CASE(StanzaErrorForbidden, "Forbidden");
-	CASE(StanzaErrorGone, "Recipient or server gone");
-	CASE(StanzaErrorInternalServerError, "Internal server error");
-	CASE(StanzaErrorItemNotFound, "Item not found");
-	CASE(StanzaErrorJidMalformed, "Jid malformed");
-	CASE(StanzaErrorNotAcceptable, "Not acceptable");
-	CASE(StanzaErrorNotAllowed, "Not allowed");
-	CASE(StanzaErrorNotAuthorized, "Not authorized");
-	CASE(StanzaErrorNotModified, "Not modified");
-	CASE(StanzaErrorPaymentRequired, "Payment required");
-	CASE(StanzaErrorRecipientUnavailable, "Recipient unavailable");
-	CASE(StanzaErrorRedirect, "Redirect");
-	CASE(StanzaErrorRegistrationRequired, "Registration required");
-	CASE(StanzaErrorRemoteServerNotFound, "Remote server not found");
-	CASE(StanzaErrorRemoteServerTimeout, "Remote server timeout");
-	CASE(StanzaErrorResourceConstraint, "Resource constraint");
-	CASE(StanzaErrorServiceUnavailable, "Service unavailable");
-	CASE(StanzaErrorSubscribtionRequired, "Subscribtion Required");
-	CASE(StanzaErrorUndefinedCondition, "Undefined condition");
-	CASE(StanzaErrorUnexpectedRequest, "Unexpected request");
-	CASE(StanzaErrorUnknownSender, "Unknown sender");
-	default:
-		return "Error undefined";
-	}
-#undef CASE
-}
-
+/**
+ * Construct the xmpp client
+ */
 XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, std::string sPassword, std::string sRoom, std::string sNick, bool regOpt)
 	: m_ScriptInterface(scriptInterface), _client(NULL), _mucRoom(NULL), _registration(NULL), _username(sUsername), _password(sPassword), _nick(sNick)
 {
@@ -153,6 +117,9 @@ XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, 
 	}
 }
 
+/**
+ * Destroy the xmpp client
+ */
 XmppClient::~XmppClient()
 {
 	DbgXMPP("XmppClient destroyed");
@@ -161,13 +128,13 @@ XmppClient::~XmppClient()
 	delete _client;
 }
 
-// Game - script
+/// Game - script
 ScriptInterface& XmppClient::GetScriptInterface()
 {
 	return m_ScriptInterface;
 }
 
-//Network
+/// Network
 void XmppClient::connect()
 {
 	_client->connect(false);
@@ -183,113 +150,20 @@ void XmppClient::recv()
 	_client->recv(1);
 }
 
-/*
- *  MUC Handlers
+/**
+ * Log (debug) Handler
  */
-void XmppClient::handleMUCParticipantPresence(gloox::MUCRoom*, const gloox::MUCRoomParticipant participant, const gloox::Presence& presence)
-{
-	//std::string jid = participant.jid->full();
-	std::string nick = participant.nick->resource();
-	gloox::Presence::PresenceType presenceType = presence.presence();
-	if (presenceType == Presence::Unavailable)
-	{
-		if (!participant.newNick.empty() && (participant.flags & (UserNickChanged | UserSelf)))
-		{
-			// we have a nick change
-			m_PlayerMap[participant.newNick] = Presence::Unavailable;
-			CreateSimpleMessage("muc", nick, "nick", participant.newNick);
-		}
-		else
-			CreateSimpleMessage("muc", nick, "leave");
-
-		DbgXMPP(nick << " left the room");
-		m_PlayerMap.erase(nick);
-	}
-	else
-	{
-		if (m_PlayerMap.find(nick) == m_PlayerMap.end())
-			CreateSimpleMessage("muc", nick, "join");
-		else
-			CreateSimpleMessage("muc", nick, "presence");
-
-		DbgXMPP(nick << " is in the room, presence : " << (int)presenceType);
-		m_PlayerMap[nick] = presenceType;
-	}
-}
-
-void XmppClient::handleMUCMessage( MUCRoom*, const Message& msg, bool )
-{
-	DbgXMPP(msg.from().resource() << " said " << msg.body());
-
-	CScriptValRooted message;
-	m_ScriptInterface.Eval("({ 'type':'mucmessage'})", message);
-	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().resource());
-	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
-	PushGuiMessage(message);
-}
-
-void XmppClient::handleMUCError(gloox::MUCRoom*, gloox::StanzaError err)
-{
-	std::string msg = StanzaErrorToString(err);
-	CreateSimpleMessage("system", msg, "error");
-}
-
-/*
- *  Log (debug) Handler
- */
-void XmppClient::handleLog( LogLevel level, LogArea area, const std::string& message )
+void XmppClient::handleLog(LogLevel level, LogArea area, const std::string& message)
 {
 	std::cout << "log: level: " << level << ", area: " << area << ", message: " << message << std::endl;
 }
 
-/*
- *  IQ Handler
- */
-bool XmppClient::handleIq( const IQ& iq )
-{
-	DbgXMPP("handleIq [" << iq.tag()->xml() << "]");
+/*****************************************************
+ * Connection handlers                               * 
+ *****************************************************/
 
-	if(iq.subtype() == gloox::IQ::Result)
-	{
-		const GameListQuery* gq = iq.findExtension<GameListQuery>( ExtGameListQuery );
-		const BoardListQuery* bq = iq.findExtension<BoardListQuery>( ExtBoardListQuery );
-		if(gq)
-		{
-			m_GameList.clear();
-			std::list<const GameData*>::const_iterator it = gq->m_GameList.begin();
-			for(; it != gq->m_GameList.end(); ++it)
-			{
-				m_GameList.push_back(*it);
-			}
-			CreateSimpleMessage("system", "gamelist updated", "internal");
-		}
-		if(bq)
-		{
-			m_BoardList.clear();
-			std::list<const PlayerData*>::const_iterator it = bq->m_BoardList.begin();
-			for(; it != bq->m_BoardList.end(); ++it)
-			{
-				m_BoardList.push_back(*it);
-			}
-			CreateSimpleMessage("system", "boardlist updated", "internal");
-		}
-	}
-	else if(iq.subtype() == gloox::IQ::Error)
-	{
-		StanzaError err = iq.error()->error();
-		std::string msg = StanzaErrorToString(err);
-		CreateSimpleMessage("system", msg, "error");
-	}
-	else
-	{
-		CreateSimpleMessage("system", std::string("unknown subtype : ") + iq.tag()->name(), "error");
-	}
-
-	return true;
-}
-
-/*
- *  Connection Handlers
+/**
+ * Handle connection
  */
 void XmppClient::onConnect()
 {
@@ -305,14 +179,17 @@ void XmppClient::onConnect()
 		_registration->fetchRegistrationFields();
 }
 
-void XmppClient::onDisconnect( ConnectionError e )
+/**
+ * Handle disconnection
+ */
+void XmppClient::onDisconnect(ConnectionError error)
 {
-	// Make sure we properly leave the room so than
-	// everything work if we decide to come back later
+	// Make sure we properly leave the room so that
+	// everything works if we decide to come back later
 	if (_mucRoom)
 		_mucRoom->leave();
 
-	if( e == ConnAuthenticationFailed )
+	if(error == ConnAuthenticationFailed)
 		CreateSimpleMessage("system", "authentication failed", "error");
 	else
 		CreateSimpleMessage("system", "disconnected");
@@ -322,6 +199,9 @@ void XmppClient::onDisconnect( ConnectionError e )
 	m_BoardList.clear();
 }
 
+/**
+ * Handle TLS connection
+ */
 bool XmppClient::onTLSConnect( const CertInfo& info )
 {
 	UNUSED2(info);
@@ -330,6 +210,14 @@ bool XmppClient::onTLSConnect( const CertInfo& info )
 	return true;
 }
 
+/**
+ * Handle MUC room errors
+ */
+void XmppClient::handleMUCError(gloox::MUCRoom*, gloox::StanzaError err)
+{
+	std::string msg = StanzaErrorToString(err);
+	CreateSimpleMessage("system", msg, "error");
+}
 
 /*****************************************************
  * Requests to server                                * 
@@ -364,7 +252,7 @@ void XmppClient::SendIqGetBoardList()
 }
 
 /**
- * Send game report containing numerous game properties to the server
+ * Send game report containing numerous game properties to the server.
  *
  * @param data A JS array of game statistics
  */
@@ -477,9 +365,10 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 	_client->send(iq);
 }
 
-/**
- * Account registration
- */
+/*****************************************************
+ * Account registration                              * 
+ *****************************************************/
+
 void XmppClient::handleRegistrationFields( const JID& /*from*/, int fields, std::string )
 {
 	RegistrationFields vals;
@@ -531,28 +420,12 @@ void XmppClient::handleOOB( const JID& /*from*/, const OOB& /* oob */ )
 	DbgXMPP("OOB registration requested");
 }
 
-/**
- * Handle a standard textual message
- */
-void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/ )
-{
-	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str()
-	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
-
-	CScriptValRooted message;
-	m_ScriptInterface.Eval("({'type':'message'})", message);
-	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username());
-	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
-	PushGuiMessage(message);
-}
-
 /*****************************************************
  * Requests from GUI                                 * 
  *****************************************************/
 
-
 /**
- * Handle requests from the GUI for the list of players
+ * Handle requests from the GUI for the list of players.
  *
  * @return A JS array containing all known players and their presences
  */
@@ -625,8 +498,13 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 	return boardList;
 }
 
+/*****************************************************
+ * Message interfaces                                * 
+ *****************************************************/
 
-/* Messages */
+/**
+ * Send GUI message queue when queried.
+ */
 CScriptValRooted XmppClient::GuiPollMessage()
 {
 	if (m_GuiMessageQueue.empty())
@@ -637,18 +515,108 @@ CScriptValRooted XmppClient::GuiPollMessage()
 	return r;
 }
 
+/**
+ * Send a standard MUC textual message.
+ */
 void XmppClient::SendMUCMessage(std::string message)
 {
 	_mucRoom->send(message);
 }
 
+/**
+ * Push a message onto the GUI queue.
+ *
+ * @param message Message to add to the queue
+ */
 void XmppClient::PushGuiMessage(const CScriptValRooted& message)
 {
 	ENSURE(!message.undefined());
-
 	m_GuiMessageQueue.push_back(message);
 }
 
+/**
+ * Handle a standard MUC textual message.
+ */
+void XmppClient::handleMUCMessage( MUCRoom*, const Message& msg, bool )
+{
+	DbgXMPP(msg.from().resource() << " said " << msg.body());
+
+	CScriptValRooted message;
+	m_ScriptInterface.Eval("({ 'type':'mucmessage'})", message);
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().resource());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
+	PushGuiMessage(message);
+}
+
+/**
+ * Handle a standard textual message.
+ */
+void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/ )
+{
+	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str()
+	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
+
+	CScriptValRooted message;
+	m_ScriptInterface.Eval("({'type':'message'})", message);
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
+	PushGuiMessage(message);
+}
+
+/**
+ * Handle portions of messages containing custom stanza extensions.
+ */
+bool XmppClient::handleIq( const IQ& iq )
+{
+	DbgXMPP("handleIq [" << iq.tag()->xml() << "]");
+
+	if(iq.subtype() == gloox::IQ::Result)
+	{
+		const GameListQuery* gq = iq.findExtension<GameListQuery>( ExtGameListQuery );
+		const BoardListQuery* bq = iq.findExtension<BoardListQuery>( ExtBoardListQuery );
+		if(gq)
+		{
+			m_GameList.clear();
+			std::list<const GameData*>::const_iterator it = gq->m_GameList.begin();
+			for(; it != gq->m_GameList.end(); ++it)
+			{
+				m_GameList.push_back(*it);
+			}
+			CreateSimpleMessage("system", "gamelist updated", "internal");
+		}
+		if(bq)
+		{
+			m_BoardList.clear();
+			std::list<const PlayerData*>::const_iterator it = bq->m_BoardList.begin();
+			for(; it != bq->m_BoardList.end(); ++it)
+			{
+				m_BoardList.push_back(*it);
+			}
+			CreateSimpleMessage("system", "boardlist updated", "internal");
+		}
+	}
+	else if(iq.subtype() == gloox::IQ::Error)
+	{
+		StanzaError err = iq.error()->error();
+		std::string msg = StanzaErrorToString(err);
+		CreateSimpleMessage("system", msg, "error");
+	}
+	else
+	{
+		CreateSimpleMessage("system", std::string("unknown subtype : ") + iq.tag()->name(), "error");
+	}
+
+	return true;
+}
+
+/**
+ * Create a new detail message for the GUI.
+ *
+ * @param type General message type
+ * @param level Detailed message type
+ * @param text Body of the message
+ * @param data Optional field, used for auxiliary data
+ */
 void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::string level, std::string data)
 {
 	CScriptValRooted message;
@@ -660,22 +628,81 @@ void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::st
 	PushGuiMessage(message);
 }
 
-// Request nick change, real change via mucRoomHandler
+/*****************************************************
+ * Presence and nickname                             * 
+ *****************************************************/
+
+/**
+ * Update local data when a user changes presence.
+ */
+void XmppClient::handleMUCParticipantPresence(gloox::MUCRoom*, const gloox::MUCRoomParticipant participant, const gloox::Presence& presence)
+{
+	//std::string jid = participant.jid->full();
+	std::string nick = participant.nick->resource();
+	gloox::Presence::PresenceType presenceType = presence.presence();
+	if (presenceType == Presence::Unavailable)
+	{
+		if (!participant.newNick.empty() && (participant.flags & (UserNickChanged | UserSelf)))
+		{
+			// we have a nick change
+			m_PlayerMap[participant.newNick] = Presence::Unavailable;
+			CreateSimpleMessage("muc", nick, "nick", participant.newNick);
+		}
+		else
+			CreateSimpleMessage("muc", nick, "leave");
+
+		DbgXMPP(nick << " left the room");
+		m_PlayerMap.erase(nick);
+	}
+	else
+	{
+		if (m_PlayerMap.find(nick) == m_PlayerMap.end())
+			CreateSimpleMessage("muc", nick, "join");
+		else
+			CreateSimpleMessage("muc", nick, "presence");
+
+		DbgXMPP(nick << " is in the room, presence : " << (int)presenceType);
+		m_PlayerMap[nick] = presenceType;
+	}
+}
+
+/**
+ * Request nick change, real change via mucRoomHandler.
+ *
+ * @param nick Desired nickname
+ */
 void XmppClient::SetNick(const std::string& nick)
 {
 	_mucRoom->setNick(nick);
 }
 
+/**
+ * Get current nickname.
+ *
+ * @param nick Variable to store the nickname in.
+ */
 void XmppClient::GetNick(std::string& nick)
 {
 	nick = _mucRoom->nick();
 }
 
+/**
+ * Kick a player from the current room.
+ *
+ * @param nick Nickname to be kicked
+ * @param reason Reason the player was kicked
+ */
 void XmppClient::kick(const std::string& nick, const std::string& reason)
 {
 	_mucRoom->kick(nick, reason);
 }
 
+/**
+ * Ban a player from the current room.
+ *
+ * @param nick Nickname to be banned
+ * @param reason Reason the player was banned
+ */
 void XmppClient::ban(const std::string& nick, const std::string& reason)
 {
 	_mucRoom->ban(nick, reason);
@@ -684,7 +711,7 @@ void XmppClient::ban(const std::string& nick, const std::string& reason)
 /**
  * Change the xmpp presence of the client.
  *
- * @param presence A string containing the desired presence.
+ * @param presence A string containing the desired presence
  */
 void XmppClient::SetPresence(const std::string& presence)
 {
@@ -700,6 +727,12 @@ void XmppClient::SetPresence(const std::string& presence)
 	else LOGERROR(L"Unknown presence '%hs'", presence.c_str());
 }
 
+/**
+ * Get the current xmpp presence of the given nick.
+ *
+ * @param nick Nickname to look up presence for
+ * @param presence Variable to store the presence in
+ */
 void XmppClient::GetPresence(const std::string& nick, std::string& presence)
 {
 	if (m_PlayerMap.find(nick) != m_PlayerMap.end())
@@ -708,6 +741,16 @@ void XmppClient::GetPresence(const std::string& nick, std::string& presence)
 		presence = "offline";
 }
 
+/*****************************************************
+ * Utilities                                         * 
+ *****************************************************/
+
+/**
+ * Convert a gloox presence type to string.
+ *
+ * @param p Presence to be converted
+ * @param presence Variable to store the converted presence string in
+ */
 void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& presence) const
 {
 	switch(p)
@@ -727,4 +770,46 @@ void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& 
 		break;
 #undef CASE
 	}
+}
+
+/**
+ * Convert a gloox presence type to string.
+ *
+ * @param err Error to be converted
+ * @return Converted error string
+ */
+std::string XmppClient::StanzaErrorToString(const StanzaError& err)
+{
+	std::string msg;
+#define CASE(X, Y) case X: return Y
+	switch (err)
+	{
+	CASE(StanzaErrorBadRequest, "Bad request");
+	CASE(StanzaErrorConflict, "Player name already in use");
+	CASE(StanzaErrorFeatureNotImplemented, "Feature not implemented");
+	CASE(StanzaErrorForbidden, "Forbidden");
+	CASE(StanzaErrorGone, "Recipient or server gone");
+	CASE(StanzaErrorInternalServerError, "Internal server error");
+	CASE(StanzaErrorItemNotFound, "Item not found");
+	CASE(StanzaErrorJidMalformed, "Jid malformed");
+	CASE(StanzaErrorNotAcceptable, "Not acceptable");
+	CASE(StanzaErrorNotAllowed, "Not allowed");
+	CASE(StanzaErrorNotAuthorized, "Not authorized");
+	CASE(StanzaErrorNotModified, "Not modified");
+	CASE(StanzaErrorPaymentRequired, "Payment required");
+	CASE(StanzaErrorRecipientUnavailable, "Recipient unavailable");
+	CASE(StanzaErrorRedirect, "Redirect");
+	CASE(StanzaErrorRegistrationRequired, "Registration required");
+	CASE(StanzaErrorRemoteServerNotFound, "Remote server not found");
+	CASE(StanzaErrorRemoteServerTimeout, "Remote server timeout");
+	CASE(StanzaErrorResourceConstraint, "Resource constraint");
+	CASE(StanzaErrorServiceUnavailable, "Service unavailable");
+	CASE(StanzaErrorSubscribtionRequired, "Subscribtion Required");
+	CASE(StanzaErrorUndefinedCondition, "Undefined condition");
+	CASE(StanzaErrorUnexpectedRequest, "Unexpected request");
+	CASE(StanzaErrorUnknownSender, "Unknown sender");
+	default:
+		return "Error undefined";
+	}
+#undef CASE
 }

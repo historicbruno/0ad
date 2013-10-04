@@ -60,19 +60,17 @@ typedef void *PVOID;
 
 #endif
 
-//network
+// Gloox
 #include <gloox/jid.h>
 #include <gloox/client.h>
 #include <gloox/mucroom.h>
 #include <gloox/message.h>
-
 #include <gloox/messagehandler.h>
 #include <gloox/presencehandler.h>
 #include <gloox/mucroomhandler.h>
 #include <gloox/loghandler.h>
 #include <gloox/connectionlistener.h>
 #include <gloox/registration.h>
-
 #include <gloox/iq.h>
 #include <gloox/iqhandler.h>
 
@@ -164,8 +162,9 @@ protected:
 	/* Message Handler */
 	virtual void handleMessage(const gloox::Message& msg, gloox::MessageSession * session);
 
-	// Helper
+	// Helpers
 	void GetPresenceString(const gloox::Presence::PresenceType p, std::string& presence) const;
+	std::string StanzaErrorToString(const gloox::StanzaError& err);
 public:
 	/* Messages */
 	CScriptValRooted GuiPollMessage();
