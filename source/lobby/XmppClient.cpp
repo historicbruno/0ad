@@ -775,7 +775,7 @@ void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& 
 }
 
 /**
- * Convert a gloox presence type to string.
+ * Convert a gloox stanza error type to string.
  *
  * @param err Error to be converted
  * @return Converted error string
