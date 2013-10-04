@@ -330,11 +330,14 @@ bool XmppClient::onTLSConnect( const CertInfo& info )
 	return true;
 }
 
-/*
- *  Requests
- */
 
-/* Request GameList from cloud */
+/*****************************************************
+ * Requests to server                                * 
+ *****************************************************/
+
+/**
+ * Request a listing of active games from the server.
+ */
 void XmppClient::SendIqGetGameList()
 {
 	JID xpartamuppJid(_xpartamuppId);
@@ -346,7 +349,9 @@ void XmppClient::SendIqGetGameList()
 	_client->send(iq);
 }
 
-/* Request BoardList from cloud */
+/**
+ * Request the leaderboard data from the server.
+ */
 void XmppClient::SendIqGetBoardList()
 {
 	JID xpartamuppJid(_xpartamuppId);
@@ -358,100 +363,80 @@ void XmppClient::SendIqGetBoardList()
 	_client->send(iq);
 }
 
-/* Send game report */
+/**
+ * Send game report containing numerous game properties to the server
+ *
+ * @param data A JS array of game statistics
+ */
 void XmppClient::SendIqGameReport(CScriptVal data)
 {
-#define SEND_STAT(stat) \
-	std::string stat; \
-	m_ScriptInterface.GetProperty( dataval, #stat, (stat) ); \
-	report->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
-
-	// Convert the values from the CScriptVal to std
 	jsval dataval = data.get();
-	// Compose IQ
+	
+	// Setup some base stanza attributes
 	GameReport* game = new GameReport();
-	GameReportData *report = new GameReportData( "game" );
-	SEND_STAT( timeElapsed );
-	SEND_STAT( playerStates );
-	SEND_STAT( playerID );
-	SEND_STAT( matchID );
-	SEND_STAT( civs );
-	SEND_STAT( mapName );
-	SEND_STAT( foodGathered );
-	SEND_STAT( woodGathered );
-	SEND_STAT( stoneGathered );
-	SEND_STAT( metalGathered );
-	SEND_STAT( foodUsed );
-	SEND_STAT( woodUsed );
-	SEND_STAT( stoneUsed );
-	SEND_STAT( metalUsed );
-	SEND_STAT( unitsLost );
-	SEND_STAT( unitsTrained );
-	SEND_STAT( enemyUnitsKilled );
-	SEND_STAT( buildingsLost );
-	SEND_STAT( buildingsConstructed );
-	SEND_STAT( enemyBuildingsDestroyed );
-	SEND_STAT( foodBought );
-	SEND_STAT( woodBought );
-	SEND_STAT( stoneBought );
-	SEND_STAT( metalBought );
-	SEND_STAT( foodSold );
-	SEND_STAT( woodSold );
-	SEND_STAT( stoneSold );
-	SEND_STAT( metalSold );
-	SEND_STAT( tributeSent );
-	SEND_STAT( tributeReceived );
-	SEND_STAT( precentMapExplored );
-	SEND_STAT( civCentersBuilt );
-	SEND_STAT( enemyCivCentersDestroyed );
-	SEND_STAT( treasuresCollected );
-	SEND_STAT( tradeIncome );
-	game->m_GameReport.push_back( report );
+	GameReportData *report = new GameReportData("game");
+
+	// Iterate through all the properties reported and add them to the stanza.
+	std::vector<std::string> properties;
+	m_ScriptInterface.EnumeratePropertyNamesWithPrefix(dataval, "", properties);
+	for (std::vector<int>::size_type i = 0; i != properties.size(); i++)
+	{
+		std::string value;
+		m_ScriptInterface.GetProperty(dataval, properties[i].c_str(), value);
+		report->addAttribute(properties[i], value);
+	}
+	
+	// Add stanza to IQ
+	game->m_GameReport.push_back(report);
 
 	// Send IQ
 	IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension(game);
 	DbgXMPP("SendGameReport [" << iq.tag()->xml() << "]");
 	_client->send(iq);
-#undef SEND_STAT
 };
 
-/* Register a game */
+/**
+ * Send a request to register a game to the server.
+ *
+ * @param data A JS array of game attributes
+ */
 void XmppClient::SendIqRegisterGame(CScriptVal data)
 {
-#define SEND_STAT(stat) \
-	m_ScriptInterface.GetProperty( dataval, #stat, (stat) ); \
-	game->addAttribute( #stat, (stat) );
 	JID xpartamuppJid(_xpartamuppId);
-
-	std::string name, mapName, mapSize, mapType, victoryCondition, nbp, tnbp, players;
 	jsval dataval = data.get();
-
-	// Send IQ
+	
+	// Setup some base stanza attributes
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "register";
-	GameData *game = new GameData( "game" );
-	// This fake ip will be overwritten by the ip stamp XMPP module.
-	game->addAttribute( "ip", "fake" );
-	SEND_STAT( name );
-	SEND_STAT( mapName );
-	SEND_STAT( mapSize );
-	SEND_STAT( mapType );
-	SEND_STAT( victoryCondition );
-	SEND_STAT( nbp );
-	SEND_STAT( players );
-	SEND_STAT( tnbp );
-	g->m_GameList.push_back( game );
+	GameData *game = new GameData("game");
+	// Add a fake ip which will be overwritten by the ip stamp XMPP module on the server.
+	game->addAttribute("ip", "fake");
 
-	IQ iq( gloox::IQ::Set, xpartamuppJid );
-	iq.addExtension( g );
-	DbgXMPP( "SendIqRegisterGame [" << iq.tag()->xml() << "]" );
-	_client->send( iq );
-#undef SEND_STAT
+	// Iterate through all the properties reported and add them to the stanza.
+	std::vector<std::string> properties;
+	m_ScriptInterface.EnumeratePropertyNamesWithPrefix(dataval, "", properties);
+	for (std::vector<int>::size_type i = 0; i != properties.size(); i++)
+	{
+		std::string value;
+		m_ScriptInterface.GetProperty(dataval, properties[i].c_str(), value);
+		game->addAttribute(properties[i], value);
+	}
+
+	// Push the stanza onto the IQ
+	g->m_GameList.push_back(game);
+
+	// Send IQ
+	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	iq.addExtension(g);
+	DbgXMPP("SendIqRegisterGame [" << iq.tag()->xml() << "]");
+	_client->send(iq);
 }
 
-/* Unregister a game */
+/**
+ * Send a request to unregister a game to the server.
+ */
 void XmppClient::SendIqUnregisterGame()
 {
 	JID xpartamuppJid( _xpartamuppId );
@@ -467,8 +452,13 @@ void XmppClient::SendIqUnregisterGame()
 	_client->send( iq );
 }
 
-/* Change the state of a registered game to 'running' or 'waiting' - it's Xpartamupp that decide the game's state
-   comparing the current number of player 'nbp' to the number of players when the game was last registered. */
+/**
+ * Send a request to change the state of a registered game on the server.
+ * 
+ * A game can either be in the 'running' or 'waiting' state - the server
+ * decides which - but we need to update the current players that are
+ * in-game so the server can make the calculation.
+ */
 void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 {
 	JID xpartamuppJid(_xpartamuppId);
@@ -487,8 +477,8 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 	_client->send(iq);
 }
 
-/*
- *  Registration
+/**
+ * Account registration
  */
 void XmppClient::handleRegistrationFields( const JID& /*from*/, int fields, std::string )
 {
@@ -542,24 +532,30 @@ void XmppClient::handleOOB( const JID& /*from*/, const OOB& /* oob */ )
 }
 
 /**
-  * Message
-  */
+ * Handle a standard textual message
+ */
 void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/ )
 {
 	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str()
 	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
 
 	CScriptValRooted message;
-	m_ScriptInterface.Eval("({ 'type':'message'})", message);
+	m_ScriptInterface.Eval("({'type':'message'})", message);
 	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username());
 	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
 	PushGuiMessage(message);
 }
 
+/*****************************************************
+ * Requests from GUI                                 * 
+ *****************************************************/
+
+
 /**
-  * Requests from GUI
-  */
-/* Get list of players */
+ * Handle requests from the GUI for the list of players
+ *
+ * @return A JS array containing all known players and their presences
+ */
 CScriptValRooted XmppClient::GUIGetPlayerList()
 {
 	std::string presence;
@@ -579,7 +575,11 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 	return playerList;
 }
 
-/* Get game listing */
+/**
+ * Handle requests from the GUI for the list of all active games.
+ *
+ * @return A JS array containing all known games
+ */
 CScriptValRooted XmppClient::GUIGetGameList()
 {
 	CScriptValRooted gameList;
@@ -600,7 +600,11 @@ CScriptValRooted XmppClient::GUIGetGameList()
 	return gameList;
 }
 
-/* Get leaderboard data */
+/**
+ * Handle requests from the GUI for leaderboard data.
+ *
+ * @return A JS array containing all known leaderboard data
+ */
 CScriptValRooted XmppClient::GUIGetBoardList()
 {
 	CScriptValRooted boardList;
@@ -677,6 +681,11 @@ void XmppClient::ban(const std::string& nick, const std::string& reason)
 	_mucRoom->ban(nick, reason);
 }
 
+/**
+ * Change the xmpp presence of the client.
+ *
+ * @param presence A string containing the desired presence.
+ */
 void XmppClient::SetPresence(const std::string& presence)
 {
 #define IF(x,y) if (presence == x) _mucRoom->setPresence(Presence::y)
