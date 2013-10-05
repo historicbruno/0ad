@@ -1432,6 +1432,21 @@ var UnitFsmSpec = {
 						// Check we can still reach the target
 						if (this.CheckTargetAttackRange(target, IID_Attack, this.order.data.attackType))
 						{
+							// If we are hunting, first update the target position of the gather order so we know where will be the killed animal
+							if (this.order.data.hunting && this.orderQueue[1] && this.orderQueue[1].data.lastPos)
+							{
+								var cmpPosition = Engine.QueryInterface(this.order.data.target, IID_Position);
+								if (cmpPosition && cmpPosition.IsInWorld())
+								{
+									// Store the initial position, so that we can find the rest of the herd later
+									if (!this.orderQueue[1].data.initPos)
+										this.orderQueue[1].data.initPos = this.orderQueue[1].data.lastPos;
+									this.orderQueue[1].data.lastPos = cmpPosition.GetPosition();
+									// We still know where the animal is, so we shouldn't give up before going there
+									this.orderQueue[1].data.secondTry = undefined;
+								}
+							}
+
 							var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 							this.lastAttacked = cmpTimer.GetTime() - msg.lateness;
 
@@ -1679,7 +1694,18 @@ var UnitFsmSpec = {
 					}
 
 					// Couldn't find nearby resources, so give up
-					this.FinishOrder();
+					if (this.FinishOrder())
+						return;
+
+					// Nothing better to do: go back to dropsite
+					var nearby = this.FindNearestDropsite(resourceType.generic);
+					if (nearby)
+					{
+						this.PushOrderFront("ReturnResource", { "target": nearby, "force": false });
+						return;
+					}
+
+					// No dropsites, just give up
 				},
 			},
 
@@ -1834,6 +1860,8 @@ var UnitFsmSpec = {
 
 					// We're already in range, can't get anywhere near it or the target is exhausted.
 
+					var herdPos = this.order.data.initPos;
+
 					// Give up on this order and try our next queued order
 					if (this.FinishOrder())
 						return;
@@ -1854,6 +1882,10 @@ var UnitFsmSpec = {
 						this.PerformGather(nearby, false, false);
 						return;
 					}
+
+					// If hunting, try to go to the initial herd position to see if we are more lucky
+					if (herdPos)
+						this.GatherNearPosition(herdPos.x, herdPos.z, resourceType, resourceTemplate);
 
 					// Nothing else to gather - if we're carrying anything then we should
 					// drop it off, and if not then we might as well head to the dropsite
@@ -2399,10 +2431,12 @@ var UnitFsmSpec = {
 				this.MoveRandomly(+this.template.RoamDistance);
 				// Set a random timer to switch to feeding state
 				this.StartTimer(RandomInt(+this.template.RoamTimeMin, +this.template.RoamTimeMax));
+				this.SetFacePointAfterMove(false);
 			},
 
 			"leave": function() {
 				this.StopTimer();
+				this.SetFacePointAfterMove(true);
 			},
 
 			"LosRangeUpdate": function(msg) {
@@ -2594,11 +2628,12 @@ UnitAI.prototype.OnOwnershipChanged = function(msg)
 {
 	this.SetupRangeQueries();
 
-	// If the unit isn't being created or dying, clear orders and reset stance.
+	// If the unit isn't being created or dying, reset stance and clear orders (if not garrisoned).
 	if (msg.to != -1 && msg.from != -1)
 	{
 		this.SetStance(this.template.DefaultStance);
-		this.Stop(false);
+		if(!this.isGarrisoned)
+			this.Stop(false);
 	}
 };
 
@@ -3945,8 +3980,6 @@ UnitAI.prototype.PerformGather = function(target, queued, force)
 
 	// Remember the position of our target, if any, in case it disappears
 	// later and we want to head to its last known position
-	// (TODO: if the target moves a lot (e.g. it's an animal), maybe we
-	// need to update this lastPos regularly rather than just here?)
 	var lastPos = undefined;
 	var cmpPosition = Engine.QueryInterface(target, IID_Position);
 	if (cmpPosition && cmpPosition.IsInWorld())
@@ -4550,6 +4583,13 @@ UnitAI.prototype.MoveRandomly = function(distance)
 
 	var cmpMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
 	cmpMotion.MoveToPointRange(tx, tz, distance, distance);
+};
+
+UnitAI.prototype.SetFacePointAfterMove = function(val)
+{
+	var cmpMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
+	if (cmpMotion)
+		cmpMotion.SetFacePointAfterMove(val);
 };
 
 UnitAI.prototype.AttackEntitiesByPreference = function(ents)

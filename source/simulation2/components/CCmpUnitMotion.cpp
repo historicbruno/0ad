@@ -129,6 +129,7 @@ public:
 
 	entity_pos_t m_Radius;
 	bool m_Moving;
+	bool m_FacePointAfterMove;
 
 	enum State
 	{
@@ -281,6 +282,8 @@ public:
 		m_FormationController = paramNode.GetChild("FormationController").ToBool();
 
 		m_Moving = false;
+		m_FacePointAfterMove = true;
+
 		m_WalkSpeed = paramNode.GetChild("WalkSpeed").ToFixed();
 		m_Speed = m_WalkSpeed;
 		m_CurSpeed = fixed::Zero();
@@ -294,14 +297,14 @@ public:
 			m_RunSpeed = m_WalkSpeed;
 		}
 
-		CmpPtr<ICmpPathfinder> cmpPathfinder(GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 		if (cmpPathfinder)
 		{
 			m_PassClass = cmpPathfinder->GetPassabilityClass(paramNode.GetChild("PassabilityClass").ToUTF8());
 			m_CostClass = cmpPathfinder->GetCostClass(paramNode.GetChild("CostClass").ToUTF8());
 		}
 
-		CmpPtr<ICmpObstruction> cmpObstruction(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpObstruction> cmpObstruction(GetEntityHandle());
 		if (cmpObstruction)
 			m_Radius = cmpObstruction->GetUnitRadius();
 
@@ -342,6 +345,7 @@ public:
 		serialize.NumberFixed_Unbounded("speed", m_Speed);
 
 		serialize.Bool("moving", m_Moving);
+		serialize.Bool("facePointAfterMove", m_FacePointAfterMove);
 
 		SerializeVector<SerializeWaypoint>()(serialize, "long path", m_LongPath.m_Waypoints);
 		SerializeVector<SerializeWaypoint>()(serialize, "short path", m_ShortPath.m_Waypoints);
@@ -428,6 +432,11 @@ public:
 		m_Speed = speed;
 	}
 
+	virtual void SetFacePointAfterMove(bool facePointAfterMove)
+	{
+		m_FacePointAfterMove = facePointAfterMove;
+	}
+
 	virtual void SetDebugOverlay(bool enabled)
 	{
 		m_DebugOverlayEnabled = enabled;
@@ -472,7 +481,7 @@ private:
 		StopMoving();
 		m_State = STATE_IDLE; // don't go through the STOPPING state since we never even started
 
-		CmpPtr<ICmpObstruction> cmpObstruction(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpObstruction> cmpObstruction(GetEntityHandle());
 		if (cmpObstruction)
 			cmpObstruction->SetMovingFlag(false);
 
@@ -484,7 +493,7 @@ private:
 	{
 		StopMoving();
 
-		CmpPtr<ICmpObstruction> cmpObstruction(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpObstruction> cmpObstruction(GetEntityHandle());
 		if (cmpObstruction)
 			cmpObstruction->SetMovingFlag(false);
 
@@ -502,7 +511,7 @@ private:
 	{
 		m_Moving = false;
 
-		CmpPtr<ICmpObstruction> cmpObstruction(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpObstruction> cmpObstruction(GetEntityHandle());
 		if (cmpObstruction)
 			cmpObstruction->SetMovingFlag(false);
 
@@ -620,7 +629,7 @@ void CCmpUnitMotion::PathResult(u32 ticket, const ICmpPathfinder::Path& path)
 			m_LongPath.m_Waypoints.push_back(wp);
 		}
 
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 		if (!cmpPosition || !cmpPosition->IsInWorld())
 		{
 			StartFailed();
@@ -658,7 +667,7 @@ void CCmpUnitMotion::PathResult(u32 ticket, const ICmpPathfinder::Path& path)
 			}
 		}
 
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 		if (!cmpPosition || !cmpPosition->IsInWorld())
 		{
 			StartFailed();
@@ -686,7 +695,7 @@ void CCmpUnitMotion::PathResult(u32 ticket, const ICmpPathfinder::Path& path)
 			m_LongPath.m_Waypoints.push_back(wp);
 		}
 
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 		if (!cmpPosition || !cmpPosition->IsInWorld())
 		{
 			StopMoving();
@@ -794,11 +803,11 @@ void CCmpUnitMotion::Move(fixed dt)
 		// Maybe we should split the updates into multiple phases to minimise
 		// that problem.
 
-		CmpPtr<ICmpPathfinder> cmpPathfinder (GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 		if (!cmpPathfinder)
 			return;
 
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 		if (!cmpPosition || !cmpPosition->IsInWorld())
 			return;
 
@@ -963,7 +972,9 @@ void CCmpUnitMotion::Move(fixed dt)
 
 							StopMoving();
 
-							FaceTowardsPointFromPos(pos, m_FinalGoal.x, m_FinalGoal.z);
+
+							if (m_FacePointAfterMove)
+								FaceTowardsPointFromPos(pos, m_FinalGoal.x, m_FinalGoal.z);
 							// TODO: if the goal was a square building, we ought to point towards the
 							// nearest point on the square, not towards its center
 						}
@@ -1020,7 +1031,7 @@ bool CCmpUnitMotion::TryGoingStraightToTargetEntity(CFixedVector2D from)
 	if ((targetPos - from).CompareLength(DIRECT_PATH_RANGE) > 0)
 		return false;
 
-	CmpPtr<ICmpPathfinder> cmpPathfinder (GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 	if (!cmpPathfinder)
 		return false;
 
@@ -1066,10 +1077,10 @@ bool CCmpUnitMotion::CheckTargetMovement(CFixedVector2D from, entity_pos_t minDe
 	// Fail if the target is no longer visible to this entity's owner
 	// (in which case we'll continue moving to its last known location,
 	// unless it comes back into view before we reach that location)
-	CmpPtr<ICmpOwnership> cmpOwnership(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpOwnership> cmpOwnership(GetEntityHandle());
 	if (cmpOwnership)
 	{
-		CmpPtr<ICmpRangeManager> cmpRangeManager(GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpRangeManager> cmpRangeManager(GetSystemEntity());
 		if (cmpRangeManager)
 		{
 			if (cmpRangeManager->GetLosVisibility(m_TargetEntity, cmpOwnership->GetOwner()) == ICmpRangeManager::VIS_HIDDEN)
@@ -1111,7 +1122,7 @@ bool CCmpUnitMotion::PathIsShort(const ICmpPathfinder::Path& path, CFixedVector2
 
 void CCmpUnitMotion::FaceTowardsPoint(entity_pos_t x, entity_pos_t z)
 {
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (!cmpPosition || !cmpPosition->IsInWorld())
 		return;
 
@@ -1127,7 +1138,7 @@ void CCmpUnitMotion::FaceTowardsPointFromPos(CFixedVector2D pos, entity_pos_t x,
 	{
 		entity_angle_t angle = atan2_approx(offset.X, offset.Y);
 
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+		CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 		if (!cmpPosition)
 			return;
 		cmpPosition->TurnTo(angle);
@@ -1156,7 +1167,7 @@ void CCmpUnitMotion::BeginPathing(CFixedVector2D from, const ICmpPathfinder::Goa
 	m_Moving = true;
 
 	// Set our 'moving' flag, so other units pathfinding now will ignore us
-	CmpPtr<ICmpObstruction> cmpObstruction(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpObstruction> cmpObstruction(GetEntityHandle());
 	if (cmpObstruction)
 		cmpObstruction->SetMovingFlag(true);
 
@@ -1183,7 +1194,7 @@ void CCmpUnitMotion::BeginPathing(CFixedVector2D from, const ICmpPathfinder::Goa
 
 void CCmpUnitMotion::RequestLongPath(CFixedVector2D from, const ICmpPathfinder::Goal& goal)
 {
-	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 	if (!cmpPathfinder)
 		return;
 
@@ -1194,7 +1205,7 @@ void CCmpUnitMotion::RequestLongPath(CFixedVector2D from, const ICmpPathfinder::
 
 void CCmpUnitMotion::RequestShortPath(CFixedVector2D from, const ICmpPathfinder::Goal& goal, bool avoidMovingUnits)
 {
-	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 	if (!cmpPathfinder)
 		return;
 
@@ -1242,7 +1253,7 @@ bool CCmpUnitMotion::PickNextLongWaypoint(const CFixedVector2D& pos, bool avoidM
 		goal.z = targetZ;
 	}
 
-	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpPathfinder> cmpPathfinder(GetSystemEntity());
 	if (!cmpPathfinder)
 		return false;
 
@@ -1256,7 +1267,7 @@ bool CCmpUnitMotion::MoveToPointRange(entity_pos_t x, entity_pos_t z, entity_pos
 {
 	PROFILE("MoveToPointRange");
 
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (!cmpPosition || !cmpPosition->IsInWorld())
 		return false;
 
@@ -1270,7 +1281,7 @@ bool CCmpUnitMotion::MoveToPointRange(entity_pos_t x, entity_pos_t z, entity_pos
 
 		// Check whether this point is in an obstruction
 
-		CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSystemEntity());
 		if (!cmpObstructionManager)
 			return false;
 
@@ -1312,7 +1323,8 @@ bool CCmpUnitMotion::MoveToPointRange(entity_pos_t x, entity_pos_t z, entity_pos
 		else
 		{
 			// We're already in range - no need to move anywhere
-			FaceTowardsPointFromPos(pos, x, z);
+			if (m_FacePointAfterMove)
+				FaceTowardsPointFromPos(pos, x, z);
 			return false;
 		}
 
@@ -1340,14 +1352,14 @@ bool CCmpUnitMotion::MoveToPointRange(entity_pos_t x, entity_pos_t z, entity_pos
 
 bool CCmpUnitMotion::IsInPointRange(entity_pos_t x, entity_pos_t z, entity_pos_t minRange, entity_pos_t maxRange)
 {
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (!cmpPosition || !cmpPosition->IsInWorld())
 		return false;
 
 	CFixedVector2D pos = cmpPosition->GetPosition2D();
 
 	bool hasObstruction = false;
-	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSystemEntity());
 	ICmpObstructionManager::ObstructionSquare obstruction;
 	if (cmpObstructionManager)
 		hasObstruction = cmpObstructionManager->FindMostImportantObstruction(GetObstructionFilter(true), x, z, m_Radius, obstruction);
@@ -1406,13 +1418,13 @@ bool CCmpUnitMotion::MoveToTargetRange(entity_id_t target, entity_pos_t minRange
 {
 	PROFILE("MoveToTargetRange");
 
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (!cmpPosition || !cmpPosition->IsInWorld())
 		return false;
 
 	CFixedVector2D pos = cmpPosition->GetPosition2D();
 
-	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSystemEntity());
 	if (!cmpObstructionManager)
 		return false;
 
@@ -1474,7 +1486,8 @@ bool CCmpUnitMotion::MoveToTargetRange(entity_id_t target, entity_pos_t minRange
 		else if (maxRange < entity_pos_t::Zero() || distance < maxRange)
 		{
 			// We're already in range - no need to move anywhere
-			FaceTowardsPointFromPos(pos, goal.x, goal.z);
+			if (m_FacePointAfterMove)
+				FaceTowardsPointFromPos(pos, goal.x, goal.z);
 			return false;
 		}
 		else
@@ -1496,7 +1509,8 @@ bool CCmpUnitMotion::MoveToTargetRange(entity_id_t target, entity_pos_t minRange
 				if (circleDistance < maxRange)
 				{
 					// We're already in range - no need to move anywhere
-					FaceTowardsPointFromPos(pos, goal.x, goal.z);
+					if (m_FacePointAfterMove)
+						FaceTowardsPointFromPos(pos, goal.x, goal.z);
 					return false;
 				}
 
@@ -1551,13 +1565,13 @@ bool CCmpUnitMotion::IsInTargetRange(entity_id_t target, entity_pos_t minRange, 
 	// This function closely mirrors MoveToTargetRange - it needs to return true
 	// after that Move has completed
 
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (!cmpPosition || !cmpPosition->IsInWorld())
 		return false;
 
 	CFixedVector2D pos = cmpPosition->GetPosition2D();
 
-	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSimContext(), SYSTEM_ENTITY);
+	CmpPtr<ICmpObstructionManager> cmpObstructionManager(GetSystemEntity());
 	if (!cmpObstructionManager)
 		return false;
 
@@ -1642,7 +1656,7 @@ void CCmpUnitMotion::MoveToFormationOffset(entity_id_t target, entity_pos_t x, e
 void CCmpUnitMotion::RenderPath(const ICmpPathfinder::Path& path, std::vector<SOverlayLine>& lines, CColor color)
 {
 	bool floating = false;
-	CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), GetEntityId());
+	CmpPtr<ICmpPosition> cmpPosition(GetEntityHandle());
 	if (cmpPosition)
 		floating = cmpPosition->IsFloating();
 

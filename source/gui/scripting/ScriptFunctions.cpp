@@ -23,6 +23,7 @@
 #include "graphics/GameView.h"
 #include "graphics/MapReader.h"
 #include "gui/GUIManager.h"
+#include "graphics/scripting/JSInterface_GameView.h"
 #include "lib/timer.h"
 #include "lib/utf8.h"
 #include "lib/sysdep/sysdep.h"
@@ -40,10 +41,13 @@
 #include "ps/ProfileViewer.h"
 #include "ps/Pyrogenesis.h"
 #include "ps/SavedGame.h"
+#include "ps/scripting/JSInterface_ConfigDB.h"
+#include "ps/scripting/JSInterface_Console.h"
 #include "ps/UserReport.h"
 #include "ps/GameSetup/Atlas.h"
 #include "ps/GameSetup/Config.h"
 #include "ps/ConfigDB.h"
+#include "renderer/scripting/JSInterface_Renderer.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
 
 #include "simulation2/Simulation2.h"
@@ -417,7 +421,7 @@ CScriptVal LoadMapSettings(void* cbdata, VfsPath pathname)
 
 	CMapSummaryReader reader;
 
-	if (reader.LoadMap(pathname.ChangeExtension(L".xml")) != PSRETURN_OK)
+	if (reader.LoadMap(pathname) != PSRETURN_OK)
 		return CScriptVal();
 
 	return reader.GetMapSettings(guiManager->GetScriptInterface()).get();
@@ -650,6 +654,11 @@ void SetBoundingBoxDebugOverlay(void* UNUSED(cbdata), bool enabled)
 
 void GuiScriptingInit(ScriptInterface& scriptInterface)
 {
+	JSI_GameView::RegisterScriptFunctions(scriptInterface);
+	JSI_Renderer::RegisterScriptFunctions(scriptInterface);
+	JSI_Console::RegisterScriptFunctions(scriptInterface);
+	JSI_ConfigDB::RegisterScriptFunctions(scriptInterface);
+
 	// GUI manager functions:
 	scriptInterface.RegisterFunction<CScriptVal, &GetActiveGui>("GetActiveGui");
 	scriptInterface.RegisterFunction<void, std::wstring, CScriptVal, &PushGuiPage>("PushGuiPage");

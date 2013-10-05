@@ -460,9 +460,15 @@ function updateHero()
 	var heroState = GetEntityState(playerState.heroes[0]);
 	var template = GetTemplateData(heroState.template);
 	heroImage.sprite = "stretched:session/portraits/" + template.icon;
+	var hero = playerState.heroes[0];
 
-	heroButton.onpress = (function(e) { return function() { if (!Engine.HotkeyIsPressed("selection.add")) g_Selection.reset(); g_Selection.addList([e]); } })(playerState.heroes[0]);
-	heroButton.ondoublepress = (function(e) { return function() { selectAndMoveTo(e) }; })(playerState.heroes[0]);
+	heroButton.onpress = function() 
+	{ 
+		if (!Engine.HotkeyIsPressed("selection.add"))
+			g_Selection.reset(); 
+		g_Selection.addList([hero]); 
+	};
+	heroButton.ondoublepress = function() { selectAndMoveTo(hero) };
 	heroButton.hidden = false;
 
 	// Setup tooltip
@@ -662,7 +668,7 @@ function playRandomAmbient(type)
 			break;
 
 		default:
-			console.write("Unrecognized ambient type: " + type);
+			Engine.Console_Write("Unrecognized ambient type: " + type);
 			break;
 	}
 }

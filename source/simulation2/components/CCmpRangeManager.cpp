@@ -21,6 +21,7 @@
 #include "ICmpRangeManager.h"
 
 #include "ICmpTerrain.h"
+#include "simulation2/system/EntityMap.h"
 #include "simulation2/MessageTypes.h"
 #include "simulation2/components/ICmpPosition.h"
 #include "simulation2/components/ICmpTerritoryManager.h"
@@ -37,6 +38,8 @@
 #include "ps/Overlay.h"
 #include "ps/Profile.h"
 #include "renderer/Scene.h"
+#include "lib/ps_stl.h"
+
 
 #define DEBUG_RANGE_MANAGER_BOUNDS 0
 
@@ -47,7 +50,7 @@ struct Query
 {
 	bool enabled;
 	bool parabolic;
-	entity_id_t source;
+	CEntityHandle source; // TODO: this could crash if an entity is destroyed while a Query is still referencing it
 	entity_pos_t minRange;
 	entity_pos_t maxRange;
 	entity_pos_t elevationBonus;
@@ -61,7 +64,7 @@ struct Query
  * Convert an owner ID (-1 = unowned, 0 = gaia, 1..30 = players)
  * into a 32-bit mask for quick set-membership tests.
  */
-static u32 CalcOwnerMask(player_id_t owner)
+static inline u32 CalcOwnerMask(player_id_t owner)
 {
 	if (owner >= -1 && owner < 31)
 		return 1 << (1+owner);
@@ -72,7 +75,7 @@ static u32 CalcOwnerMask(player_id_t owner)
 /**
  * Returns LOS mask for given player.
  */
-static u32 CalcPlayerLosMask(player_id_t player)
+static inline u32 CalcPlayerLosMask(player_id_t player)
 {
 	if (player > 0 && player <= 16)
 		return ICmpRangeManager::LOS_MASK << (2*(player-1));
@@ -100,18 +103,17 @@ static u32 CalcSharedLosMask(std::vector<player_id_t> players)
  */
 static bool InParabolicRange(CFixedVector3D v, fixed range) 
 {
-	i64 x = (i64)v.X.GetInternalValue(); // abs(x) <= 2^31
-	i64 z = (i64)v.Z.GetInternalValue();
-	i64 xx = (x * x); // xx <= 2^62
-	i64 zz = (z * z);
+	i32 x = v.X.GetInternalValue(); // abs(x) <= 2^31
+	i32 z = v.Z.GetInternalValue();
+	u64 xx = (u64)FIXED_MUL_I64_I32_I32(x, x); // xx <= 2^62
+	u64 zz = (u64)FIXED_MUL_I64_I32_I32(z, z);
 	i64 d2 = (xx + zz) >> 1; // d2 <= 2^62 (no overflow)
 	
-	i64 y = (i64)v.Y.GetInternalValue();
+	i32 y = v.Y.GetInternalValue();
+	i32 c = range.GetInternalValue();
+	i32 c_2 = c >> 1;
 
-	i64 c = (i64)range.GetInternalValue();
-	i64 c_2 = c >> 1; 
-
-	i64 c2 = (c_2-y)*c;
+	i64 c2 = FIXED_MUL_I64_I32_I32(c_2 - y, c);
 
 	if (d2 <= c2)
 		return true;
@@ -145,18 +147,16 @@ struct EntityData
 
 cassert(sizeof(EntityData) == 16);
 
-
 /**
  * Serialization helper template for Query
  */
 struct SerializeQuery
 {
 	template<typename S>
-	void operator()(S& serialize, const char* UNUSED(name), Query& value)
+	void Common(S& serialize, const char* UNUSED(name), Query& value)
 	{
 		serialize.Bool("enabled", value.enabled);
 		serialize.Bool("parabolic",value.parabolic);
-		serialize.NumberU32_Unbounded("source", value.source);
 		serialize.NumberFixed_Unbounded("min range", value.minRange);
 		serialize.NumberFixed_Unbounded("max range", value.maxRange);
 		serialize.NumberFixed_Unbounded("elevation bonus", value.elevationBonus);
@@ -164,6 +164,25 @@ struct SerializeQuery
 		serialize.NumberI32_Unbounded("interface", value.interface);
 		SerializeVector<SerializeU32_Unbounded>()(serialize, "last match", value.lastMatch);
 		serialize.NumberU8_Unbounded("flagsMask", value.flagsMask);
+	}
+
+	void operator()(ISerializer& serialize, const char* name, Query& value, const CSimContext& UNUSED(context))
+	{
+		Common(serialize, name, value);
+
+		uint32_t id = value.source.GetId();
+		serialize.NumberU32_Unbounded("source", id);
+	}
+
+	void operator()(IDeserializer& deserialize, const char* name, Query& value, const CSimContext& context)
+	{
+		Common(deserialize, name, value);
+
+		uint32_t id;
+		deserialize.NumberU32_Unbounded("source", id);
+		value.source = context.GetComponentManager().LookupEntityHandle(id, true);
+			// the referenced entity might not have been deserialized yet,
+			// so tell LookupEntityHandle to allocate the handle if necessary
 	}
 };
 
@@ -193,7 +212,7 @@ struct SerializeEntityData
  */
 struct EntityDistanceOrdering
 {
-	EntityDistanceOrdering(const std::map<entity_id_t, EntityData>& entities, const CFixedVector2D& source) :
+	EntityDistanceOrdering(const EntityMap<EntityData>& entities, const CFixedVector2D& source) :
 		m_EntityData(entities), m_Source(source)
 	{
 	}
@@ -207,7 +226,7 @@ struct EntityDistanceOrdering
 		return (vecA.CompareLength(vecB) < 0);
 	}
 
-	const std::map<entity_id_t, EntityData>& m_EntityData;
+	const EntityMap<EntityData>& m_EntityData;
 	CFixedVector2D m_Source;
 
 private:
@@ -254,8 +273,9 @@ public:
 	// Range query state:
 	tag_t m_QueryNext; // next allocated id
 	std::map<tag_t, Query> m_Queries;
-	std::map<entity_id_t, EntityData> m_EntityData;
-	SpatialSubdivision<entity_id_t> m_Subdivision; // spatial index of m_EntityData
+	EntityMap<EntityData> m_EntityData;
+
+	SpatialSubdivision m_Subdivision; // spatial index of m_EntityData
 
 	// LOS state:
 
@@ -302,7 +322,7 @@ public:
 
 		// Initialise with bogus values (these will get replaced when
 		// SetBounds is called)
-		ResetSubdivisions(entity_pos_t::FromInt(1), entity_pos_t::FromInt(1));
+		ResetSubdivisions(entity_pos_t::FromInt(1024), entity_pos_t::FromInt(1024));
 
 		// The whole map should be visible to Gaia by default, else e.g. animals
 		// will get confused when trying to run from enemies
@@ -331,8 +351,8 @@ public:
 		serialize.NumberFixed_Unbounded("world z1", m_WorldZ1);
 
 		serialize.NumberU32_Unbounded("query next", m_QueryNext);
-		SerializeMap<SerializeU32_Unbounded, SerializeQuery>()(serialize, "queries", m_Queries);
-		SerializeMap<SerializeU32_Unbounded, SerializeEntityData>()(serialize, "entity data", m_EntityData);
+		SerializeMap<SerializeU32_Unbounded, SerializeQuery>()(serialize, "queries", m_Queries, GetSimContext());
+		SerializeEntityMap<SerializeEntityData>()(serialize, "entity data", m_EntityData);
 
 		SerializeMap<SerializeI32_Unbounded, SerializeBool>()(serialize, "los reveal all", m_LosRevealAll);
 		serialize.Bool("los circular", m_LosCircular);
@@ -394,8 +414,7 @@ public:
 			}
 
 			// Remember this entity
-			m_EntityData.insert(std::make_pair(ent, entdata));
-
+			m_EntityData.insert(ent, entdata);
 			break;
 		}
 		case MT_PositionChanged:
@@ -403,7 +422,7 @@ public:
 			const CMessagePositionChanged& msgData = static_cast<const CMessagePositionChanged&> (msg);
 			entity_id_t ent = msgData.entity;
 
-			std::map<entity_id_t, EntityData>::iterator it = m_EntityData.find(ent);
+			EntityMap<EntityData>::iterator it = m_EntityData.find(ent);
 
 			// Ignore if we're not already tracking this entity
 			if (it == m_EntityData.end())
@@ -450,7 +469,7 @@ public:
 			const CMessageOwnershipChanged& msgData = static_cast<const CMessageOwnershipChanged&> (msg);
 			entity_id_t ent = msgData.entity;
 
-			std::map<entity_id_t, EntityData>::iterator it = m_EntityData.find(ent);
+			EntityMap<EntityData>::iterator it = m_EntityData.find(ent);
 
 			// Ignore if we're not already tracking this entity
 			if (it == m_EntityData.end())
@@ -473,7 +492,7 @@ public:
 			const CMessageDestroy& msgData = static_cast<const CMessageDestroy&> (msg);
 			entity_id_t ent = msgData.entity;
 
-			std::map<entity_id_t, EntityData>::iterator it = m_EntityData.find(ent);
+			EntityMap<EntityData>::iterator it = m_EntityData.find(ent);
 
 			// Ignore if we're not already tracking this entity
 			if (it == m_EntityData.end())
@@ -495,7 +514,7 @@ public:
 			const CMessageVisionRangeChanged& msgData = static_cast<const CMessageVisionRangeChanged&> (msg);
 			entity_id_t ent = msgData.entity;
 
-			std::map<entity_id_t, EntityData>::iterator it = m_EntityData.find(ent);
+			EntityMap<EntityData>::iterator it = m_EntityData.find(ent);
 
 			// Ignore if we're not already tracking this entity
 			if (it == m_EntityData.end())
@@ -559,7 +578,7 @@ public:
 
 		std::vector<std::vector<u16> > oldPlayerCounts = m_LosPlayerCounts;
 		std::vector<u32> oldStateRevealed = m_LosStateRevealed;
-		SpatialSubdivision<entity_id_t> oldSubdivision = m_Subdivision;
+		SpatialSubdivision oldSubdivision = m_Subdivision;
 
 		ResetDerivedData(true);
 
@@ -620,7 +639,7 @@ public:
 		m_LosStateRevealed.clear();
 		m_LosStateRevealed.resize(m_TerrainVerticesPerSide*m_TerrainVerticesPerSide);
 
-		for (std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
+		for (EntityMap<EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
 		{
 			if (it->second.inWorld)
 				LosAdd(it->second.owner, it->second.visionRange, CFixedVector2D(it->second.x, it->second.z));
@@ -646,7 +665,7 @@ public:
 		// (TODO: find the optimal number instead of blindly guessing)
 		m_Subdivision.Reset(x1, z1, entity_pos_t::FromInt(8*TERRAIN_TILE_SIZE));
 
-		for (std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
+		for (EntityMap<EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
 		{
 			if (it->second.inWorld)
 				m_Subdivision.Add(it->first, CFixedVector2D(it->second.x, it->second.z));
@@ -720,7 +739,7 @@ public:
 
 		std::vector<entity_id_t> r;
 
-		CmpPtr<ICmpPosition> cmpSourcePosition(GetSimContext(), q.source);
+		CmpPtr<ICmpPosition> cmpSourcePosition(q.source);
 		if (!cmpSourcePosition || !cmpSourcePosition->IsInWorld())
 		{
 			// If the source doesn't have a position, then the result is just the empty list
@@ -752,7 +771,7 @@ public:
 		Query& q = it->second;
 		q.enabled = true;
 
-		CmpPtr<ICmpPosition> cmpSourcePosition(GetSimContext(), q.source);
+		CmpPtr<ICmpPosition> cmpSourcePosition(q.source);
 		if (!cmpSourcePosition || !cmpSourcePosition->IsInWorld())
 		{
 			// If the source doesn't have a position, then the result is just the empty list
@@ -777,7 +796,7 @@ public:
 
 		u32 ownerMask = CalcOwnerMask(player);
 
-		for (std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
+		for (EntityMap<EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
 		{
 			// Check owner and add to list if it matches
 			if (CalcOwnerMask(it->second.owner) & ownerMask)
@@ -805,46 +824,51 @@ public:
 		// Store a queue of all messages before sending any, so we can assume
 		// no entities will move until we've finished checking all the ranges
 		std::vector<std::pair<entity_id_t, CMessageRangeUpdate> > messages;
+		std::vector<entity_id_t> results;
+		std::vector<entity_id_t> added;
+		std::vector<entity_id_t> removed;
 
 		for (std::map<tag_t, Query>::iterator it = m_Queries.begin(); it != m_Queries.end(); ++it)
 		{
-			Query& q = it->second;
+			Query& query = it->second;
 
-			if (!q.enabled)
+			if (!query.enabled)
 				continue;
 
-			CmpPtr<ICmpPosition> cmpSourcePosition(GetSimContext(), q.source);
+			CmpPtr<ICmpPosition> cmpSourcePosition(query.source);			
 			if (!cmpSourcePosition || !cmpSourcePosition->IsInWorld())
 				continue;
 
-			std::vector<entity_id_t> r;
-			r.reserve(q.lastMatch.size());
-
-			PerformQuery(q, r);
+			results.clear();
+			results.reserve(query.lastMatch.size());
+			PerformQuery(query, results);
 
 			// Compute the changes vs the last match
-			std::vector<entity_id_t> added;
-			std::vector<entity_id_t> removed;
-			std::set_difference(r.begin(), r.end(), q.lastMatch.begin(), q.lastMatch.end(), std::back_inserter(added));
-			std::set_difference(q.lastMatch.begin(), q.lastMatch.end(), r.begin(), r.end(), std::back_inserter(removed));
-
+			added.clear();
+			removed.clear();
+			// Return the 'added' list sorted by distance from the entity
+			// (Don't bother sorting 'removed' because they might not even have positions or exist any more)
+			std::set_difference(results.begin(), results.end(), query.lastMatch.begin(), query.lastMatch.end(), 
+				std::back_inserter(added));
+			std::set_difference(query.lastMatch.begin(), query.lastMatch.end(), results.begin(), results.end(), 
+				std::back_inserter(removed));
 			if (added.empty() && removed.empty())
 				continue;
 
-			// Return the 'added' list sorted by distance from the entity
-			// (Don't bother sorting 'removed' because they might not even have positions or exist any more)
-			CFixedVector2D pos = cmpSourcePosition->GetPosition2D();
-			std::stable_sort(added.begin(), added.end(), EntityDistanceOrdering(m_EntityData, pos));
+			std::stable_sort(added.begin(), added.end(), EntityDistanceOrdering(m_EntityData, cmpSourcePosition->GetPosition2D()));
 
-			messages.push_back(std::make_pair(q.source, CMessageRangeUpdate(it->first)));
-			messages.back().second.added.swap(added);
-			messages.back().second.removed.swap(removed);
-
-			it->second.lastMatch.swap(r);
+			messages.resize(messages.size() + 1);
+			std::pair<entity_id_t, CMessageRangeUpdate>& back = messages.back();
+			back.first = query.source.GetId();
+			back.second.tag = it->first;
+			back.second.added.swap(added);
+			back.second.removed.swap(removed);
+			it->second.lastMatch.swap(results);
 		}
 
+		CComponentManager& cmpMgr = GetSimContext().GetComponentManager();
 		for (size_t i = 0; i < messages.size(); ++i)
-			GetSimContext().GetComponentManager().PostMessage(messages[i].first, messages[i].second);
+			cmpMgr.PostMessage(messages[i].first, messages[i].second);
 	}
 
 	/**
@@ -865,7 +889,7 @@ public:
 			return false;
 
 		// Ignore self
-		if (id == q.source)
+		if (id == q.source.GetId())
 			return false;
 
 		// Ignore if it's missing the required interface
@@ -880,7 +904,7 @@ public:
 	 */
 	void PerformQuery(const Query& q, std::vector<entity_id_t>& r)
 	{
-		CmpPtr<ICmpPosition> cmpSourcePosition(GetSimContext(), q.source);
+		CmpPtr<ICmpPosition> cmpSourcePosition(q.source);
 		if (!cmpSourcePosition || !cmpSourcePosition->IsInWorld())
 			return;
 		CFixedVector2D pos = cmpSourcePosition->GetPosition2D();
@@ -888,7 +912,7 @@ public:
 		// Special case: range -1.0 means check all entities ignoring distance
 		if (q.maxRange == entity_pos_t::FromInt(-1))
 		{
-			for (std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
+			for (EntityMap<EntityData>::const_iterator it = m_EntityData.begin(); it != m_EntityData.end(); ++it)
 			{
 				if (!TestEntityQuery(q, it->first, it->second))
 					continue;
@@ -903,11 +927,12 @@ public:
 			CFixedVector3D pos3d = cmpSourcePosition->GetPosition()+
 			    CFixedVector3D(entity_pos_t::Zero(), q.elevationBonus, entity_pos_t::Zero()) ;
 			// Get a quick list of entities that are potentially in range, with a cutoff of 2*maxRange
-			std::vector<entity_id_t> ents = m_Subdivision.GetNear(pos, q.maxRange*2);
+			SpatialQueryArray ents;
+			m_Subdivision.GetNear(ents, pos, q.maxRange*2);
 
-			for (size_t i = 0; i < ents.size(); ++i)
+			for (int i = 0; i < ents.size(); ++i)
 			{
-				std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.find(ents[i]);
+				EntityMap<EntityData>::const_iterator it = m_EntityData.find(ents[i]);
 				ENSURE(it != m_EntityData.end());
 
 				if (!TestEntityQuery(q, it->first, it->second))
@@ -933,18 +958,18 @@ public:
 				}
 
 				r.push_back(it->first);
-
 			}
 		}
 		// check a regular range (i.e. not the entire world, and not parabolic)
 		else 
 		{
 			// Get a quick list of entities that are potentially in range
-			std::vector<entity_id_t> ents = m_Subdivision.GetNear(pos, q.maxRange);
-
-			for (size_t i = 0; i < ents.size(); ++i)
+			SpatialQueryArray ents;
+			m_Subdivision.GetNear(ents, pos, q.maxRange);
+			
+			for (int i = 0; i < ents.size(); ++i)
 			{
-				std::map<entity_id_t, EntityData>::const_iterator it = m_EntityData.find(ents[i]);
+				EntityMap<EntityData>::const_iterator it = m_EntityData.find(ents[i]);
 				ENSURE(it != m_EntityData.end());
 
 				if (!TestEntityQuery(q, it->first, it->second))
@@ -963,7 +988,6 @@ public:
 				}
 
 				r.push_back(it->first);
-
 			}
 		}
 	}
@@ -1006,8 +1030,8 @@ public:
 		std::vector<entity_pos_t> r;
 		
 
-		CmpPtr<ICmpTerrain> cmpTerrain(GetSimContext(), SYSTEM_ENTITY);
-		CmpPtr<ICmpWaterManager> cmpWaterManager(GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpTerrain> cmpTerrain(GetSystemEntity());
+		CmpPtr<ICmpWaterManager> cmpWaterManager(GetSystemEntity());
 		entity_pos_t waterLevel = cmpWaterManager->GetWaterLevel(pos.X,pos.Z);
 		entity_pos_t thisHeight = pos.Y > waterLevel ? pos.Y : waterLevel;
 
@@ -1088,7 +1112,7 @@ public:
 		Query q;
 		q.enabled = false;
 		q.parabolic = false;
-		q.source = source;
+		q.source = GetSimContext().GetComponentManager().LookupEntityHandle(source);
 		q.minRange = minRange;
 		q.maxRange = maxRange;
 		q.elevationBonus = entity_pos_t::Zero();
@@ -1118,9 +1142,10 @@ public:
 	{
 		if (!m_DebugOverlayEnabled)
 			return;
-		CColor enabledRingColour(0, 1, 0, 1);
-		CColor disabledRingColour(1, 0, 0, 1);
-		CColor rayColour(1, 1, 0, 0.2f);
+		static CColor disabledRingColour(1, 0, 0, 1);	// red
+		static CColor enabledRingColour(0, 1, 0, 1);	// green
+		static CColor subdivColour(0, 0, 1, 1);			// blue 
+		static CColor rayColour(1, 1, 0, 0.2f);
 
 		if (m_DebugOverlayDirty)
 		{
@@ -1130,7 +1155,7 @@ public:
 			{
 				Query& q = it->second;
 
-				CmpPtr<ICmpPosition> cmpSourcePosition(GetSimContext(), q.source);
+				CmpPtr<ICmpPosition> cmpSourcePosition(q.source);
 				if (!cmpSourcePosition || !cmpSourcePosition->IsInWorld())
 					continue;
 				CFixedVector2D pos = cmpSourcePosition->GetPosition2D();
@@ -1151,9 +1176,9 @@ public:
 					std::vector<entity_pos_t> coords;
 					
 					// Get the outline from cache if possible
-					if (ParabolicRangesOutlines.find(q.source) != ParabolicRangesOutlines.end())
+					if (ParabolicRangesOutlines.find(q.source.GetId()) != ParabolicRangesOutlines.end())
 					{
-						EntityParabolicRangeOutline e = ParabolicRangesOutlines[q.source];
+						EntityParabolicRangeOutline e = ParabolicRangesOutlines[q.source.GetId()];
 						if (e.position == pos && e.range == q.maxRange) 
 						{
 							// outline is cached correctly, use it
@@ -1168,7 +1193,7 @@ public:
 							e.outline = coords;
 							e.range = q.maxRange;
 							e.position = pos;
-							ParabolicRangesOutlines[q.source] = e;
+							ParabolicRangesOutlines[q.source.GetId()] = e;
 						}
 					}
 					else 
@@ -1178,11 +1203,11 @@ public:
 						// cache a new outline
 						coords = getParabolicRangeForm(pos,q.maxRange,q.maxRange*2, entity_pos_t::Zero(), entity_pos_t::FromFloat(2.0f*3.14f),70);
 						EntityParabolicRangeOutline e;
-						e.source = q.source;
+						e.source = q.source.GetId();
 						e.range = q.maxRange;
 						e.position = pos;
 						e.outline = coords;
-						ParabolicRangesOutlines[q.source] = e;
+						ParabolicRangesOutlines[q.source.GetId()] = e;
 					}
 					
 					CColor thiscolor = q.enabled ? enabledRingColour : disabledRingColour;
@@ -1227,6 +1252,24 @@ public:
 				}
 			}
 
+			// render subdivision grid
+			float divSize = m_Subdivision.GetDivisionSize().ToFloat();
+			int width = m_Subdivision.GetWidth();
+			int height = m_Subdivision.GetHeight();
+			for (int x = 0; x < width; ++x)
+			{
+				for (int y = 0; y < height; ++y)
+				{
+					m_DebugOverlayLines.push_back(SOverlayLine());
+					m_DebugOverlayLines.back().m_Color = subdivColour;
+					
+					float xpos = x*divSize + divSize/2;
+					float zpos = y*divSize + divSize/2;
+					SimRender::ConstructSquareOnGround(GetSimContext(), xpos, zpos, divSize, divSize, 0.0f,
+						m_DebugOverlayLines.back(), false, 1.0f);
+				}
+			}
+
 			m_DebugOverlayDirty = false;
 		}
 
@@ -1247,7 +1290,7 @@ public:
 
 	virtual void SetEntityFlag(entity_id_t ent, std::string identifier, bool value)
 	{
-		std::map<entity_id_t, EntityData>::iterator it = m_EntityData.find(ent);
+		EntityMap<EntityData>::iterator it = m_EntityData.find(ent);
 
 		// We don't have this entity
 		if (it == m_EntityData.end())
@@ -1280,12 +1323,14 @@ public:
 			return CLosQuerier(GetSharedLosMask(player), m_LosState, m_TerrainVerticesPerSide);
 	}
 
-	virtual ELosVisibility GetLosVisibility(entity_id_t ent, player_id_t player, bool forceRetainInFog)
+	virtual ELosVisibility GetLosVisibility(CEntityHandle ent, player_id_t player, bool forceRetainInFog)
 	{
 		// (We can't use m_EntityData since this needs to handle LOCAL entities too)
 
 		// Entities not with positions in the world are never visible
-		CmpPtr<ICmpPosition> cmpPosition(GetSimContext(), ent);
+		if (ent.GetId() == INVALID_ENTITY)
+			return VIS_HIDDEN;
+		CmpPtr<ICmpPosition> cmpPosition(ent);
 		if (!cmpPosition || !cmpPosition->IsInWorld())
 			return VIS_HIDDEN;
 
@@ -1312,7 +1357,7 @@ public:
 		// Fogged if the 'retain in fog' flag is set, and in a non-visible explored region
 		if (los.IsExplored(i, j))
 		{
-			CmpPtr<ICmpVision> cmpVision(GetSimContext(), ent);
+			CmpPtr<ICmpVision> cmpVision(ent);
 			if (forceRetainInFog || (cmpVision && cmpVision->GetRetainInFog()))
 				return VIS_FOGGED;
 		}
@@ -1320,6 +1365,13 @@ public:
 		// Otherwise not visible
 		return VIS_HIDDEN;
 	}
+
+	virtual ELosVisibility GetLosVisibility(entity_id_t ent, player_id_t player, bool forceRetainInFog)
+	{
+		CEntityHandle handle = GetSimContext().GetComponentManager().LookupEntityHandle(ent);
+		return GetLosVisibility(handle, player, forceRetainInFog);
+	}
+
 
 	virtual void SetLosRevealAll(player_id_t player, bool enabled)
 	{
@@ -1370,7 +1422,7 @@ public:
 
 	void UpdateTerritoriesLos()
 	{
-		CmpPtr<ICmpTerritoryManager> cmpTerritoryManager(GetSimContext(), SYSTEM_ENTITY);
+		CmpPtr<ICmpTerritoryManager> cmpTerritoryManager(GetSystemEntity());
 		if (!cmpTerritoryManager || !cmpTerritoryManager->NeedUpdate(&m_TerritoriesDirtyID))
 			return;
 

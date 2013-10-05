@@ -28,11 +28,12 @@
 #include "graphics/ShaderProgram.h"
 #include "lib/res/handle.h"
 #include "ps/Singleton.h"
-#include "scripting/ScriptableObject.h"
 
+#include "graphics/ShaderDefines.h"
 #include "renderer/PostprocManager.h"
 #include "renderer/Scene.h"
 #include "renderer/TimeManager.h"
+#include "scriptinterface/ScriptInterface.h"
 
 // necessary declarations
 class CLightEnv;
@@ -41,7 +42,6 @@ class CMaterialManager;
 class CModel;
 class CParticleManager;
 class CPatch;
-class CShaderDefines;
 class CShaderManager;
 class CSimulation2;
 class CTextureManager;
@@ -71,7 +71,6 @@ struct CRendererInternals;
 
 class CRenderer :
 	public Singleton<CRenderer>,
-	public CJSObject<CRenderer>,
 	private SceneCollector
 {
 public:
@@ -89,6 +88,7 @@ public:
 		OPT_WATERSHADOW,
 		OPT_SHADOWPCF,
 		OPT_PARTICLES,
+		OPT_PREFERGLSL,
 		OPT_SILHOUETTES,
 		OPT_SHOWSKY
 	};
@@ -304,7 +304,7 @@ public:
 
 	CMaterialManager& GetMaterialManager();
 
-	CShaderDefines GetSystemShaderDefines();
+	CShaderDefines GetSystemShaderDefines() { return m_SystemShaderDefines; }
 	
 	CTimeManager& GetTimeManager();
 	
@@ -317,7 +317,7 @@ public:
 	 */
 	const Caps& GetCapabilities() const { return m_Caps; }
 
-	static void ScriptingInit();
+	static void RegisterScriptFunctions(ScriptInterface& scriptInterface);
 
 protected:
 	friend struct CRendererInternals;
@@ -334,24 +334,6 @@ protected:
 	friend class InstancingModelRenderer;
 	friend class ShaderInstancingModelRenderer;
 	friend class TerrainRenderer;
-
-	// scripting
-	// TODO: Perhaps we could have a version of AddLocalProperty for function-driven
-	// properties? Then we could hide these function in the private implementation class.
-	jsval JSI_GetRenderPath(JSContext*);
-	void JSI_SetRenderPath(JSContext* ctx, jsval newval);
-	jsval JSI_GetDepthTextureBits(JSContext*);
-	void JSI_SetDepthTextureBits(JSContext* ctx, jsval newval);
-	jsval JSI_GetShadows(JSContext*);
-	void JSI_SetShadows(JSContext* ctx, jsval newval);
-	jsval JSI_GetShadowAlphaFix(JSContext*);
-	void JSI_SetShadowAlphaFix(JSContext* ctx, jsval newval);
-	jsval JSI_GetShadowPCF(JSContext*);
-	void JSI_SetShadowPCF(JSContext* ctx, jsval newval);
-	jsval JSI_GetPreferGLSL(JSContext*);
-	void JSI_SetPreferGLSL(JSContext* ctx, jsval newval);
-	jsval JSI_GetSky(JSContext*);
-	void JSI_SetSky(JSContext* ctx, jsval newval);
 
 	//BEGIN: Implementation of SceneCollector
 	void Submit(CPatch* patch);
@@ -392,6 +374,7 @@ protected:
 	void SetObliqueFrustumClipping(const CVector4D& clipPlane);
 
 	void ReloadShaders();
+	void RecomputeSystemShaderDefines();
 
 	// hotloading
 	static Status ReloadChangedFileCB(void* param, const VfsPath& path);
@@ -407,6 +390,8 @@ protected:
 	ERenderMode m_TerrainRenderMode;
 	// current model rendering mode
 	ERenderMode m_ModelRenderMode;
+
+	CShaderDefines m_SystemShaderDefines;
 
 	/**
 	 * m_ViewCamera: determines the eye position for rendering

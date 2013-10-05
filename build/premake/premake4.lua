@@ -144,6 +144,12 @@ function project_set_build_flags()
 		flags { "ExtraWarnings" } -- this causes far too many warnings/remarks on ICC
 	end
 
+	-- disable Windows debug heap, since it makes malloc/free hugely slower when
+	-- running inside a debugger
+	if os.is("windows") then
+		flags { "NoDebugHeap" }
+	end
+
 	configuration "Debug"
 		defines { "DEBUG" }
 
@@ -600,6 +606,7 @@ function setup_all_libs ()
 		"graphics",
 		"graphics/scripting",
 		"renderer",
+		"renderer/scripting",
 		"third_party/mikktspace"
 	}
 	extern_libs = {
@@ -944,6 +951,7 @@ function setup_atlas_projects()
 		"CustomControls/EditableListCtrl",
 		"CustomControls/FileHistory",
 		"CustomControls/HighResTimer",
+		"CustomControls/MapDialog",
 		"CustomControls/SnapSplitterWindow",
 		"CustomControls/VirtualDirTreeCtrl",
 		"CustomControls/Windows",

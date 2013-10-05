@@ -1539,7 +1539,7 @@ var jumpCameraPositions = [], jumpCameraLast;
 
 function jumpCamera(index)
 {
-	var position = jumpCameraPositions[index], distanceThreshold = g_ConfigDB.system["camerajump.threshold"];
+	var position = jumpCameraPositions[index], distanceThreshold = Engine.ConfigDB_GetValue("user", "camerajump.threshold");
 	if (position)
 	{
 		if (jumpCameraLast &&
@@ -1615,7 +1615,7 @@ function getEntityLimitAndCount(playerState, entType)
 	var entLimit = undefined;
 	var entCount = undefined;
 	var canBeAddedCount = undefined;
-	if (entCategory && playerState.entityLimits[entCategory])
+	if (entCategory && playerState.entityLimits[entCategory] != null)
 	{
 		entLimit = playerState.entityLimits[entCategory];
 		entCount = playerState.entityCounts[entCategory];
