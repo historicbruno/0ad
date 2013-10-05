@@ -36,7 +36,7 @@ gloox::Tag* GameReport::tag() const
 	gloox::Tag* t = new gloox::Tag( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::list<const GameReportData*>::const_iterator it = m_GameReport.begin();
+	std::vector<const GameReportData*>::const_iterator it = m_GameReport.begin();
 	for( ; it != m_GameReport.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -90,7 +90,7 @@ gloox::Tag* BoardListQuery::tag() const
 	gloox::Tag* t = new gloox::Tag( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::list<const PlayerData*>::const_iterator it = m_BoardList.begin();
+	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
 	for( ; it != m_BoardList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -105,13 +105,15 @@ gloox::StanzaExtension* BoardListQuery::clone() const
 
 BoardListQuery::~BoardListQuery()
 {
-	m_BoardList.clear();
+	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
+	for( ; it != m_BoardList.end(); ++it )
+		delete *it;
 }
 
 /******************************************************
  * GameListQuery, custom IQ Stanza, used to receive
  * the listing of games from the server, and register/
- * unregister/changestate games on the server. 
+ * unregister/changestate games on the server.
  */
 GameListQuery::GameListQuery( const gloox::Tag* tag ):StanzaExtension( ExtGameListQuery )
 {
@@ -149,7 +151,7 @@ gloox::Tag* GameListQuery::tag() const
 	if(!m_Command.empty())
 		t->addChild(new gloox::Tag("command", m_Command));
 
-	std::list<const GameData*>::const_iterator it = m_GameList.begin();
+	std::vector<const GameData*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -164,5 +166,7 @@ gloox::StanzaExtension* GameListQuery::clone() const
 
 GameListQuery::~GameListQuery()
 {
-	m_GameList.clear();
+	std::vector<const PlayerData*>::const_iterator it = m_GameList.begin();
+	for( ; it != m_GameList.end(); ++it )
+		delete *it;
 }

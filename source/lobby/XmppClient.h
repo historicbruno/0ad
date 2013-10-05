@@ -177,9 +177,9 @@ private:
 	/// Map of players
 	std::map<std::string, gloox::Presence::PresenceType> m_PlayerMap;
 	/// List of games
-	std::list< const GameData* > m_GameList;
+	std::vector< const GameData* > m_GameList;
 	/// List of rankings
-	std::list< const PlayerData* > m_BoardList;
+	std::vector< const PlayerData* > m_BoardList;
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
 };

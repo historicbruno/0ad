@@ -161,7 +161,7 @@ void XmppClient::handleLog(LogLevel level, LogArea area, const std::string& mess
 }
 
 /*****************************************************
- * Connection handlers                               * 
+ * Connection handlers                               *
  *****************************************************/
 
 /**
@@ -195,10 +195,6 @@ void XmppClient::onDisconnect(ConnectionError error)
 		CreateSimpleMessage("system", "authentication failed", "error");
 	else
 		CreateSimpleMessage("system", "disconnected");
-
-	m_PlayerMap.clear();
-	m_GameList.clear();
-	m_BoardList.clear();
 }
 
 /**
@@ -222,7 +218,7 @@ void XmppClient::handleMUCError(gloox::MUCRoom*, gloox::StanzaError err)
 }
 
 /*****************************************************
- * Requests to server                                * 
+ * Requests to server                                *
  *****************************************************/
 
 /**
@@ -262,7 +258,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 {
 	JID xpartamuppJid(_xpartamuppId);
 	jsval dataval = data.get();
-	
+
 	// Setup some base stanza attributes
 	GameReport* game = new GameReport();
 	GameReportData *report = new GameReportData("game");
@@ -276,7 +272,7 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 		m_ScriptInterface.GetProperty(dataval, properties[i].c_str(), value);
 		report->addAttribute(properties[i], value);
 	}
-	
+
 	// Add stanza to IQ
 	game->m_GameReport.push_back(report);
 
@@ -296,7 +292,7 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 {
 	JID xpartamuppJid(_xpartamuppId);
 	jsval dataval = data.get();
-	
+
 	// Setup some base stanza attributes
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "register";
@@ -344,7 +340,7 @@ void XmppClient::SendIqUnregisterGame()
 
 /**
  * Send a request to change the state of a registered game on the server.
- * 
+ *
  * A game can either be in the 'running' or 'waiting' state - the server
  * decides which - but we need to update the current players that are
  * in-game so the server can make the calculation.
@@ -368,7 +364,7 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
 }
 
 /*****************************************************
- * Account registration                              * 
+ * Account registration                              *
  *****************************************************/
 
 void XmppClient::handleRegistrationFields( const JID& /*from*/, int fields, std::string )
@@ -423,7 +419,7 @@ void XmppClient::handleOOB( const JID& /*from*/, const OOB& /* oob */ )
 }
 
 /*****************************************************
- * Requests from GUI                                 * 
+ * Requests from GUI                                 *
  *****************************************************/
 
 /**
@@ -459,7 +455,7 @@ CScriptValRooted XmppClient::GUIGetGameList()
 {
 	CScriptValRooted gameList;
 	m_ScriptInterface.Eval("([])", gameList);
-	for(std::list<const GameData*>::const_iterator it = m_GameList.begin(); it !=m_GameList.end(); ++it)
+	for(std::vector<const GameData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it)
 	{
 		CScriptValRooted game;
 		m_ScriptInterface.Eval("({})", game);
@@ -484,7 +480,7 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 {
 	CScriptValRooted boardList;
 	m_ScriptInterface.Eval("([])", boardList);
-	for(std::list<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it)
+	for(std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it)
 	{
 		CScriptValRooted board;
 		m_ScriptInterface.Eval("({})", board);
@@ -501,7 +497,7 @@ CScriptValRooted XmppClient::GUIGetBoardList()
 }
 
 /*****************************************************
- * Message interfaces                                * 
+ * Message interfaces                                *
  *****************************************************/
 
 /**
@@ -578,22 +574,22 @@ bool XmppClient::handleIq( const IQ& iq )
 		const BoardListQuery* bq = iq.findExtension<BoardListQuery>( ExtBoardListQuery );
 		if(gq)
 		{
-			m_GameList.clear();
-			std::list<const GameData*>::const_iterator it = gq->m_GameList.begin();
-			for(; it != gq->m_GameList.end(); ++it)
-			{
-				m_GameList.push_back(*it);
-			}
+			for(std::vector<const PlayerData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it )
+				delete *it;
+
+			for(std::vector<const GameData*>::const_iterator it = gq->m_GameList.begin(); it != gq->m_GameList.end(); ++it)
+				m_GameList.push_back( (*it)->clone() );
+
 			CreateSimpleMessage("system", "gamelist updated", "internal");
 		}
 		if(bq)
 		{
-			m_BoardList.clear();
-			std::list<const PlayerData*>::const_iterator it = bq->m_BoardList.begin();
-			for(; it != bq->m_BoardList.end(); ++it)
-			{
-				m_BoardList.push_back(*it);
-			}
+			for(std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it )
+				delete *it;
+
+			for(std::vector<const PlayerData*>::const_iterator it = bq->m_BoardList.begin(); it != bq->m_BoardList.end(); ++it)
+				m_BoardList.push_back( (*it)->clone() );
+
 			CreateSimpleMessage("system", "boardlist updated", "internal");
 		}
 	}
@@ -631,7 +627,7 @@ void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::st
 }
 
 /*****************************************************
- * Presence and nickname                             * 
+ * Presence and nickname                             *
  *****************************************************/
 
 /**
@@ -744,7 +740,7 @@ void XmppClient::GetPresence(const std::string& nick, std::string& presence)
 }
 
 /*****************************************************
- * Utilities                                         * 
+ * Utilities                                         *
  *****************************************************/
 
 /**

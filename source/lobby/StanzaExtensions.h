@@ -49,7 +49,7 @@ public:
 	virtual gloox::Tag* tag() const;
 	virtual gloox::StanzaExtension* clone() const;
 
-	std::list<const GameReportData*> m_GameReport;
+	std::vector<const GameReportData*> m_GameReport;
 };
 
 class GameListQuery : public gloox::StanzaExtension
@@ -69,7 +69,7 @@ public:
 	~GameListQuery();
 
 	std::string m_Command;
-	std::list<const GameData*> m_GameList;
+	std::vector<const GameData*> m_GameList;
 };
 
 class BoardListQuery : public gloox::StanzaExtension
@@ -88,6 +88,6 @@ public:
 
 	~BoardListQuery();
 
-	std::list<const PlayerData*> m_BoardList;
+	std::vector<const PlayerData*> m_BoardList;
 };
 #endif
