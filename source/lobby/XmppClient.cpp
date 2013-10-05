@@ -576,6 +576,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		{
 			for(std::vector<const PlayerData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it )
 				delete *it;
+			m_GameList.clear();
 
 			for(std::vector<const GameData*>::const_iterator it = gq->m_GameList.begin(); it != gq->m_GameList.end(); ++it)
 				m_GameList.push_back( (*it)->clone() );
@@ -586,6 +587,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		{
 			for(std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it )
 				delete *it;
+			m_BoardList.clear();
 
 			for(std::vector<const PlayerData*>::const_iterator it = bq->m_BoardList.begin(); it != bq->m_BoardList.end(); ++it)
 				m_BoardList.push_back( (*it)->clone() );

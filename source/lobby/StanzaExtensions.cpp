@@ -108,6 +108,7 @@ BoardListQuery::~BoardListQuery()
 	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
 	for( ; it != m_BoardList.end(); ++it )
 		delete *it;
+	m_BoardList.clear();
 }
 
 /******************************************************
@@ -169,4 +170,5 @@ GameListQuery::~GameListQuery()
 	std::vector<const PlayerData*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
 		delete *it;
+	m_GameList.clear();
 }
