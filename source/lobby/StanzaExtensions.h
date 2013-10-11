@@ -17,74 +17,74 @@
 #ifndef STANZAEXTENSIONS_H
 #define STANZAEXTENSIONS_H
 
-#include <gloox/client.h>
+#include "glooxwrapper/glooxwrapper.h"
 
 /// Global Gamelist Extension
 #define ExtGameListQuery 1403
-const std::string XMLNS_GAMELIST = "jabber:iq:gamelist";
+#define XMLNS_GAMELIST "jabber:iq:gamelist"
 
 /// Global Boardlist Extension
 #define ExtBoardListQuery 1404
-const std::string XMLNS_BOARDLIST = "jabber:iq:boardlist";
+#define XMLNS_BOARDLIST "jabber:iq:boardlist"
 
 /// Global Boardlist Extension
 #define ExtGameReport 1405
-const std::string XMLNS_GAMEREPORT = "jabber:iq:gamereport";
+#define XMLNS_GAMEREPORT "jabber:iq:gamereport"
 
-typedef gloox::Tag PlayerData;
-typedef gloox::Tag GameData;
-typedef gloox::Tag GameReportData;
+typedef glooxwrapper::Tag PlayerData;
+typedef glooxwrapper::Tag GameData;
+typedef glooxwrapper::Tag GameReportData;
 
-class GameReport : public gloox::StanzaExtension
+class GameReport : public glooxwrapper::StanzaExtension
 {
 public:
-	GameReport(const gloox::Tag* tag = 0);
+	GameReport(const glooxwrapper::Tag* tag = 0);
 
 	// Following four methods are all required by gloox
-	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
+	virtual StanzaExtension* newInstance(const glooxwrapper::Tag* tag) const
 	{
 		return new GameReport(tag);
 	}
-	virtual const std::string& filterString() const;
-	virtual gloox::Tag* tag() const;
-	virtual gloox::StanzaExtension* clone() const;
+	virtual const glooxwrapper::string& filterString() const;
+	virtual glooxwrapper::Tag* tag() const;
+	virtual glooxwrapper::StanzaExtension* clone() const;
 
 	std::vector<const GameReportData*> m_GameReport;
 };
 
-class GameListQuery : public gloox::StanzaExtension
+class GameListQuery : public glooxwrapper::StanzaExtension
 {
 public:
-	GameListQuery(const gloox::Tag* tag = 0);
+	GameListQuery(const glooxwrapper::Tag* tag = 0);
 
 	// Following four methods are all required by gloox
-	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
+	virtual StanzaExtension* newInstance(const glooxwrapper::Tag* tag) const
 	{
 		return new GameListQuery(tag);
 	}
-	virtual const std::string& filterString() const;
-	virtual gloox::Tag* tag() const;
-	virtual gloox::StanzaExtension* clone() const;
+	virtual const glooxwrapper::string& filterString() const;
+	virtual glooxwrapper::Tag* tag() const;
+	virtual glooxwrapper::StanzaExtension* clone() const;
 
 	~GameListQuery();
 
-	std::string m_Command;
+	glooxwrapper::string m_Command;
 	std::vector<const GameData*> m_GameList;
 };
 
-class BoardListQuery : public gloox::StanzaExtension
+class BoardListQuery : public glooxwrapper::StanzaExtension
 {
 public:
-	BoardListQuery(const gloox::Tag* tag = 0);
+	BoardListQuery(const glooxwrapper::Tag* tag = 0);
 
 	// Following four methods are all required by gloox
-	virtual StanzaExtension* newInstance(const gloox::Tag* tag) const
+	virtual StanzaExtension* newInstance(const glooxwrapper::Tag* tag) const
 	{
 		return new BoardListQuery(tag);
 	}
-	virtual const std::string& filterString() const;
-	virtual gloox::Tag* tag() const;
-	virtual gloox::StanzaExtension* clone() const;
+	virtual const glooxwrapper::string& filterString() const;
+	virtual glooxwrapper::Tag* tag() const;
+	virtual glooxwrapper::StanzaExtension* clone() const;
 
 	~BoardListQuery();
 

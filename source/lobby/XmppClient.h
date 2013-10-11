@@ -18,61 +18,9 @@
 #ifndef XXXMPPCLIENT_H
 #define XXXMPPCLIENT_H
 
-#if OS_WIN
-// Prevent gloox from pulling in windows.h (which causes conflicts)
-// and defines what is necessary in order to compile the lobby
-#define _WINDOWS_
+#include "IXmppClient.h"
 
-#ifndef OUT
-#define OUT
-#endif
-
-	//Taken from WinDef.h
-#define CONST const
-typedef unsigned char UCHAR;
-typedef UCHAR *PUCHAR;
-typedef unsigned short USHORT;
-typedef unsigned long ULONG;
-typedef ULONG *PULONG;
-#define OPTIONAL
-
-	// Taken from WinNT.h
-#define VOID void
-typedef char CHAR;
-typedef long LONG;
-typedef wchar_t WCHAR;
-typedef __nullterminated WCHAR *NWPSTR, *LPWSTR, *PWSTR;
-typedef __nullterminated CHAR *NPSTR, *LPSTR, *PSTR;
-typedef __nullterminated CONST WCHAR *LPCWSTR, *PCWSTR;
-typedef __nullterminated CONST CHAR *LPCSTR, *PCSTR;
-typedef unsigned char       BYTE;
-typedef BYTE  BOOLEAN;
-typedef BOOLEAN *PBOOLEAN;
-typedef void *PVOID;
-
-	//Taken from BaseTsd.h
-#if defined(_WIN64)
-    typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
-#else
-    typedef _W64 unsigned long ULONG_PTR, *PULONG_PTR;
-#endif
-#include "specstrings.h"
-
-#endif
-
-// Gloox
-#include <gloox/jid.h>
-#include <gloox/client.h>
-#include <gloox/mucroom.h>
-#include <gloox/message.h>
-#include <gloox/messagehandler.h>
-#include <gloox/presencehandler.h>
-#include <gloox/mucroomhandler.h>
-#include <gloox/loghandler.h>
-#include <gloox/connectionlistener.h>
-#include <gloox/registration.h>
-#include <gloox/iq.h>
-#include <gloox/iqhandler.h>
+#include "glooxwrapper/glooxwrapper.h"
 
 //game - script
 #include <deque>
@@ -81,18 +29,25 @@ typedef void *PVOID;
 //Game - script
 class ScriptInterface;
 
-typedef gloox::Tag PlayerData;
-typedef gloox::Tag GameData;
+typedef glooxwrapper::Tag PlayerData;
+typedef glooxwrapper::Tag GameData;
 
-class XmppClient : public gloox::ConnectionListener, public gloox::MUCRoomHandler, public gloox::IqHandler, public gloox::LogHandler, public gloox::RegistrationHandler, public gloox::MessageHandler
+namespace glooxwrapper
 {
+	class Client;
+	struct CertInfo;
+}
+
+class XmppClient : public IXmppClient, public glooxwrapper::ConnectionListener, public glooxwrapper::MUCRoomHandler, public glooxwrapper::IqHandler, public glooxwrapper::RegistrationHandler, public glooxwrapper::MessageHandler
+{
+	NONCOPYABLE(XmppClient);
 private:
 	//Game - script
 	ScriptInterface& m_ScriptInterface;
 	//Components
-	gloox::Client* _client;
-	gloox::MUCRoom* _mucRoom;
-	gloox::Registration* _registration;
+	glooxwrapper::Client* _client;
+	glooxwrapper::MUCRoom* _mucRoom;
+	glooxwrapper::Registration* _registration;
 	//Account infos
 	std::string _username;
 	std::string _password;
@@ -101,7 +56,7 @@ private:
 
 public:
 	//Basic
-	XmppClient(ScriptInterface& scriptInterface, std::string sUsername, std::string sPassword, std::string sRoom, std::string sNick, bool regOpt = false);
+	XmppClient(ScriptInterface& scriptInterface, const std::string& sUsername, const std::string& sPassword, const std::string& sRoom, const std::string& sNick, bool regOpt = false);
 	virtual ~XmppClient();
 
 	//Network
@@ -113,7 +68,7 @@ public:
 	void SendIqGameReport(CScriptVal data);
 	void SendIqRegisterGame(CScriptVal data);
 	void SendIqUnregisterGame();
-	void SendIqChangeStateGame(std::string nbp, std::string players);
+	void SendIqChangeStateGame(const std::string& nbp, const std::string& players);
 	void SetNick(const std::string& nick);
 	void GetNick(std::string& nick);
 	void kick(const std::string& nick, const std::string& reason);
@@ -131,14 +86,15 @@ public:
 protected:
 	/* Xmpp handlers */
 	/* MUC handlers */
-	virtual void handleMUCParticipantPresence(gloox::MUCRoom*, const gloox::MUCRoomParticipant, const gloox::Presence&);
-	virtual bool handleMUCRoomCreation(gloox::MUCRoom*) {return false;}
-	virtual void handleMUCSubject(gloox::MUCRoom*, const std::string&, const std::string&) {}
-	virtual void handleMUCInviteDecline(gloox::MUCRoom*, const gloox::JID&, const std::string&) {}
-	virtual void handleMUCError(gloox::MUCRoom*, gloox::StanzaError);
-	virtual void handleMUCInfo(gloox::MUCRoom*, int, const std::string&, const gloox::DataForm*) {}
-	virtual void handleMUCItems(gloox::MUCRoom*, const std::list<gloox::Disco::Item*, std::allocator<gloox::Disco::Item*> >&) {}
-	virtual void handleMUCMessage(gloox::MUCRoom* room, const gloox::Message& msg, bool priv);
+	virtual void handleMUCParticipantPresence(glooxwrapper::MUCRoom*, const glooxwrapper::MUCRoomParticipant, const glooxwrapper::Presence&);
+	virtual void handleMUCError(glooxwrapper::MUCRoom*, gloox::StanzaError);
+	virtual void handleMUCMessage(glooxwrapper::MUCRoom* room, const glooxwrapper::Message& msg, bool priv);
+	/* MUC handlers not supported by glooxwrapper */
+	// virtual bool handleMUCRoomCreation(glooxwrapper::MUCRoom*) {return false;}
+	// virtual void handleMUCSubject(glooxwrapper::MUCRoom*, const std::string&, const std::string&) {}
+	// virtual void handleMUCInviteDecline(glooxwrapper::MUCRoom*, const glooxwrapper::JID&, const std::string&) {}
+	// virtual void handleMUCInfo(glooxwrapper::MUCRoom*, int, const std::string&, const glooxwrapper::DataForm*) {}
+	// virtual void handleMUCItems(glooxwrapper::MUCRoom*, const std::list<gloox::Disco::Item*, std::allocator<gloox::Disco::Item*> >&) {}
 
 	/* Log handler */
 	virtual void handleLog(gloox::LogLevel level, gloox::LogArea area, const std::string& message);
@@ -146,32 +102,32 @@ protected:
 	/* ConnectionListener handlers*/
 	virtual void onConnect();
 	virtual void onDisconnect(gloox::ConnectionError e);
-	virtual bool onTLSConnect(const gloox::CertInfo& info);
+	virtual bool onTLSConnect(const glooxwrapper::CertInfo& info);
 
 	/* Iq Handlers */
-	virtual bool handleIq(const gloox::IQ& iq);
-	virtual void handleIqID(const gloox::IQ&, int) {}
+	virtual bool handleIq(const glooxwrapper::IQ& iq);
+	virtual void handleIqID(const glooxwrapper::IQ&, int) {}
 
 	/* Registration Handlers */
-	virtual void handleRegistrationFields(const gloox::JID& /*from*/, int fields, std::string instructions );
-	virtual void handleRegistrationResult(const gloox::JID& /*from*/, gloox::RegistrationResult result);
-	virtual void handleAlreadyRegistered(const gloox::JID& /*from*/);
-	virtual void handleDataForm(const gloox::JID& /*from*/, const gloox::DataForm& /*form*/);
-	virtual void handleOOB(const gloox::JID& /*from*/, const gloox::OOB& oob);
+	virtual void handleRegistrationFields(const glooxwrapper::JID& /*from*/, int fields, glooxwrapper::string instructions );
+	virtual void handleRegistrationResult(const glooxwrapper::JID& /*from*/, gloox::RegistrationResult result);
+	virtual void handleAlreadyRegistered(const glooxwrapper::JID& /*from*/);
+	virtual void handleDataForm(const glooxwrapper::JID& /*from*/, const glooxwrapper::DataForm& /*form*/);
+	virtual void handleOOB(const glooxwrapper::JID& /*from*/, const glooxwrapper::OOB& oob);
 
 	/* Message Handler */
-	virtual void handleMessage(const gloox::Message& msg, gloox::MessageSession * session);
+	virtual void handleMessage(const glooxwrapper::Message& msg, glooxwrapper::MessageSession * session);
 
 	// Helpers
 	void GetPresenceString(const gloox::Presence::PresenceType p, std::string& presence) const;
-	std::string StanzaErrorToString(const gloox::StanzaError& err);
+	std::string StanzaErrorToString(gloox::StanzaError err);
 public:
 	/* Messages */
 	CScriptValRooted GuiPollMessage();
-	void SendMUCMessage(std::string message);
+	void SendMUCMessage(const std::string& message);
 	protected:
 	void PushGuiMessage(const CScriptValRooted& message);
-	void CreateSimpleMessage(std::string type, std::string text, std::string level = "standard", std::string data = "");
+	void CreateSimpleMessage(const std::string& type, const std::string& text, const std::string& level = "standard", const std::string& data = "");
 
 private:
 	/// Map of players
@@ -183,8 +139,5 @@ private:
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
 };
-
-extern XmppClient *g_XmppClient;
-extern bool g_rankedGame;
 
 #endif // XMPPCLIENT_H

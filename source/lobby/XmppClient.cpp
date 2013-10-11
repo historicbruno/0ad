@@ -25,9 +25,7 @@
 #include "ps/CLogger.h"
 
 // Gloox
-#include <gloox/rostermanager.h>
-#include <gloox/rosteritem.h>
-#include <gloox/error.h>
+#include "glooxwrapper/glooxwrapper.h"
 
 // Game - script
 #include "scriptinterface/ScriptInterface.h"
@@ -35,10 +33,8 @@
 // Configuration
 #include "ps/ConfigDB.h"
 
-using namespace gloox;
-
 //global
-XmppClient *g_XmppClient = NULL;
+IXmppClient *g_XmppClient = NULL;
 bool g_rankedGame = false;
 
 //debug
@@ -46,19 +42,35 @@ bool g_rankedGame = false;
 #define DbgXMPP(x)
 #else
 #define DbgXMPP(x) std::cout << x << std::endl;
+
+static std::string tag_xml(const glooxwrapper::IQ& iq)
+{
+	std::string ret;
+	glooxwrapper::Tag* tag = iq.tag();
+	ret = tag->xml().to_string();
+	glooxwrapper::Tag::free(tag);
+	return ret;
+}
 #endif
 
-//Hack
-#if 1
-#if OS_WIN
-const std::string gloox::EmptyString = "";
-#endif
-#endif
+static std::string tag_name(const glooxwrapper::IQ& iq)
+{
+	std::string ret;
+	glooxwrapper::Tag* tag = iq.tag();
+	ret = tag->name().to_string();
+	glooxwrapper::Tag::free(tag);
+	return ret;
+}
+
+IXmppClient* IXmppClient::create(ScriptInterface& scriptInterface, const std::string& sUsername, const std::string& sPassword, const std::string& sRoom, const std::string& sNick, bool regOpt)
+{
+	return new XmppClient(scriptInterface, sUsername, sPassword, sRoom, sNick, regOpt);
+}
 
 /**
  * Construct the xmpp client
  */
-XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, std::string sPassword, std::string sRoom, std::string sNick, bool regOpt)
+XmppClient::XmppClient(ScriptInterface& scriptInterface, const std::string& sUsername, const std::string& sPassword, const std::string& sRoom, const std::string& sNick, bool regOpt)
 	: m_ScriptInterface(scriptInterface), _client(NULL), _mucRoom(NULL), _registration(NULL), _username(sUsername), _password(sPassword), _nick(sNick)
 {
 	// Read lobby configuration from default.cfg
@@ -67,28 +79,28 @@ XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, 
 	CFG_GET_VAL("lobby.server", String, sServer);
 	CFG_GET_VAL("lobby.xpartamupp", String, sXpartamupp);
 
-	_xpartamuppId = sXpartamupp+std::string("@")+sServer+std::string("/CC");
-	JID clientJid(sUsername+std::string("@")+sServer+std::string("/0ad"));
-	JID roomJid(sRoom+std::string("@conference.")+sServer+std::string("/")+sNick);
+	_xpartamuppId = sXpartamupp + "@" + sServer + "/CC";
+	glooxwrapper::JID clientJid(sUsername + "@" + sServer + "/0ad");
+	glooxwrapper::JID roomJid(sRoom + "@conference." + sServer + "/" + sNick);
 
 	// If we are connecting, use the full jid and a password
 	// If we are registering, only use the server name
 	if(!regOpt)
-		_client = new Client(clientJid, sPassword);
+		_client = new glooxwrapper::Client(clientJid, sPassword);
 	else
-		_client = new Client(sServer);
+		_client = new glooxwrapper::Client(sServer);
 
 	// Disable TLS as we haven't set a certificate on the server yet
-	_client->setTls(TLSDisabled);
+	_client->setTls(gloox::TLSDisabled);
 
 	// Disable use of the SASL PLAIN mechanism, to prevent leaking credentials
 	// if the server doesn't list any supported SASL mechanism or the response
 	// has been modified to exclude those.
-	const int mechs = SaslMechAll ^ SaslMechPlain;
+	const int mechs = gloox::SaslMechAll ^ gloox::SaslMechPlain;
 	_client->setSASLMechanisms(mechs);
 
 	_client->registerConnectionListener( this );
-	_client->setPresence(Presence::Available, -1);
+	_client->setPresence(gloox::Presence::Available, -1);
 	_client->disco()->setVersion( "Pyrogenesis", "0.0.15" );
 	_client->disco()->setIdentity( "client", "bot" );
 	_client->setCompression(false);
@@ -107,15 +119,15 @@ XmppClient::XmppClient(ScriptInterface& scriptInterface, std::string sUsername, 
 	if (!regOpt)
 	{
 		// Create a Multi User Chat Room
-		_mucRoom = new MUCRoom(_client, roomJid, this, 0);
+		_mucRoom = new glooxwrapper::MUCRoom(_client, roomJid, this, 0);
 		// Disable the history because its anoying
-		_mucRoom->setRequestHistory(0, MUCRoom::HistoryMaxStanzas);
+		_mucRoom->setRequestHistory(0, gloox::MUCRoom::HistoryMaxStanzas);
 	}
 	else
 	{
 		// Registration
-		_registration = new Registration( _client );
-		_registration->registerRegistrationHandler( this );
+		_registration = new glooxwrapper::Registration(_client);
+		_registration->registerRegistrationHandler(this);
 	}
 }
 
@@ -127,7 +139,16 @@ XmppClient::~XmppClient()
 	DbgXMPP("XmppClient destroyed");
 	delete _registration;
 	delete _mucRoom;
+
+	// Workaround for memory leak in gloox 1.0/1.0.1
+	_client->removePresenceExtension(gloox::ExtCaps);
+
 	delete _client;
+
+	for (std::vector<const GameData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it)
+		GameData::free(*it);
+	for (std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it)
+		PlayerData::free(*it);
 }
 
 /// Game - script
@@ -155,7 +176,7 @@ void XmppClient::recv()
 /**
  * Log (debug) Handler
  */
-void XmppClient::handleLog(LogLevel level, LogArea area, const std::string& message)
+void XmppClient::handleLog(gloox::LogLevel level, gloox::LogArea area, const std::string& message)
 {
 	std::cout << "log: level: " << level << ", area: " << area << ", message: " << message << std::endl;
 }
@@ -184,14 +205,14 @@ void XmppClient::onConnect()
 /**
  * Handle disconnection
  */
-void XmppClient::onDisconnect(ConnectionError error)
+void XmppClient::onDisconnect(gloox::ConnectionError error)
 {
 	// Make sure we properly leave the room so that
 	// everything works if we decide to come back later
 	if (_mucRoom)
 		_mucRoom->leave();
 
-	if(error == ConnAuthenticationFailed)
+	if(error == gloox::ConnAuthenticationFailed)
 		CreateSimpleMessage("system", "authentication failed", "error");
 	else
 		CreateSimpleMessage("system", "disconnected");
@@ -200,18 +221,25 @@ void XmppClient::onDisconnect(ConnectionError error)
 /**
  * Handle TLS connection
  */
-bool XmppClient::onTLSConnect( const CertInfo& info )
+bool XmppClient::onTLSConnect( const glooxwrapper::CertInfo& info )
 {
 	UNUSED2(info);
 	DbgXMPP("onTLSConnect");
-	DbgXMPP("status: " << info.status << "\nissuer: " << info.issuer << "\npeer: " << info.server << "\nprotocol: " << info.protocol << "\nmac: " << info.mac << "\ncipher: " << info.cipher << "\ncompression: " << info.compression );
+	DbgXMPP(
+		"status: " << info.status <<
+		"\nissuer: " << info.issuer <<
+		"\npeer: " << info.server <<
+		"\nprotocol: " << info.protocol <<
+		"\nmac: " << info.mac <<
+		"\ncipher: " << info.cipher <<
+		"\ncompression: " << info.compression );
 	return true;
 }
 
 /**
  * Handle MUC room errors
  */
-void XmppClient::handleMUCError(gloox::MUCRoom*, gloox::StanzaError err)
+void XmppClient::handleMUCError(glooxwrapper::MUCRoom*, gloox::StanzaError err)
 {
 	std::string msg = StanzaErrorToString(err);
 	CreateSimpleMessage("system", msg, "error");
@@ -226,12 +254,12 @@ void XmppClient::handleMUCError(gloox::MUCRoom*, gloox::StanzaError err)
  */
 void XmppClient::SendIqGetGameList()
 {
-	JID xpartamuppJid(_xpartamuppId);
+	glooxwrapper::JID xpartamuppJid(_xpartamuppId);
 
 	// Send IQ
-	IQ iq(gloox::IQ::Get, xpartamuppJid);
+	glooxwrapper::IQ iq(gloox::IQ::Get, xpartamuppJid);
 	iq.addExtension( new GameListQuery() );
-	DbgXMPP("SendIqGetGameList [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendIqGetGameList [" << tag_xml(iq) << "]");
 	_client->send(iq);
 }
 
@@ -240,12 +268,12 @@ void XmppClient::SendIqGetGameList()
  */
 void XmppClient::SendIqGetBoardList()
 {
-	JID xpartamuppJid(_xpartamuppId);
+	glooxwrapper::JID xpartamuppJid(_xpartamuppId);
 
 	// Send IQ
-	IQ iq(gloox::IQ::Get, xpartamuppJid);
+	glooxwrapper::IQ iq(gloox::IQ::Get, xpartamuppJid);
 	iq.addExtension( new BoardListQuery() );
-	DbgXMPP("SendIqGetBoardList [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendIqGetBoardList [" << tag_xml(iq) << "]");
 	_client->send(iq);
 }
 
@@ -256,12 +284,12 @@ void XmppClient::SendIqGetBoardList()
  */
 void XmppClient::SendIqGameReport(CScriptVal data)
 {
-	JID xpartamuppJid(_xpartamuppId);
+	glooxwrapper::JID xpartamuppJid(_xpartamuppId);
 	jsval dataval = data.get();
 
 	// Setup some base stanza attributes
 	GameReport* game = new GameReport();
-	GameReportData *report = new GameReportData("game");
+	GameReportData *report = GameReportData::allocate("game");
 
 	// Iterate through all the properties reported and add them to the stanza.
 	std::vector<std::string> properties;
@@ -277,9 +305,9 @@ void XmppClient::SendIqGameReport(CScriptVal data)
 	game->m_GameReport.push_back(report);
 
 	// Send IQ
-	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	glooxwrapper::IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension(game);
-	DbgXMPP("SendGameReport [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendGameReport [" << tag_xml(iq) << "]");
 	_client->send(iq);
 };
 
@@ -290,13 +318,13 @@ void XmppClient::SendIqGameReport(CScriptVal data)
  */
 void XmppClient::SendIqRegisterGame(CScriptVal data)
 {
-	JID xpartamuppJid(_xpartamuppId);
+	glooxwrapper::JID xpartamuppJid(_xpartamuppId);
 	jsval dataval = data.get();
 
 	// Setup some base stanza attributes
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "register";
-	GameData *game = new GameData("game");
+	GameData *game = GameData::allocate("game");
 	// Add a fake ip which will be overwritten by the ip stamp XMPP module on the server.
 	game->addAttribute("ip", "fake");
 
@@ -314,9 +342,9 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
 	g->m_GameList.push_back(game);
 
 	// Send IQ
-	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	glooxwrapper::IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension(g);
-	DbgXMPP("SendIqRegisterGame [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendIqRegisterGame [" << tag_xml(iq) << "]");
 	_client->send(iq);
 }
 
@@ -325,16 +353,16 @@ void XmppClient::SendIqRegisterGame(CScriptVal data)
  */
 void XmppClient::SendIqUnregisterGame()
 {
-	JID xpartamuppJid( _xpartamuppId );
+	glooxwrapper::JID xpartamuppJid( _xpartamuppId );
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "unregister";
-	g->m_GameList.push_back( new GameData( "game" ) );
+	g->m_GameList.push_back( GameData::allocate( "game" ) );
 
-	IQ iq( gloox::IQ::Set, xpartamuppJid );
+	glooxwrapper::IQ iq( gloox::IQ::Set, xpartamuppJid );
 	iq.addExtension( g );
-	DbgXMPP("SendIqUnregisterGame [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendIqUnregisterGame [" << tag_xml(iq) << "]");
 	_client->send( iq );
 }
 
@@ -345,21 +373,21 @@ void XmppClient::SendIqUnregisterGame()
  * decides which - but we need to update the current players that are
  * in-game so the server can make the calculation.
  */
-void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
+void XmppClient::SendIqChangeStateGame(const std::string& nbp, const std::string& players)
 {
-	JID xpartamuppJid(_xpartamuppId);
+	glooxwrapper::JID xpartamuppJid(_xpartamuppId);
 
 	// Send IQ
 	GameListQuery* g = new GameListQuery();
 	g->m_Command = "changestate";
-	GameData* game = new GameData("game");
+	GameData* game = GameData::allocate("game");
 	game->addAttribute("nbp", nbp);
 	game->addAttribute("players", players);
 	g->m_GameList.push_back(game);
 
-	IQ iq(gloox::IQ::Set, xpartamuppJid);
+	glooxwrapper::IQ iq(gloox::IQ::Set, xpartamuppJid);
 	iq.addExtension( g );
-	DbgXMPP("SendIqChangeStateGame [" << iq.tag()->xml() << "]");
+	DbgXMPP("SendIqChangeStateGame [" << tag_xml(iq) << "]");
 	_client->send(iq);
 }
 
@@ -367,15 +395,15 @@ void XmppClient::SendIqChangeStateGame(std::string nbp, std::string players)
  * Account registration                              *
  *****************************************************/
 
-void XmppClient::handleRegistrationFields( const JID& /*from*/, int fields, std::string )
+void XmppClient::handleRegistrationFields( const glooxwrapper::JID& /*from*/, int fields, glooxwrapper::string )
 {
-	RegistrationFields vals;
+	glooxwrapper::RegistrationFields vals;
 	vals.username = _username;
 	vals.password = _password;
 	_registration->createAccount(fields, vals);
 }
 
-void XmppClient::handleRegistrationResult( const JID& /*from*/, RegistrationResult result )
+void XmppClient::handleRegistrationResult( const glooxwrapper::JID& /*from*/, gloox::RegistrationResult result )
 {
 	if (result == gloox::RegistrationSuccess)
 	{
@@ -384,7 +412,7 @@ void XmppClient::handleRegistrationResult( const JID& /*from*/, RegistrationResu
 	else
 	{
 	std::string msg;
-#define CASE(X, Y) case X: msg = Y; break
+#define CASE(X, Y) case gloox::X: msg = Y; break
 		switch(result)
 		{
 		CASE(RegistrationNotAcceptable, "Registration not acceptable");
@@ -403,17 +431,17 @@ void XmppClient::handleRegistrationResult( const JID& /*from*/, RegistrationResu
 	disconnect();
 }
 
-void XmppClient::handleAlreadyRegistered( const JID& /*from*/ )
+void XmppClient::handleAlreadyRegistered( const glooxwrapper::JID& /*from*/ )
 {
 	DbgXMPP("the account already exists");
 }
 
-void XmppClient::handleDataForm( const JID& /*from*/, const DataForm& /*form*/ )
+void XmppClient::handleDataForm( const glooxwrapper::JID& /*from*/, const glooxwrapper::DataForm& /*form*/ )
 {
 	DbgXMPP("dataForm received");
 }
 
-void XmppClient::handleOOB( const JID& /*from*/, const OOB& /* oob */ )
+void XmppClient::handleOOB( const glooxwrapper::JID& /*from*/, const glooxwrapper::OOB& /* oob */ )
 {
 	DbgXMPP("OOB registration requested");
 }
@@ -432,7 +460,7 @@ CScriptValRooted XmppClient::GUIGetPlayerList()
 	std::string presence;
 	CScriptValRooted playerList;
 	m_ScriptInterface.Eval("({})", playerList);
-	for(std::map<std::string, Presence::PresenceType>::const_iterator it = m_PlayerMap.begin(); it != m_PlayerMap.end(); ++it)
+	for(std::map<std::string, gloox::Presence::PresenceType>::const_iterator it = m_PlayerMap.begin(); it != m_PlayerMap.end(); ++it)
 	{
 		CScriptValRooted player;
 		GetPresenceString(it->second, presence);
@@ -516,7 +544,7 @@ CScriptValRooted XmppClient::GuiPollMessage()
 /**
  * Send a standard MUC textual message.
  */
-void XmppClient::SendMUCMessage(std::string message)
+void XmppClient::SendMUCMessage(const std::string& message)
 {
 	_mucRoom->send(message);
 }
@@ -535,38 +563,38 @@ void XmppClient::PushGuiMessage(const CScriptValRooted& message)
 /**
  * Handle a standard MUC textual message.
  */
-void XmppClient::handleMUCMessage( MUCRoom*, const Message& msg, bool )
+void XmppClient::handleMUCMessage( glooxwrapper::MUCRoom*, const glooxwrapper::Message& msg, bool )
 {
 	DbgXMPP(msg.from().resource() << " said " << msg.body());
 
 	CScriptValRooted message;
 	m_ScriptInterface.Eval("({ 'type':'mucmessage'})", message);
-	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().resource());
-	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().resource().to_string());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body().to_string());
 	PushGuiMessage(message);
 }
 
 /**
  * Handle a standard textual message.
  */
-void XmppClient::handleMessage( const Message& msg, MessageSession * /*session*/ )
+void XmppClient::handleMessage( const glooxwrapper::Message& msg, glooxwrapper::MessageSession * /*session*/ )
 {
-	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject().c_str()
-	  << ", message " << msg.body().c_str() << ", thread id " << msg.thread().c_str());
+	DbgXMPP("type " << msg.subtype() << ", subject " << msg.subject()
+	  << ", message " << msg.body() << ", thread id " << msg.thread());
 
 	CScriptValRooted message;
 	m_ScriptInterface.Eval("({'type':'message'})", message);
-	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username());
-	m_ScriptInterface.SetProperty(message.get(), "text", msg.body());
+	m_ScriptInterface.SetProperty(message.get(), "from", msg.from().username().to_string());
+	m_ScriptInterface.SetProperty(message.get(), "text", msg.body().to_string());
 	PushGuiMessage(message);
 }
 
 /**
  * Handle portions of messages containing custom stanza extensions.
  */
-bool XmppClient::handleIq( const IQ& iq )
+bool XmppClient::handleIq( const glooxwrapper::IQ& iq )
 {
-	DbgXMPP("handleIq [" << iq.tag()->xml() << "]");
+	DbgXMPP("handleIq [" << tag_xml(iq) << "]");
 
 	if(iq.subtype() == gloox::IQ::Result)
 	{
@@ -574,8 +602,8 @@ bool XmppClient::handleIq( const IQ& iq )
 		const BoardListQuery* bq = iq.findExtension<BoardListQuery>( ExtBoardListQuery );
 		if(gq)
 		{
-			for(std::vector<const PlayerData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it )
-				delete *it;
+			for(std::vector<const GameData*>::const_iterator it = m_GameList.begin(); it != m_GameList.end(); ++it )
+				GameData::free(*it);
 			m_GameList.clear();
 
 			for(std::vector<const GameData*>::const_iterator it = gq->m_GameList.begin(); it != gq->m_GameList.end(); ++it)
@@ -586,7 +614,7 @@ bool XmppClient::handleIq( const IQ& iq )
 		if(bq)
 		{
 			for(std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin(); it != m_BoardList.end(); ++it )
-				delete *it;
+				PlayerData::free(*it);
 			m_BoardList.clear();
 
 			for(std::vector<const PlayerData*>::const_iterator it = bq->m_BoardList.begin(); it != bq->m_BoardList.end(); ++it)
@@ -597,13 +625,13 @@ bool XmppClient::handleIq( const IQ& iq )
 	}
 	else if(iq.subtype() == gloox::IQ::Error)
 	{
-		StanzaError err = iq.error()->error();
+		gloox::StanzaError err = iq.error_error();
 		std::string msg = StanzaErrorToString(err);
 		CreateSimpleMessage("system", msg, "error");
 	}
 	else
 	{
-		CreateSimpleMessage("system", std::string("unknown subtype : ") + iq.tag()->name(), "error");
+		CreateSimpleMessage("system", std::string("unknown subtype : ") + tag_name(iq), "error");
 	}
 
 	return true;
@@ -617,7 +645,7 @@ bool XmppClient::handleIq( const IQ& iq )
  * @param text Body of the message
  * @param data Optional field, used for auxiliary data
  */
-void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::string level, std::string data)
+void XmppClient::CreateSimpleMessage(const std::string& type, const std::string& text, const std::string& level, const std::string& data)
 {
 	CScriptValRooted message;
 	m_ScriptInterface.Eval("({})", message);
@@ -635,18 +663,18 @@ void XmppClient::CreateSimpleMessage(std::string type, std::string text, std::st
 /**
  * Update local data when a user changes presence.
  */
-void XmppClient::handleMUCParticipantPresence(gloox::MUCRoom*, const gloox::MUCRoomParticipant participant, const gloox::Presence& presence)
+void XmppClient::handleMUCParticipantPresence(glooxwrapper::MUCRoom*, const glooxwrapper::MUCRoomParticipant participant, const glooxwrapper::Presence& presence)
 {
 	//std::string jid = participant.jid->full();
-	std::string nick = participant.nick->resource();
+	std::string nick = participant.nick->resource().to_string();
 	gloox::Presence::PresenceType presenceType = presence.presence();
-	if (presenceType == Presence::Unavailable)
+	if (presenceType == gloox::Presence::Unavailable)
 	{
-		if (!participant.newNick.empty() && (participant.flags & (UserNickChanged | UserSelf)))
+		if (!participant.newNick.empty() && (participant.flags & (gloox::UserNickChanged | gloox::UserSelf)))
 		{
 			// we have a nick change
-			m_PlayerMap[participant.newNick] = Presence::Unavailable;
-			CreateSimpleMessage("muc", nick, "nick", participant.newNick);
+			m_PlayerMap[participant.newNick.to_string()] = gloox::Presence::Unavailable;
+			CreateSimpleMessage("muc", nick, "nick", participant.newNick.to_string());
 		}
 		else
 			CreateSimpleMessage("muc", nick, "leave");
@@ -683,7 +711,7 @@ void XmppClient::SetNick(const std::string& nick)
  */
 void XmppClient::GetNick(std::string& nick)
 {
-	nick = _mucRoom->nick();
+	nick = _mucRoom->nick().to_string();
 }
 
 /**
@@ -715,7 +743,7 @@ void XmppClient::ban(const std::string& nick, const std::string& reason)
  */
 void XmppClient::SetPresence(const std::string& presence)
 {
-#define IF(x,y) if (presence == x) _mucRoom->setPresence(Presence::y)
+#define IF(x,y) if (presence == x) _mucRoom->setPresence(gloox::Presence::y)
 	IF("available", Available);
 	else IF("chat", Chat);
 	else IF("away", Away);
@@ -751,11 +779,11 @@ void XmppClient::GetPresence(const std::string& nick, std::string& presence)
  * @param p Presence to be converted
  * @param presence Variable to store the converted presence string in
  */
-void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& presence) const
+void XmppClient::GetPresenceString(const gloox::Presence::PresenceType p, std::string& presence) const
 {
 	switch(p)
 	{
-#define CASE(x,y) case Presence::x: presence = y; break
+#define CASE(x,y) case gloox::Presence::x: presence = y; break
 	CASE(Available, "available");
 	CASE(Chat, "chat");
 	CASE(Away, "away");
@@ -778,10 +806,10 @@ void XmppClient::GetPresenceString(const Presence::PresenceType p, std::string& 
  * @param err Error to be converted
  * @return Converted error string
  */
-std::string XmppClient::StanzaErrorToString(const StanzaError& err)
+std::string XmppClient::StanzaErrorToString(gloox::StanzaError err)
 {
 	std::string msg;
-#define CASE(X, Y) case X: return Y
+#define CASE(X, Y) case gloox::X: return Y
 	switch (err)
 	{
 	CASE(StanzaErrorBadRequest, "Bad request");

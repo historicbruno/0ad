@@ -88,7 +88,7 @@
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
-#include "lobby/XmppClient.h"
+#include "lobby/IXmppClient.h"
 #include "soundmanager/scripting/JSInterface_Sound.h"
 #include "soundmanager/ISoundManager.h"
 #include "tools/atlas/GameInterface/GameLoop.h"

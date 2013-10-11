@@ -21,7 +21,7 @@
  * GameReport, fairly generic custom stanza extension used
  * to report game statistics.
  */
-GameReport::GameReport( const gloox::Tag* tag ):StanzaExtension( ExtGameReport )
+GameReport::GameReport( const glooxwrapper::Tag* tag ):StanzaExtension( ExtGameReport )
 {
 	if( !tag || tag->name() != "report" || tag->xmlns() != XMLNS_GAMEREPORT )
 		return;
@@ -31,9 +31,9 @@ GameReport::GameReport( const gloox::Tag* tag ):StanzaExtension( ExtGameReport )
 /**
  * Required by gloox, used to serialize the GameReport into XML for sending.
  */
-gloox::Tag* GameReport::tag() const
+glooxwrapper::Tag* GameReport::tag() const
 {
-	gloox::Tag* t = new gloox::Tag( "report" );
+	glooxwrapper::Tag* t = glooxwrapper::Tag::allocate( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
 	std::vector<const GameReportData*>::const_iterator it = m_GameReport.begin();
@@ -46,13 +46,13 @@ gloox::Tag* GameReport::tag() const
 /**
  * Required by gloox, used to find the GameReport element in a recived IQ.
  */
-const std::string& GameReport::filterString() const
+const glooxwrapper::string& GameReport::filterString() const
 {
-	static const std::string filter = "/iq/report[@xmlns='" + XMLNS_GAMEREPORT + "']";
+	static const glooxwrapper::string filter = "/iq/report[@xmlns='" XMLNS_GAMEREPORT "']";
 	return filter;
 }
 
-gloox::StanzaExtension* GameReport::clone() const
+glooxwrapper::StanzaExtension* GameReport::clone() const
 {
 	GameReport* q = new GameReport();
 	return q;
@@ -62,32 +62,32 @@ gloox::StanzaExtension* GameReport::clone() const
  * BoardListQuery, custom IQ Stanza, used solely to
  * request and receive leaderboard data from server.
  */
-BoardListQuery::BoardListQuery( const gloox::Tag* tag ):StanzaExtension( ExtBoardListQuery )
+BoardListQuery::BoardListQuery( const glooxwrapper::Tag* tag ):StanzaExtension( ExtBoardListQuery )
 {
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_BOARDLIST )
 		return;
 
-	const gloox::ConstTagList boardTags = tag->findTagList( "query/board" );
-	gloox::ConstTagList::const_iterator it = boardTags.begin();
+	const glooxwrapper::ConstTagList boardTags = tag->findTagList_clone( "query/board" );
+	glooxwrapper::ConstTagList::const_iterator it = boardTags.begin();
 	for ( ; it != boardTags.end(); ++it )
-		m_BoardList.push_back( (*it)->clone() );
+		m_BoardList.push_back( *it );
 }
 
 /**
  * Required by gloox, used to find the BoardList element in a recived IQ.
  */
-const std::string& BoardListQuery::filterString() const
+const glooxwrapper::string& BoardListQuery::filterString() const
 {
-	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_BOARDLIST + "']";
+	static const glooxwrapper::string filter = "/iq/query[@xmlns='" XMLNS_BOARDLIST "']";
 	return filter;
 }
 
 /**
  * Required by gloox, used to serialize the BoardList request into XML for sending.
  */
-gloox::Tag* BoardListQuery::tag() const
+glooxwrapper::Tag* BoardListQuery::tag() const
 {
-	gloox::Tag* t = new gloox::Tag( "query" );
+	glooxwrapper::Tag* t = glooxwrapper::Tag::allocate( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
 	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
@@ -97,7 +97,7 @@ gloox::Tag* BoardListQuery::tag() const
 	return t;
 }
 
-gloox::StanzaExtension* BoardListQuery::clone() const
+glooxwrapper::StanzaExtension* BoardListQuery::clone() const
 {
 	BoardListQuery* q = new BoardListQuery();
 	return q;
@@ -107,7 +107,7 @@ BoardListQuery::~BoardListQuery()
 {
 	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
 	for( ; it != m_BoardList.end(); ++it )
-		delete *it;
+		PlayerData::free(*it);
 	m_BoardList.clear();
 }
 
@@ -116,41 +116,42 @@ BoardListQuery::~BoardListQuery()
  * the listing of games from the server, and register/
  * unregister/changestate games on the server.
  */
-GameListQuery::GameListQuery( const gloox::Tag* tag ):StanzaExtension( ExtGameListQuery )
+GameListQuery::GameListQuery( const glooxwrapper::Tag* tag ):StanzaExtension( ExtGameListQuery )
 {
 	if( !tag || tag->name() != "query" || tag->xmlns() != XMLNS_GAMELIST )
 		return;
 
-	const gloox::Tag* c = tag->findTag( "query/game" );
+	const glooxwrapper::Tag* c = tag->findTag_clone( "query/game" );
 	if (c)
 		m_Command = c->cdata();
+	glooxwrapper::Tag::free(c);
 
-	const gloox::ConstTagList games = tag->findTagList( "query/game" );
-	gloox::ConstTagList::const_iterator it = games.begin();
+	const glooxwrapper::ConstTagList games = tag->findTagList_clone( "query/game" );
+	glooxwrapper::ConstTagList::const_iterator it = games.begin();
 	for ( ; it != games.end(); ++it )
-		m_GameList.push_back( (*it)->clone() );
+		m_GameList.push_back( *it );
 }
 
 /**
  * Required by gloox, used to find the GameList element in a recived IQ.
  */
-const std::string& GameListQuery::filterString() const
+const glooxwrapper::string& GameListQuery::filterString() const
 {
-	static const std::string filter = "/iq/query[@xmlns='" + XMLNS_GAMELIST + "']";
+	static const glooxwrapper::string filter = "/iq/query[@xmlns='" XMLNS_GAMELIST "']";
 	return filter;
 }
 
 /**
  * Required by gloox, used to serialize the game object into XML for sending.
  */
-gloox::Tag* GameListQuery::tag() const
+glooxwrapper::Tag* GameListQuery::tag() const
 {
-	gloox::Tag* t = new gloox::Tag( "query" );
+	glooxwrapper::Tag* t = glooxwrapper::Tag::allocate( "query" );
 	t->setXmlns( XMLNS_GAMELIST );
 
 	// Check for register / unregister command
 	if(!m_Command.empty())
-		t->addChild(new gloox::Tag("command", m_Command));
+		t->addChild(glooxwrapper::Tag::allocate("command", m_Command));
 
 	std::vector<const GameData*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
@@ -159,7 +160,7 @@ gloox::Tag* GameListQuery::tag() const
 	return t;
 }
 
-gloox::StanzaExtension* GameListQuery::clone() const
+glooxwrapper::StanzaExtension* GameListQuery::clone() const
 {
 	GameListQuery* q = new GameListQuery();
 	return q;
@@ -167,8 +168,8 @@ gloox::StanzaExtension* GameListQuery::clone() const
 
 GameListQuery::~GameListQuery()
 {
-	std::vector<const PlayerData*>::const_iterator it = m_GameList.begin();
+	std::vector<const GameData*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
-		delete *it;
+		GameData::free(*it);
 	m_GameList.clear();
 }

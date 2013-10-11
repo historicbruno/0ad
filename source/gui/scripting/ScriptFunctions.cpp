@@ -50,7 +50,7 @@
 #include "ps/ConfigDB.h"
 #include "renderer/scripting/JSInterface_Renderer.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
-#include "lobby/XmppClient.h"
+#include "lobby/IXmppClient.h"
 #include "lobby/sha.h"
 
 #include "simulation2/Simulation2.h"
@@ -621,7 +621,7 @@ void StartXmppClient(void* cbdata, std::string sUsername, std::string sPassword,
 
 	ENSURE(!g_XmppClient);
 
-	g_XmppClient = new XmppClient(guiManager->GetScriptInterface(), sUsername, sPassword, sRoom, sNick);
+	g_XmppClient = IXmppClient::create(guiManager->GetScriptInterface(), sUsername, sPassword, sRoom, sNick);
 	g_rankedGame = true;
 }
 
@@ -631,7 +631,7 @@ void StartRegisterXmppClient(void* cbdata, std::string sUsername, std::string sP
 
 	ENSURE(!g_XmppClient);
 
-	g_XmppClient = new XmppClient(guiManager->GetScriptInterface(), sUsername, sPassword, "", "", true);
+	g_XmppClient = IXmppClient::create(guiManager->GetScriptInterface(), sUsername, sPassword, "", "", true);
 }
 
 bool HasXmppClient(void* UNUSED(cbdata))
