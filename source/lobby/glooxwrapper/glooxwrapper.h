@@ -89,6 +89,7 @@ namespace glooxwrapper
 	class IQ;
 	class JID;
 	class MUCRoom;
+	class MUCRoomConfigHandler;
 	class Message;
 	class MessageSession;
 	class OOB;
@@ -487,7 +488,7 @@ namespace glooxwrapper
 		gloox::MUCRoom* m_Wrapped;
 		MUCRoomHandlerWrapper* m_HandlerWrapper;
 	public:
-		MUCRoom(Client* parent, const JID& nick, MUCRoomHandler* mrh);
+		MUCRoom(Client* parent, const JID& nick, MUCRoomHandler* mrh, MUCRoomConfigHandler* mrch = 0);
 		~MUCRoom();
 		const string nick() const;
 		void join(gloox::Presence::PresenceType type = gloox::Presence::Available, const string& status = "", int priority = 0);

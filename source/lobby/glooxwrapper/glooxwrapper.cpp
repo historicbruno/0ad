@@ -511,7 +511,7 @@ glooxwrapper::string glooxwrapper::Message::thread() const
 }
 
 
-glooxwrapper::MUCRoom::MUCRoom(Client* parent, const JID& nick, MUCRoomHandler* mrh)
+glooxwrapper::MUCRoom::MUCRoom(Client* parent, const JID& nick, MUCRoomHandler* mrh, MUCRoomConfigHandler* UNUSED(mrch))
 {
 	m_HandlerWrapper = new MUCRoomHandlerWrapper(mrh);
 	m_Wrapped = new gloox::MUCRoom(parent ? parent->getWrapped() : NULL, nick.getWrapped(), m_HandlerWrapper);
