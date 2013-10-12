@@ -248,8 +248,8 @@
 		sprite_selectarea="BackgroundRed"
 		textcolor="white"
 		textcolor_selected="gold"
-		masking_enabled="true"
-		masking_char="*"
+		mask="true"
+		mask_char="*"
 	/>
 
 	<style 	name="StoneDropDown"

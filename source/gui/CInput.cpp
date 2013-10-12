@@ -51,8 +51,8 @@ CInput::CInput()
 	AddSetting(GUIST_CStrW,					"caption");
 	AddSetting(GUIST_int,					"cell_id");
 	AddSetting(GUIST_CStrW,					"font");
-	AddSetting(GUIST_CStrW,					"masking_char");
-	AddSetting(GUIST_bool,					"masking_enabled");
+	AddSetting(GUIST_CStrW,					"mask_char");
+	AddSetting(GUIST_bool,					"mask");
 	AddSetting(GUIST_int,					"max_length");
 	AddSetting(GUIST_bool,					"multiline");
 	AddSetting(GUIST_bool,					"scrollbar");
@@ -1019,11 +1019,11 @@ void CInput::Draw()
 	bool scrollbar;
 	float buffer_zone;
 	bool multiline;
-	bool masking_enabled;
+	bool mask;
 	GUI<bool>::GetSetting(this, "scrollbar", scrollbar);
 	GUI<float>::GetSetting(this, "buffer_zone", buffer_zone);
 	GUI<bool>::GetSetting(this, "multiline", multiline);
-	GUI<bool>::GetSetting(this, "masking_enabled", masking_enabled);
+	GUI<bool>::GetSetting(this, "mask", mask);
 
 	if (scrollbar && multiline)
 	{
@@ -1043,12 +1043,13 @@ void CInput::Draw()
 		// Get pointer of caption, it might be very large, and we don't
 		//  want to copy it continuously.
 		CStrW *pCaption = NULL;
-		wchar_t masking_char = L'*';
-		if (masking_enabled)
+		wchar_t mask_char = L'*';
+		if (mask)
 		{
-			CStrW *pMaskingCh = (CStrW*)m_Settings["masking_char"].m_pSetting;
-			if (pMaskingCh->length() > 0)
-				masking_char = (*pMaskingCh)[0];
+			CStrW maskStr;
+			GUI<CStrW>::GetSetting(this, "mask_char", maskStr);
+			if (maskStr.length() > 0)
+				mask_char = maskStr[0];
 		}
 		else
 			pCaption = (CStrW*)m_Settings["caption"].m_pSetting;
@@ -1260,10 +1261,10 @@ void CInput::Draw()
 
 					if (i < (int)it->m_ListOfX.size())
 					{
-						if (!masking_enabled)
+						if (!mask)
 							x_pointer += (float)font.GetCharacterWidth((*pCaption)[it->m_ListStart + i]);
 						else
-							x_pointer += (float)font.GetCharacterWidth(masking_char);
+							x_pointer += (float)font.GetCharacterWidth(mask_char);
 					}
 				}
 
@@ -1356,10 +1357,10 @@ void CInput::Draw()
 
 					if (i != (int)it->m_ListOfX.size())
 					{
-						if (!masking_enabled)
+						if (!mask)
 							textRenderer.PrintfAdvance(L"%lc", (*pCaption)[it->m_ListStart + i]);
 						else
-							textRenderer.PrintfAdvance(L"%lc", masking_char);
+							textRenderer.PrintfAdvance(L"%lc", mask_char);
 					}
 
 					// check it's now outside a one-liner, then we'll break
