@@ -28,16 +28,14 @@ export ARCH=${ARCH:="x86_64"}
 #  but previously they were in /Developer/SDKs)
 # TODO: we could get this from xcode-select but the user must set that up
 #export SYSROOT=${SYSROOT="/Developer/SDKs/MacOSX10.5.sdk"}
-export SYSROOT=${SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk"}
-export MIN_OSX_VERSION=${MIN_OSX_VERSION="10.6"}
+export SYSROOT=${SYSROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk"}
+export MIN_OSX_VERSION=${MIN_OSX_VERSION="10.5"}
 
-# 0 A.D. release version, e.g. Alpha 12 is 0.0.12
+# 0 A.D. release version, e.g. Alpha 15 is 0.0.15
 BUNDLE_VERSION=${BUNDLE_VERSION:="0.0.0"}
 
-# Define compiler as "gcc" (in case anything expects e.g. gcc-4.2)
-# On newer OS X versions, this will be a symbolic link to LLVM GCC
-# TODO: don't rely on that
-export CC=${CC:="gcc"} CXX=${CXX:="g++"}
+# Define compiler as "clang" (in case anything assumes e.g. gcc-4.2)
+export CC=${CC:="clang"} CXX=${CXX:="clang++"}
 
 die()
 {
