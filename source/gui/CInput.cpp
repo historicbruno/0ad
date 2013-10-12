@@ -51,6 +51,8 @@ CInput::CInput()
 	AddSetting(GUIST_CStrW,					"caption");
 	AddSetting(GUIST_int,					"cell_id");
 	AddSetting(GUIST_CStrW,					"font");
+	AddSetting(GUIST_CStrW,					"masking_char");
+	AddSetting(GUIST_bool,					"masking_enabled");
 	AddSetting(GUIST_int,					"max_length");
 	AddSetting(GUIST_bool,					"multiline");
 	AddSetting(GUIST_bool,					"scrollbar");
@@ -1017,9 +1019,11 @@ void CInput::Draw()
 	bool scrollbar;
 	float buffer_zone;
 	bool multiline;
+	bool masking_enabled;
 	GUI<bool>::GetSetting(this, "scrollbar", scrollbar);
 	GUI<float>::GetSetting(this, "buffer_zone", buffer_zone);
 	GUI<bool>::GetSetting(this, "multiline", multiline);
+	GUI<bool>::GetSetting(this, "masking_enabled", masking_enabled);
 
 	if (scrollbar && multiline)
 	{
@@ -1038,7 +1042,16 @@ void CInput::Draw()
 		
 		// Get pointer of caption, it might be very large, and we don't
 		//  want to copy it continuously.
-		CStrW *pCaption = (CStrW*)m_Settings["caption"].m_pSetting;
+		CStrW *pCaption = NULL;
+		wchar_t masking_char = L'*';
+		if (masking_enabled)
+		{
+			CStrW *pMaskingCh = (CStrW*)m_Settings["masking_char"].m_pSetting;
+			if (pMaskingCh->length() > 0)
+				masking_char = (*pMaskingCh)[0];
+		}
+		else
+			pCaption = (CStrW*)m_Settings["caption"].m_pSetting;
 
 		CGUISpriteInstance *sprite=NULL, *sprite_selectarea=NULL;
 		int cell_id;
@@ -1246,7 +1259,12 @@ void CInput::Draw()
 					}
 
 					if (i < (int)it->m_ListOfX.size())
-						x_pointer += (float)font.GetCharacterWidth((*pCaption)[it->m_ListStart + i]);
+					{
+						if (!masking_enabled)
+							x_pointer += (float)font.GetCharacterWidth((*pCaption)[it->m_ListStart + i]);
+						else
+							x_pointer += (float)font.GetCharacterWidth(masking_char);
+					}
 				}
 
 				if (done)
@@ -1337,7 +1355,12 @@ void CInput::Draw()
 					}
 
 					if (i != (int)it->m_ListOfX.size())
-						textRenderer.PrintfAdvance(L"%lc", (*pCaption)[it->m_ListStart + i]);
+					{
+						if (!masking_enabled)
+							textRenderer.PrintfAdvance(L"%lc", (*pCaption)[it->m_ListStart + i]);
+						else
+							textRenderer.PrintfAdvance(L"%lc", masking_char);
+					}
 
 					// check it's now outside a one-liner, then we'll break
 					if (!multiline && i < (int)it->m_ListOfX.size())				
