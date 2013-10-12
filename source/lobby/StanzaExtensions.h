@@ -31,10 +31,6 @@
 #define ExtGameReport 1405
 #define XMLNS_GAMEREPORT "jabber:iq:gamereport"
 
-typedef glooxwrapper::Tag PlayerData;
-typedef glooxwrapper::Tag GameData;
-typedef glooxwrapper::Tag GameReportData;
-
 class GameReport : public glooxwrapper::StanzaExtension
 {
 public:
@@ -49,7 +45,7 @@ public:
 	virtual glooxwrapper::Tag* tag() const;
 	virtual glooxwrapper::StanzaExtension* clone() const;
 
-	std::vector<const GameReportData*> m_GameReport;
+	std::vector<const glooxwrapper::Tag*> m_GameReport;
 };
 
 class GameListQuery : public glooxwrapper::StanzaExtension
@@ -69,7 +65,7 @@ public:
 	~GameListQuery();
 
 	glooxwrapper::string m_Command;
-	std::vector<const GameData*> m_GameList;
+	std::vector<const glooxwrapper::Tag*> m_GameList;
 };
 
 class BoardListQuery : public glooxwrapper::StanzaExtension
@@ -88,6 +84,6 @@ public:
 
 	~BoardListQuery();
 
-	std::vector<const PlayerData*> m_BoardList;
+	std::vector<const glooxwrapper::Tag*> m_BoardList;
 };
 #endif

@@ -29,9 +29,6 @@
 //Game - script
 class ScriptInterface;
 
-typedef glooxwrapper::Tag PlayerData;
-typedef glooxwrapper::Tag GameData;
-
 namespace glooxwrapper
 {
 	class Client;
@@ -45,14 +42,14 @@ private:
 	//Game - script
 	ScriptInterface& m_ScriptInterface;
 	//Components
-	glooxwrapper::Client* _client;
-	glooxwrapper::MUCRoom* _mucRoom;
-	glooxwrapper::Registration* _registration;
+	glooxwrapper::Client* m_client;
+	glooxwrapper::MUCRoom* m_mucRoom;
+	glooxwrapper::Registration* m_registration;
 	//Account infos
-	std::string _username;
-	std::string _password;
-	std::string _nick;
-	std::string _xpartamuppId;
+	std::string m_username;
+	std::string m_password;
+	std::string m_nick;
+	std::string m_xpartamuppId;
 
 public:
 	//Basic
@@ -133,9 +130,9 @@ private:
 	/// Map of players
 	std::map<std::string, gloox::Presence::PresenceType> m_PlayerMap;
 	/// List of games
-	std::vector< const GameData* > m_GameList;
+	std::vector<const glooxwrapper::Tag*> m_GameList;
 	/// List of rankings
-	std::vector< const PlayerData* > m_BoardList;
+	std::vector<const glooxwrapper::Tag*> m_BoardList;
 	/// Queue of messages
 	std::deque<CScriptValRooted> m_GuiMessageQueue;
 };

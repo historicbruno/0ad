@@ -36,7 +36,7 @@ glooxwrapper::Tag* GameReport::tag() const
 	glooxwrapper::Tag* t = glooxwrapper::Tag::allocate( "report" );
 	t->setXmlns( XMLNS_GAMEREPORT );
 
-	std::vector<const GameReportData*>::const_iterator it = m_GameReport.begin();
+	std::vector<const glooxwrapper::Tag*>::const_iterator it = m_GameReport.begin();
 	for( ; it != m_GameReport.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -90,7 +90,7 @@ glooxwrapper::Tag* BoardListQuery::tag() const
 	glooxwrapper::Tag* t = glooxwrapper::Tag::allocate( "query" );
 	t->setXmlns( XMLNS_BOARDLIST );
 
-	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
+	std::vector<const glooxwrapper::Tag*>::const_iterator it = m_BoardList.begin();
 	for( ; it != m_BoardList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -105,9 +105,9 @@ glooxwrapper::StanzaExtension* BoardListQuery::clone() const
 
 BoardListQuery::~BoardListQuery()
 {
-	std::vector<const PlayerData*>::const_iterator it = m_BoardList.begin();
+	std::vector<const glooxwrapper::Tag*>::const_iterator it = m_BoardList.begin();
 	for( ; it != m_BoardList.end(); ++it )
-		PlayerData::free(*it);
+		glooxwrapper::Tag::free(*it);
 	m_BoardList.clear();
 }
 
@@ -153,7 +153,7 @@ glooxwrapper::Tag* GameListQuery::tag() const
 	if(!m_Command.empty())
 		t->addChild(glooxwrapper::Tag::allocate("command", m_Command));
 
-	std::vector<const GameData*>::const_iterator it = m_GameList.begin();
+	std::vector<const glooxwrapper::Tag*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
 		t->addChild( (*it)->clone() );
 
@@ -168,8 +168,8 @@ glooxwrapper::StanzaExtension* GameListQuery::clone() const
 
 GameListQuery::~GameListQuery()
 {
-	std::vector<const GameData*>::const_iterator it = m_GameList.begin();
+	std::vector<const glooxwrapper::Tag*>::const_iterator it = m_GameList.begin();
 	for( ; it != m_GameList.end(); ++it )
-		GameData::free(*it);
+		glooxwrapper::Tag::free(*it);
 	m_GameList.clear();
 }
