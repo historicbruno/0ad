@@ -1404,10 +1404,21 @@ void CInput::UpdateText(int from, int to_before, int to_after)
 	CStrW font_name;
 	float buffer_zone;
 	bool multiline;
+	bool mask;
 	GUI<CStrW>::GetSetting(this, "font", font_name);
 	GUI<CStrW>::GetSetting(this, "caption", caption);
 	GUI<float>::GetSetting(this, "buffer_zone", buffer_zone);
 	GUI<bool>::GetSetting(this, "multiline", multiline);
+	GUI<bool>::GetSetting(this, "mask", mask);
+
+	wchar_t mask_char = L'*';
+	if (mask)
+	{
+		CStrW maskStr;
+		GUI<CStrW>::GetSetting(this, "mask_char", maskStr);
+		if (maskStr.length() > 0)
+			mask_char = maskStr[0];
+	}
 
 	// Ensure positions are valid after caption changes
 	m_iBufferPos = std::min(m_iBufferPos, (int)caption.size());
@@ -1598,7 +1609,10 @@ void CInput::UpdateText(int from, int to_before, int to_after)
 				caption[i] == L'-'*/)
 				last_word_started = i+1;
 
-			x_pos += (float)font.GetCharacterWidth(caption[i]);
+			if (!mask)
+				x_pos += (float)font.GetCharacterWidth(caption[i]);
+			else
+				x_pos += (float)font.GetCharacterWidth(mask_char);
 
 			if (x_pos >= GetTextAreaWidth() && multiline)
 			{

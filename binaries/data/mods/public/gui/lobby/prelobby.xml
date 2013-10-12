@@ -93,7 +93,7 @@
 			<object type="text" size="0 40 200 70" style="RightLabelText">
 				Password again:
 			</object>
-			<object name="registerPasswordAgain" type="input" size="210 40 100%-32 64" style="StoneInput">
+			<object name="registerPasswordAgain" type="input" size="210 40 100%-32 64" style="StonePasswordInput">
 				<action on="Press">
 					lobbyStartRegister()
 				</action>
