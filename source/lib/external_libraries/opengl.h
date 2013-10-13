@@ -57,14 +57,14 @@
 // including GL/glext.h.
 #undef GL_GLEXT_PROTOTYPES
 
-#if CONFIG2_GLES
-//# include <GLES2/gl2ext.h>
-#elif OS_MACOSX || OS_MAC
-# include <OpenGL/glext.h>
-#else
-# include <GL/glext.h>
-# if OS_WIN
-#  include <GL/wglext.h>
+#if !CONFIG2_GLES
+# if OS_MACOSX || OS_MAC
+#  include <OpenGL/glext.h>
+# else
+#  include <GL/glext.h>
+#  if OS_WIN
+#   include <GL/wglext.h>
+#  endif
 # endif
 #endif
 
