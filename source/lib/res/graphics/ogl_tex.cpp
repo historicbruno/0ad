@@ -103,9 +103,9 @@ static bool fmt_is_s3tc(GLenum fmt)
 {
 	switch(fmt)
 	{
+#if !CONFIG2_GLES
 	case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 	case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-#if !CONFIG2_GLES
 	case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
 	case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 #endif
@@ -129,15 +129,17 @@ static GLint choose_fmt(size_t bpp, size_t flags)
 	{
 		switch(dxt)
 		{
+#if !CONFIG2_GLES
 		case DXT1A:
 			return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 		case 1:
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-#if !CONFIG2_GLES
 		case 3:
 			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 		case 5:
 			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+#else
+		return GL_RGBA;
 #endif
 		default:
 			DEBUG_WARN_ERR(ERR::LOGIC);	// invalid DXT value
@@ -166,7 +168,13 @@ static GLint choose_fmt(size_t bpp, size_t flags)
 		ENSURE(alpha);
 		// GLES can support BGRA via GL_EXT_texture_format_BGRA8888
 		// (TODO: can we rely on support for that extension?)
+#if CONFIG2_GLES
+		// GLES never supports BGRA
+		ENSURE(!bgr);
+		return GL_RGBA;
+#else
 		return bgr? GL_BGRA_EXT : GL_RGBA;
+#endif
 	default:
 		DEBUG_WARN_ERR(ERR::LOGIC);	// invalid bpp
 		return 0;
@@ -344,7 +352,6 @@ static void state_latch(OglTexState* ots)
 #if !CONFIG2_GLES
 	if((wrap_s != GL_CLAMP && wrap_s != GL_REPEAT) || (wrap_t != GL_CLAMP && wrap_t != GL_REPEAT))
 		ogl_SquelchError(GL_INVALID_ENUM);
-#endif
 
 	// anisotropy
 	const GLfloat anisotropy = ots->anisotropy;
@@ -352,6 +359,7 @@ static void state_latch(OglTexState* ots)
 	{
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
+#endif
 }
 
 

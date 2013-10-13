@@ -58,7 +58,7 @@
 #undef GL_GLEXT_PROTOTYPES
 
 #if CONFIG2_GLES
-# include <GLES2/gl2ext.h>
+//# include <GLES2/gl2ext.h>
 #elif OS_MACOSX || OS_MAC
 # include <OpenGL/glext.h>
 #else
