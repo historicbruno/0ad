@@ -35,7 +35,7 @@
 		</Postproc>
 	</Environment>
 	<Camera>
-		<Position x="685.651" y="63.796" z="725.442"/>
+		<Position x="693.369" y="91.6323" z="659.412"/>
 		<Rotation angle="0"/>
 		<Declination angle="0.610865"/>
 	</Camera>
@@ -55,7 +55,7 @@
         "g": 46,
         "r": 46
       },
-      "Name": "",
+      "Name": "Player 1",
       "Resources": {
         "food": 300,
         "metal": 300,
@@ -83,7 +83,7 @@
         "g": 20,
         "r": 150
       },
-      "Name": "",
+      "Name": "Player 2",
       "Resources": {
         "food": 300,
         "metal": 300,
@@ -161,7 +161,7 @@
 		<Entity uid="29">
 			<Template>gaia/geology_stonemine_desert_quarry</Template>
 			<Player>0</Player>
-			<Position x="289.27131" z="192.00934"/>
+			<Position x="287.14658" z="194.0842"/>
 			<Orientation y="-0.3257"/>
 		</Entity>
 		<Entity uid="30">
@@ -6404,7 +6404,7 @@
 		<Entity uid="1153">
 			<Template>gaia/flora_tree_cretan_date_palm_patch</Template>
 			<Player>0</Player>
-			<Position x="277.77482" z="190.9018"/>
+			<Position x="275.6501" z="192.97666"/>
 			<Orientation y="-1.05936"/>
 		</Entity>
 		<Entity uid="1154">
@@ -8756,32 +8756,74 @@
 			<Actor seed="38254"/>
 		</Entity>
 		<Entity uid="1589">
-			<Template>skirmish/units/maur_support_elephant</Template>
+			<Template>skirmish/units/special_starting_unit</Template>
 			<Player>1</Player>
 			<Position x="677.03241" z="767.17194"/>
 			<Orientation y="-2.31159"/>
 			<Actor seed="24656"/>
 		</Entity>
 		<Entity uid="1590">
-			<Template>skirmish/units/maur_support_elephant</Template>
+			<Template>skirmish/units/special_starting_unit</Template>
 			<Player>2</Player>
 			<Position x="283.94956" z="284"/>
 			<Orientation y="-0.87375"/>
 			<Actor seed="47906"/>
 		</Entity>
-		<Entity uid="1591">
-			<Template>skirmish/units/brit_war_dog_b</Template>
+		<Entity uid="1593">
+			<Template>skirmish/structures/default_defense_tower</Template>
 			<Player>1</Player>
-			<Position x="677.28766" z="767.72675"/>
-			<Orientation y="-2.15458"/>
-			<Actor seed="28940"/>
+			<Position x="603.48981" z="781.41901"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="19518"/>
 		</Entity>
-		<Entity uid="1592">
-			<Template>skirmish/units/brit_war_dog_b</Template>
+		<Entity uid="1594">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>1</Player>
+			<Position x="709.99634" z="695.83271"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="62318"/>
+		</Entity>
+		<Entity uid="1595">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>1</Player>
+			<Position x="781.19941" z="785.35785"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="26002"/>
+		</Entity>
+		<Entity uid="1596">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>1</Player>
+			<Position x="679.20887" z="871.93348"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="33644"/>
+		</Entity>
+		<Entity uid="1597">
+			<Template>skirmish/structures/default_defense_tower</Template>
 			<Player>2</Player>
-			<Position x="283.65662" z="283.91443"/>
-			<Orientation y="-0.79235"/>
-			<Actor seed="41358"/>
+			<Position x="317.67722" z="188.6865"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="19178"/>
+		</Entity>
+		<Entity uid="1598">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>2</Player>
+			<Position x="292.62687" z="335.12418"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="38824"/>
+		</Entity>
+		<Entity uid="1599">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>2</Player>
+			<Position x="390.38276" z="260.94883"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="13484"/>
+		</Entity>
+		<Entity uid="1600">
+			<Template>skirmish/structures/default_defense_tower</Template>
+			<Player>2</Player>
+			<Position x="218.35834" z="275.16254"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="3396"/>
 		</Entity>
 	</Entities>
 	<Paths/>
