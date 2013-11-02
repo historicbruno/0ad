@@ -1,4 +1,4 @@
-/* Copyright (c) 2012 Wildfire Games
+/* Copyright (c) 2013 Wildfire Games
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <sstream>
 
+#include "lib/external_libraries/libsdl.h"
 #include "lib/ogl.h"
 #include "lib/sysdep/cursor.h"
 #include "ogl_tex.h"
@@ -75,6 +76,49 @@ static Status load_sys_cursor(const PIVFS& vfs, const VfsPath& pathname, int hx,
 #endif
 }
 
+
+class SDLCursor
+{
+	SDL_Surface* surface;
+	SDL_Cursor* cursor;
+
+public:
+	Status create(const PIVFS& vfs, const VfsPath& pathname, int hotspotx_, int hotspoty_)
+	{
+		shared_ptr<u8> file; size_t fileSize;
+		RETURN_STATUS_IF_ERR(vfs->LoadFile(pathname, file, fileSize));
+
+		ScopedTex t;
+		RETURN_STATUS_IF_ERR(tex_decode(file, fileSize, &t));
+
+		// convert to required BGRA format.
+		const size_t flags = (t.flags | TEX_BGR) & ~TEX_DXT;
+		RETURN_STATUS_IF_ERR(tex_transform_to(&t, flags));
+		void* bgra_img = tex_get_data(&t);
+		if(!bgra_img)
+			WARN_RETURN(ERR::FAIL);
+
+		surface = SDL_CreateRGBSurfaceFrom(bgra_img, (int)t.w, (int)t.h, 32, (int)t.w*4, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+		if (!surface)
+			return ERR::FAIL;
+		cursor = SDL_CreateColorCursor(surface, hotspotx_, hotspoty_);
+		if (!cursor)
+			return ERR::FAIL;
+
+		return INFO::OK;
+	}
+
+	void set()
+	{
+		SDL_SetCursor(cursor);
+	}
+
+	void destroy()
+	{
+		SDL_FreeCursor(cursor);
+		SDL_FreeSurface(surface);
+	}
+};
 
 // no init is necessary because this is stored in struct Cursor, which
 // is 0-initialized by h_mgr.
@@ -151,6 +195,7 @@ enum CursorKind
 {
 	CK_Default,
 	CK_System,
+	CK_SDL,
 	CK_OpenGL
 };
 
@@ -163,6 +208,9 @@ struct Cursor
 
 	// valid iff kind == CK_System
 	sys_cursor system_cursor;
+
+	// valid iff kind == CK_SDL
+	SDLCursor sdl_cursor;
 
 	// valid iff kind == CK_OpenGL
 	GLCursor gl_cursor;
@@ -187,9 +235,15 @@ static void Cursor_dtor(Cursor* c)
 		sys_cursor_free(c->system_cursor);
 		break;
 
+	case CK_SDL:
+		c->sdl_cursor.destroy();
+		break;
+
 	case CK_OpenGL:
 		c->gl_cursor.destroy();
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 		sys_cursor_free(c->gl_empty_system_cursor);
+#endif
 		break;
 
 	default:
@@ -215,15 +269,26 @@ static Status Cursor_reload(Cursor* c, const PIVFS& vfs, const VfsPath& name, Ha
 
 	const VfsPath pathnameImage = pathname.ChangeExtension(L".png");
 
-	// try loading as system cursor (2d, hardware accelerated)
-	if(!c->forceGL && load_sys_cursor(vfs, pathnameImage, hotspotx, hotspoty, &c->system_cursor) == INFO::OK)
-		c->kind = CK_System;
+	if(!c->forceGL)
+	{
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		// try loading as SDL 2.0 cursor
+		if (c->sdl_cursor.create(vfs, pathnameImage, hotspotx, hotspoty) == INFO::OK)
+			c->kind = CK_SDL;
+#else
+		// try loading as system cursor (2d, hardware accelerated)
+		if (load_sys_cursor(vfs, pathnameImage, hotspotx, hotspoty, &c->system_cursor) == INFO::OK)
+			c->kind = CK_System;
+#endif
+	}
 	// fall back to GLCursor (system cursor code is disabled or failed)
 	else if(c->gl_cursor.create(vfs, pathnameImage, hotspotx, hotspoty) == INFO::OK)
 	{
 		c->kind = CK_OpenGL;
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 		// (we need to hide the system cursor when using a OpenGL cursor)
 		sys_cursor_create_empty(&c->gl_empty_system_cursor);
+#endif
 	}
 	// everything failed, leave cursor unchanged
 	else
@@ -243,6 +308,9 @@ static Status Cursor_validate(const Cursor* c)
 		if(c->system_cursor == 0)
 			WARN_RETURN(ERR::_1);
 		break;
+
+	case CK_SDL:
+		break;	// nothing to do
 
 	case CK_OpenGL:
 		RETURN_STATUS_IF_ERR(c->gl_cursor.validate());
@@ -267,6 +335,10 @@ static Status Cursor_to_string(const Cursor* c, wchar_t* buf)
 
 	case CK_System:
 		type = L"sys";
+		break;
+
+	case CK_SDL:
+		type = L"sdl";
 		break;
 
 	case CK_OpenGL:
@@ -311,7 +383,11 @@ Status cursor_draw(const PIVFS& vfs, const wchar_t* name, int x, int y, bool for
 	// hide the cursor
 	if(!name)
 	{
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 		sys_cursor_set(0);
+#else
+		SDL_ShowCursor(SDL_DISABLE);
+#endif
 		return INFO::OK;
 	}
 
@@ -331,15 +407,24 @@ Status cursor_draw(const PIVFS& vfs, const wchar_t* name, int x, int y, bool for
 	case CK_System:
 		sys_cursor_set(c->system_cursor);
 		break;
+		
+	case CK_SDL:
+		c->sdl_cursor.set();
+		SDL_ShowCursor(SDL_ENABLE);
+		break;
 
 	case CK_OpenGL:
 		c->gl_cursor.draw(x, y);
+#if !SDL_VERSION_ATLEAST(2, 0, 0)
 		// note: gl_empty_system_cursor can be 0 if sys_cursor_create_empty
 		// failed; in that case we don't want to sys_cursor_set because that
 		// would restore the default cursor (which is exactly what we're
 		// trying to avoid here)
 		if(c->gl_empty_system_cursor)
 			sys_cursor_set(c->gl_empty_system_cursor);
+#else
+		SDL_ShowCursor(SDL_DISABLE);
+#endif
 		break;
 
 	default:
