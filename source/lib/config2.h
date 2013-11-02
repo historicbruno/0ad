@@ -67,7 +67,7 @@
 // - it doesn't support color hardware mouse cursors and clashes with
 //   cursor.cpp's efforts by resetting the mouse cursor after movement.
 #ifndef CONFIG2_WSDL
-# define CONFIG2_WSDL 1
+# define CONFIG2_WSDL 0
 #endif
 
 #ifndef CONFIG2_FILE_ENABLE_AIO

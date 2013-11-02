@@ -44,8 +44,8 @@
 # include "SDL_endian.h"
 
 # if MSC_VERSION
-#  pragma comment(lib, "SDL")
-#  pragma comment(lib, "SDLmain")
+#  pragma comment(lib, "SDL2")
+#  pragma comment(lib, "SDL2main")
 # endif
 
 #endif
