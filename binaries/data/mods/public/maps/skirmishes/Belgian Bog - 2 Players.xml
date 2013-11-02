@@ -29,39 +29,29 @@
 		<Postproc>
 			<Brightness>0</Brightness>
 			<Contrast>1.07617</Contrast>
-			<Saturation>0.99</Saturation>
+			<Saturation>1.1875</Saturation>
 			<Bloom>0.108398</Bloom>
 			<PostEffect>hdr</PostEffect>
 		</Postproc>
 	</Environment>
 	<Camera>
-		<Position x="875.423" y="73.077" z="413.142"/>
+		<Position x="879.121" y="92.1247" z="388.789"/>
 		<Rotation angle="0"/>
 		<Declination angle="0.610865"/>
 	</Camera>
 	<ScriptSettings><![CDATA[
 {
   "CircularMap": true,
-  "Description": "Two players face off across a large bog somewhere in the Rhine lowlands.",
+  "Description": "Two players face off across a large bog somewhere in the Rhine lowlands.\u000a\u000aWood is in abundance, but Metal and Stone are hard to find and extract. Hunting and foraging is plentiful.",
   "GameType": "conquest",
   "Keywords": [],
   "LockTeams": false,
   "Name": "Belgian Bog (2)",
   "PlayerData": [
     {
-      "Colour": {
-        "b": 200,
-        "g": 46,
-        "r": 46
-      },
       "Name": "Player 1"
     },
     {
-      "Colour": {
-        "b": 20,
-        "g": 20,
-        "r": 150
-      },
       "Name": "Player 2"
     }
   ],
@@ -13357,7 +13347,7 @@
 		<Entity uid="2449">
 			<Template>gaia/fauna_deer</Template>
 			<Player>0</Player>
-			<Position x="565.83771" z="363.26383"/>
+			<Position x="567.66376" z="359.4846"/>
 			<Orientation y="0.98343"/>
 		</Entity>
 		<Entity uid="2450">
@@ -13781,7 +13771,7 @@
 		</Entity>
 		<Entity uid="2536">
 			<Template>actor|props/flora/pond_lillies_large.xml</Template>
-			<Position x="556.58332" z="355.62855"/>
+			<Position x="528.4112" z="364.33127"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="2537">
@@ -22191,7 +22181,7 @@
 		<Entity uid="4241">
 			<Template>gaia/geology_metal_tropic_slabs</Template>
 			<Player>0</Player>
-			<Position x="724.89356" z="673.52564"/>
+			<Position x="513.52771" z="936.86957"/>
 			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="4242">
@@ -22200,16 +22190,10 @@
 			<Position x="708.52167" z="181.21488"/>
 			<Orientation y="0.62641"/>
 		</Entity>
-		<Entity uid="4243">
-			<Template>gaia/geology_metal_tropic_slabs</Template>
-			<Player>0</Player>
-			<Position x="405.12583" z="74.86329"/>
-			<Orientation y="-2.88305"/>
-		</Entity>
 		<Entity uid="4244">
 			<Template>gaia/geology_metal_tropic_slabs</Template>
 			<Player>0</Player>
-			<Position x="216.01381" z="319.28791"/>
+			<Position x="524.02344" z="129.8076"/>
 			<Orientation y="0.42878"/>
 		</Entity>
 		<Entity uid="4245">
@@ -22223,12 +22207,6 @@
 			<Player>0</Player>
 			<Position x="445.1634" z="314.06882"/>
 			<Orientation y="0.4117"/>
-		</Entity>
-		<Entity uid="4247">
-			<Template>gaia/geology_metal_tropic_slabs</Template>
-			<Player>0</Player>
-			<Position x="648.89606" z="300.65668"/>
-			<Orientation y="2.35621"/>
 		</Entity>
 		<Entity uid="4250">
 			<Template>actor|props/flora/grass_tropic_field.xml</Template>
@@ -22411,32 +22389,18 @@
 			<Actor seed="4892"/>
 		</Entity>
 		<Entity uid="4281">
-			<Template>skirmish/units/brit_war_dog_b</Template>
-			<Player>1</Player>
-			<Position x="858.46491" z="513.43921"/>
-			<Orientation y="-0.98104"/>
-			<Actor seed="56714"/>
-		</Entity>
-		<Entity uid="4282">
-			<Template>skirmish/units/maur_support_elephant</Template>
+			<Template>skirmish/units/special_starting_unit</Template>
 			<Player>1</Player>
 			<Position x="858.04987" z="513.55115"/>
 			<Orientation y="-0.8198"/>
 			<Actor seed="8442"/>
 		</Entity>
-		<Entity uid="4283">
-			<Template>skirmish/units/maur_support_elephant</Template>
+		<Entity uid="4282">
+			<Template>skirmish/units/special_starting_unit</Template>
 			<Player>2</Player>
 			<Position x="136.42777" z="556.12562"/>
 			<Orientation y="-0.92878"/>
 			<Actor seed="16132"/>
-		</Entity>
-		<Entity uid="4284">
-			<Template>skirmish/units/brit_war_dog_b</Template>
-			<Player>2</Player>
-			<Position x="136.72892" z="556.12562"/>
-			<Orientation y="-0.85395"/>
-			<Actor seed="31078"/>
 		</Entity>
 	</Entities>
 	<Paths/>

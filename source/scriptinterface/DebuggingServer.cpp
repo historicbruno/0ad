@@ -21,7 +21,6 @@
 #include "ThreadDebugger.h"
 #include "ps/CLogger.h"
 #include "ps/Filesystem.h"
-#include "scripting/JSConversions.h"
 
 CDebuggingServer* g_DebuggingServer = NULL;
 
@@ -50,7 +49,7 @@ void CDebuggingServer::GetAllCallstacks(std::stringstream& response)
 				{
 					if (nbrCallstacksWritten != 0)
 						response << ",";
-					response << "{" << "\"ThreadDebuggerID\" : " << (*itr)->GetID() << ", \"CallStack\" : " << stream << "}";
+					response << "{" << "\"ThreadDebuggerID\" : " << (*itr)->GetID() << ", \"CallStack\" : " << stream.str() << "}";
 					nbrCallstacksWritten++;
 				}
 
@@ -73,7 +72,7 @@ void CDebuggingServer::GetStackFrameData(std::stringstream& response, uint nesti
 			(*itr)->GetStackFrameData(stream, nestingLevel, stackInfoKind);
 			if ((int)stream.tellp() != 0)
 			{
-				response << stream;
+				response << stream.str();
 			}
 		}
 	}

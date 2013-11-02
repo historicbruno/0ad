@@ -16,15 +16,6 @@
       <MaxRange>4.0</MaxRange>
     </Slaughter>
   </Attack>
-  <Auras>
-    <Allure>
-      <Radius>25</Radius>
-    </Allure>
-    <Infidelity>
-      <Radius>10</Radius>
-      <Time>10</Time>
-    </Infidelity>
-  </Auras>
   <Builder>
     <Rate>1.0</Rate>
     <Entities datatype="tokens">
@@ -50,7 +41,7 @@
   </Health>
   <Identity>
     <GenericName>Female Citizen</GenericName>
-    <History>Women in the ancient world took on a variety of roles - from leadership (Celts) to servant (Greeks). Women are hard workers, the economic backbone of any civilisation. In history, it was typical when all the males (capable of fighting) were killed for the females, children, and elderly to be sold as slaves.</History>
+    <History>Women in the ancient world took on a variety of roles - from leadership (Celts) to servant (Greeks). Women are hard workers, the economic backbone of any civilization. In history, it was typical when all the males (capable of fighting) were killed for the females, children, and elderly to be sold as slaves.</History>
     <Tooltip>Classes: Support Female.
 Gather resources, build civic structures, and inspire nearby males to work faster. Bonused at foraging and farming.</Tooltip>
     <Classes datatype="tokens">Worker Female Citizen</Classes>
