@@ -126,7 +126,7 @@
 			"Count": 2
 		},
 		{
-			"Template": "units/ptol_cavalry_swordsman_b"
+			"Template": "units/ptol_cavalry_archer_b"
 		}
 	],
 	"Formations":
@@ -163,8 +163,8 @@
 		"Cleopatra Philopater",
 		"Cleopatra Selene",
 		"Cleopatra II Philometora Soteira",
-		"Arisone IV",
-		"Arisone II"
+		"Arsinoe IV",
+		"Arsinoe II"
 	],
 	"SelectableInGameSetup": true
 }

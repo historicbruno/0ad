@@ -9,9 +9,9 @@
 		<TerrainAmbientColour r="0.392157" g="0.47451" b="0.654902"/>
 		<UnitsAmbientColour r="0.501961" g="0.501961" b="0.501961"/>
 		<Fog>
-			<FogFactor>0</FogFactor>
-			<FogThickness>0.5</FogThickness>
-			<FogColour r="0.8" g="0.8" b="0.894118"/>
+			<FogFactor>0.00195313</FogFactor>
+			<FogThickness>0</FogThickness>
+			<FogColour r="0.882353" g="0.839216" b="0.701961"/>
 		</Fog>
 		<Water>
 			<WaterBody>
@@ -29,24 +29,24 @@
 		<Postproc>
 			<Brightness>0</Brightness>
 			<Contrast>1</Contrast>
-			<Saturation>0.99</Saturation>
-			<Bloom>0.1999</Bloom>
-			<PostEffect>default</PostEffect>
+			<Saturation>1.07813</Saturation>
+			<Bloom>0.160156</Bloom>
+			<PostEffect>hdr</PostEffect>
 		</Postproc>
 	</Environment>
 	<Camera>
-		<Position x="693.369" y="91.6323" z="659.412"/>
+		<Position x="451.683" y="72.9154" z="698.464"/>
 		<Rotation angle="0"/>
 		<Declination angle="0.610865"/>
 	</Camera>
 	<ScriptSettings><![CDATA[
 {
   "CircularMap": true,
-  "Description": "An old favorite. An otherwise wide-open, flat desert map is pierced in the center by a lush oasis.",
+  "Description": "An old favorite. An otherwise wide-open, flat desert map is pierced in the center by a lush oasis.\u000a\u000aThis represents the Libyan Desert, part of the Saharan Desert, West of the Nile River in Egypt.",
   "GameType": "conquest",
   "Keywords": [],
   "LockTeams": false,
-  "Name": "Arabian Oasis (2)",
+  "Name": "Libyan Oasis (2)",
   "PlayerData": [
     {
       "AI": "",
@@ -105,7 +105,7 @@
       "Team": -1
     }
   ],
-  "Preview": "oasis_6.png",
+  "Preview": "arabian_oasis_skirmish.png",
   "RevealMap": false
 }
 ]]></ScriptSettings>
@@ -8824,6 +8824,48 @@
 			<Position x="218.35834" z="275.16254"/>
 			<Orientation y="2.35621"/>
 			<Actor seed="3396"/>
+		</Entity>
+		<Entity uid="1601">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="614.74604" z="97.65754"/>
+			<Orientation y="-0.8007"/>
+			<Actor seed="30430"/>
+		</Entity>
+		<Entity uid="1602">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="618.29743" z="101.1806"/>
+			<Orientation y="-0.78611"/>
+			<Actor seed="54608"/>
+		</Entity>
+		<Entity uid="1603">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="609.42511" z="93.03632"/>
+			<Orientation y="-0.5896"/>
+			<Actor seed="16870"/>
+		</Entity>
+		<Entity uid="1604">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="449.2482" z="877.1482"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="29364"/>
+		</Entity>
+		<Entity uid="1605">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="453.48584" z="880.80567"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="53630"/>
+		</Entity>
+		<Entity uid="1607">
+			<Template>gaia/special_ruins_stone_statues_egyptian</Template>
+			<Player>0</Player>
+			<Position x="442.50599" z="869.91968"/>
+			<Orientation y="2.35621"/>
+			<Actor seed="39840"/>
 		</Entity>
 	</Entities>
 	<Paths/>

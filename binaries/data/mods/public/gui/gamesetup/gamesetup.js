@@ -107,8 +107,8 @@ function initMain()
 
 	// Init map types
 	var mapTypes = getGUIObjectByName("mapTypeSelection");
-	mapTypes.list = ["Scenario","Skirmish","Random"];
-	mapTypes.list_data = ["scenario","skirmish","random"];
+	mapTypes.list = ["Skirmish","Random","Scenario"];
+	mapTypes.list_data = ["skirmish","random","scenario"];
 
 	// Setup map filters - will appear in order they are added
 	addFilter("Default", function(settings) { return settings && !keywordTestOR(settings.Keywords, ["naval", "demo", "hidden"]); });
@@ -791,7 +791,7 @@ function launchGame()
 	{ 
 		civs = allcivs[Math.floor(Math.random()*allcivs.length)];
 		
-		if (g_GameAttributes.settings.PlayerData[i].Civ == "random") 
+		if (!g_GameAttributes.settings.PlayerData[i].Civ || g_GameAttributes.settings.PlayerData[i].Civ == "random") 
 			g_GameAttributes.settings.PlayerData[i].Civ = civs[Math.floor(Math.random()*civs.length)]; 
 		// Setting names for AI players. Check if the player is AI and the match is not a scenario
 		if (g_GameAttributes.mapType !== "scenario" && g_GameAttributes.settings.PlayerData[i].AI)
