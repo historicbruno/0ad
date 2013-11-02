@@ -100,6 +100,7 @@ private:
 	int m_ConfigW;
 	int m_ConfigH;
 	int m_ConfigBPP;
+	int m_ConfigDisplay;
 	bool m_ConfigFullscreen;
 	bool m_ConfigForceS3TCEnable;
 
