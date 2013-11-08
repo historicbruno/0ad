@@ -87,6 +87,7 @@
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
+#include "lobby/IXmppClient.h"
 #include "soundmanager/scripting/JSInterface_Sound.h"
 #include "soundmanager/ISoundManager.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
@@ -280,8 +281,12 @@ void Render()
 			glLoadMatrixf(&transform._11);
 #endif
 
+#if OS_ANDROID
+#warning TODO: cursors for Android
+#else
 			if (cursor_draw(g_VFS, cursorName.c_str(), g_mouse_x, g_yres-g_mouse_y, forceGL) < 0)
 				LOGWARNING(L"Failed to draw cursor '%ls'", cursorName.c_str());
+#endif
 
 #if CONFIG2_GLES
 #warning TODO: implement cursors for GLES
@@ -679,6 +684,10 @@ void EndGame()
 void Shutdown(int UNUSED(flags))
 {
 	EndGame();
+
+	#if CONFIG2_LOBBY
+		SAFE_DELETE(g_XmppClient);
+	#endif
 
 	ShutdownPs(); // Must delete g_GUI before g_ScriptingHost
 

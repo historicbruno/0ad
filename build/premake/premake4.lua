@@ -10,6 +10,7 @@ newoption { trigger = "minimal-flags", description = "Only set compiler/linker f
 newoption { trigger = "without-nvtt", description = "Disable use of NVTT" }
 newoption { trigger = "without-tests", description = "Disable generation of test projects" }
 newoption { trigger = "without-pch", description = "Disable generation and usage of precompiled headers" }
+newoption { trigger = "without-lobby", description = "Disable the use of gloox and the multiplayer lobby" }
 newoption { trigger = "with-system-nvtt", description = "Search standard paths for nvidia-texture-tools library, instead of using bundled copy" }
 newoption { trigger = "with-system-enet", description = "Search standard paths for libenet, instead of using bundled copy" }
 newoption { trigger = "with-system-mozjs185", description = "Search standard paths for libmozjs185, instead of using bundled copy" }
@@ -17,6 +18,9 @@ newoption { trigger = "with-c++11", description = "Enable C++11 on GCC" }
 newoption { trigger = "sysroot", description = "Set compiler system root path, used for building against a non-system SDK. For example /usr/local becomes SYSROOT/user/local" }
 newoption { trigger = "macosx-version-min", description = "Set minimum required version of the OS X API, the build will possibly fail if an older SDK is used, while newer API functions will be weakly linked (i.e. resolved at runtime)" }
 newoption { trigger = "macosx-bundle", description = "Enable OSX bundle, the argument is the bundle identifier string (e.g. com.wildfiregames.0ad)" }
+
+newoption { trigger = "build-shared-glooxwrapper", description = "Rebuild glooxwrapper DLL for Windows. Requires the same compiler version that gloox was built with" }
+newoption { trigger = "use-shared-glooxwrapper", description = "Use prebuilt glooxwrapper DLL for Windows" }
 
 newoption { trigger = "bindir", description = "Directory for executables (typically '/usr/games'); default is to be relocatable" }
 newoption { trigger = "datadir", description = "Directory for data files (typically '/usr/share/games/0ad'); default is ../data/ relative to executable" }
@@ -172,6 +176,10 @@ function project_set_build_flags()
 
 	if _OPTIONS["without-nvtt"] then
 		defines { "CONFIG2_NVTT=0" }
+	end
+
+	if _OPTIONS["without-lobby"] then
+		defines { "CONFIG2_LOBBY=0" }
 	end
 
 	-- required for the lowlevel library. must be set from all projects that use it, otherwise it assumes it is
@@ -500,6 +508,8 @@ end
 -- names of all static libs created. automatically added to the
 -- main app project later (see explanation at end of this file)
 static_lib_names = {}
+static_lib_names_debug = {}
+static_lib_names_release = {}
 
 -- set up one of the static libraries into which the main engine code is split.
 -- extra_params:
@@ -520,6 +530,24 @@ function setup_static_lib_project (project_name, rel_source_dirs, extern_libs, e
 
 	if os.is("windows") then
 		flags { "NoRTTI" }
+	end
+end
+
+function setup_shared_lib_project (project_name, rel_source_dirs, extern_libs, extra_params)
+
+	local target_type = "SharedLib"
+	project_create(project_name, target_type)
+	project_add_contents(source_root, rel_source_dirs, {}, extra_params)
+	project_add_extern_libs(extern_libs, target_type)
+	project_add_x11_dirs()
+
+	if not extra_params["no_default_link"] then
+		table.insert(static_lib_names, project_name)
+	end
+
+	if os.is("windows") then
+		flags { "NoRTTI" }
+		links { "delayimp" }
 	end
 end
 
@@ -546,6 +574,36 @@ function setup_all_libs ()
 	}
 	setup_static_lib_project("network", source_dirs, extern_libs, {})
 
+	if not _OPTIONS["without-lobby"] then
+		source_dirs = {
+			"lobby",
+		}
+
+		extern_libs = {
+			"spidermonkey",
+			"boost",
+			"gloox",
+		}
+		setup_static_lib_project("lobby", source_dirs, extern_libs, {})
+	end
+
+	if _OPTIONS["use-shared-glooxwrapper"] and not _OPTIONS["build-shared-glooxwrapper"] then
+		table.insert(static_lib_names_debug, "glooxwrapper_dbg")
+		table.insert(static_lib_names_release, "glooxwrapper")
+	else
+		source_dirs = {
+			"lobby/glooxwrapper",
+		}
+		extern_libs = {
+			"boost",
+			"gloox",
+		}
+		if _OPTIONS["build-shared-glooxwrapper"] then
+			setup_shared_lib_project("glooxwrapper", source_dirs, extern_libs, {})
+		else
+			setup_static_lib_project("glooxwrapper", source_dirs, extern_libs, {})
+		end
+	end
 
 	source_dirs = {
 		"simulation2",
@@ -598,7 +656,7 @@ function setup_all_libs ()
 		"zlib",
 		"boost",
 		"enet",
-		"libcurl"
+		"libcurl",
 	}
 	
 	if not _OPTIONS["without-audio"] then
@@ -648,7 +706,7 @@ function setup_all_libs ()
 		"spidermonkey",
 		"sdl",	-- key definitions
 		"opengl",
-		"boost"
+		"boost",
 	}
 	setup_static_lib_project("gui", source_dirs, extern_libs, {})
 
@@ -789,6 +847,10 @@ if not _OPTIONS["without-nvtt"] then
 	table.insert(used_extern_libs, "nvtt")
 end
 
+if not _OPTIONS["without-lobby"] then
+	table.insert(used_extern_libs, "gloox")
+end
+
 -- Bundles static libs together with main.cpp and builds game executable.
 function setup_main_exe ()
 
@@ -837,6 +899,8 @@ function setup_main_exe ()
 		if _OPTIONS["android"] then
 			-- NDK's STANDALONE-TOOLCHAIN.html says this is required
 			linkoptions { "-Wl,--fix-cortex-a8" }
+
+			links { "log" }
 		end
 
 		if os.is("linux") or os.getversion().description == "GNU/kFreeBSD" then
@@ -1238,6 +1302,12 @@ function setup_tests()
 	configure_cxxtestgen()
 
 	links { static_lib_names }
+	configuration "Debug"
+		links { static_lib_names_debug }
+	configuration "Release"
+		links { static_lib_names_release }
+	configuration { }
+
 	links { "mocks_test" }
 	if _OPTIONS["atlas"] then
 		links { "AtlasObject" }
@@ -1318,6 +1388,11 @@ setup_all_libs()
 -- work when changing the static lib breakdown.
 project("pyrogenesis") -- Set the main project active
 	links { static_lib_names }
+	configuration "Debug"
+		links { static_lib_names_debug }
+	configuration "Release"
+		links { static_lib_names_release }
+	configuration { }
 
 if _OPTIONS["atlas"] then
 	setup_atlas_projects()
