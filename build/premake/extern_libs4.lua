@@ -569,7 +569,11 @@ extern_lib_defs = {
 	sdl = {
 		compile_settings = function()
 			if os.is("windows") then
-				includedirs { libraries_dir .. "sdl2/include/SDL" }
+				if _OPTIONS["sdl2"] then
+					includedirs { libraries_dir .. "sdl2/include/SDL" }
+				else
+					includedirs { libraries_dir .. "sdl/include/SDL" }
+				end
 			elseif not _OPTIONS["android"] then
 				-- Support SDL_CONFIG for overriding for the default PATH-based sdl-config
 				sdl_config_path = os.getenv("SDL_CONFIG")
@@ -584,11 +588,19 @@ extern_lib_defs = {
 		end,
 		link_settings = function()
 			if os.is("windows") then
-				add_default_lib_paths("sdl2")
+				if _OPTIONS["sdl2"] then
+					add_default_lib_paths("sdl2")
+				else
+					add_default_lib_paths("sdl")
+				end
 			elseif not _OPTIONS["android"] then
 				sdl_config_path = os.getenv("SDL_CONFIG")
 				if not sdl_config_path then
-					sdl_config_path = "sdl-config"
+					if _OPTIONS["sdl2"] then
+						sdl_config_path = "sdl2-config"
+					else
+						sdl_config_path = "sdl-config"
+					end
 				end
 				pkgconfig_libs(nil, sdl_config_path.." --libs")
 			end

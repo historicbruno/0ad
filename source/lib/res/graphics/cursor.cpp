@@ -46,10 +46,10 @@
 # define ALLOW_SYS_CURSOR 0
 #endif
 
-
+#if !SDL_VERSION_ATLEAST(2,0,0)
 static Status load_sys_cursor(const PIVFS& vfs, const VfsPath& pathname, int hx, int hy, sys_cursor* cursor)
 {
-#if !ALLOW_SYS_CURSOR
+# if !ALLOW_SYS_CURSOR
 	UNUSED2(vfs);
 	UNUSED2(pathname);
 	UNUSED2(hx);
@@ -57,7 +57,7 @@ static Status load_sys_cursor(const PIVFS& vfs, const VfsPath& pathname, int hx,
 	UNUSED2(cursor);
 
 	return ERR::FAIL;
-#else
+# else
 	shared_ptr<u8> file; size_t fileSize;
 	RETURN_STATUS_IF_ERR(vfs->LoadFile(pathname, file, fileSize));
 
@@ -73,9 +73,9 @@ static Status load_sys_cursor(const PIVFS& vfs, const VfsPath& pathname, int hx,
 
 	RETURN_STATUS_IF_ERR(sys_cursor_create((int)t.m_Width, (int)t.m_Height, bgra_img, hx, hy, cursor));
 	return INFO::OK;
-#endif
+# endif // ALLOW_SYS_CURSOR
 }
-
+#endif // !SDL_VERSION_ATLEAST(2,0,0)
 
 class SDLCursor
 {
