@@ -29,8 +29,8 @@ function init(attribs)
 	playersNumberFilter.list_data = [2,3,4,5,6,7,8,""];
 
 	var mapTypeFilter = getGUIObjectByName("mapTypeFilter");
-	mapTypeFilter.list = ["Random", "Scenario", "Any"];
-	mapTypeFilter.list_data = ["conquest", "scenario", ""];
+	mapTypeFilter.list = ["Skirmish", "Random", "Scenario", "Any"];
+	mapTypeFilter.list_data = ["skirmish", "random", "scenario", ""];
 
 	Engine.LobbySetPlayerPresence("available");
 	Engine.SendGetGameList();
@@ -281,7 +281,9 @@ function selectGame(selected)
 	var g = getGUIObjectByName("gamesBox").list_data[selected];
 
 	// Load map data
-	if (g_GameList[g].mapType == "random" && fileExists(g_GameList[g].mapName + ".json"))
+	if (g_GameList[g].mapType == "random" && g_GameList[g].mapName == "random")
+		mapData = {"settings": {"Description": "A randomly selected map."}};
+	else if (g_GameList[g].mapType == "random" && fileExists(g_GameList[g].mapName + ".json"))
 		mapData = parseJSONData(g_GameList[g].mapName + ".json");
 	else if (fileExists(g_GameList[g].mapName + ".xml"))
 		mapData = Engine.LoadMapSettings(g_GameList[g].mapName + ".xml");
@@ -557,12 +559,6 @@ function handleSpecialCommand(text)
 
 function addChatMessage(msg)
 {
-	// Set sender color
-	if (msg.color)
-		msg.from = '[color="' + msg.color + '"]' + msg.from + '[/color]';
-	else if (msg.from)
-		msg.from = colorPlayerName(msg.from);
-
 	// Highlight local user's nick
 	if (msg.text.indexOf(g_Name) != -1 && g_Name != msg.from)
 		msg.text = msg.text.replace(new RegExp('\\b' + '\\' + g_Name + '\\b', "g"), colorPlayerName(g_Name));
@@ -572,7 +568,7 @@ function addChatMessage(msg)
 		return;
 
 	// Format Text
-	var formatted = ircFormat(msg.text, msg.from, msg.key);
+	var formatted = ircFormat(msg.text, msg.from, msg.color, msg.key);
 
 	// If there is text, add it to the chat box.
 	if (formatted)
@@ -591,15 +587,23 @@ function ircSplit(string)
 }
 
 // The following formats text in an IRC-like way
-function ircFormat(text, from, key)
+function ircFormat(text, from, color, key)
 {
-	time = new Date(Date.now());
 	function warnUnsupportedCommand(command, from) // Function to warn only local player
 	{
 		if (from === g_Name)
-			addChatMessage({ "from": "system", "text": "We're sorry, the '" + command + "' command is not supported." });
+			addChatMessage({ "from":"system", "text":"We're sorry, the '" + command + "' command is not supported." });
 		return;
 	}
+
+	// Generate and apply color to uncolored names,
+	if (!color && from)
+		coloredFrom = colorPlayerName(from);
+	else if (from)
+		coloredFrom = "[color='" + color + "']" + from + "[/color]";
+
+	// Time for optional time header
+	var time = new Date(Date.now());
 
 	// Build time header if enabled
 	if (g_timestamp)
@@ -614,18 +618,18 @@ function ircFormat(text, from, key)
 		switch (command)
 		{
 			case "me":
-				return formatted + '[font="serif-bold-13"]* ' + from + '[/font] ' + message;
+				return formatted + '[font="serif-bold-13"]* ' + coloredFrom + '[/font] ' + message;
 			case "say":
-				return formatted + '[font="serif-bold-13"]<' + from + '>[/font] ' + message;
+				return formatted + '[font="serif-bold-13"]<' + coloredFrom + '>[/font] ' + message;
 			case "special":
 				if (key === g_specialKey)
 					return formatted + '[font="serif-bold-13"] == ' + message + '[/font]';
 				break;
 			default:
-				return warnUnsupportedCommand(command, from)
+				return warnUnsupportedCommand(command, from);
 		}
 	}
-	return formatted + '[font="serif-bold-13"]<' + from + '>[/font] ' + text;
+	return formatted + '[font="serif-bold-13"]<' + coloredFrom + '>[/font] ' + text;
 }
 
 // The following function tracks message stats and returns true if the input text is spam.
@@ -645,9 +649,7 @@ function updateSpamandDetect(text, from)
 	if(from in g_spammers)
 	{
 		if (from == g_Name)
-		{
 			addChatMessage({ "from": "system", "text": "Please do not spam. You have been blocked for thirty seconds." });
-		}
 		return true;
 	}
 	// Return false if everything is clear.
@@ -739,22 +741,22 @@ function rgbToHsl(r, g, b)
 
 function hslToRgb(h, s, l)
 {
+	function hue2rgb(p, q, t)
+	{
+		if (t < 0) t += 1;
+		if (t > 1) t -= 1;
+		if (t < 1/6) return p + (q - p) * 6 * t;
+		if (t < 1/2) return q;
+		if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+		return p;
+	}
+
 	[h, s, l] = [h, s, l].map(clampColorValue);
 	var r, g, b;
 
 	if (s == 0)
 		r = g = b = l; // achromatic
 	else {
-		function hue2rgb(p, q, t)
-		{
-			if (t < 0) t += 1;
-			if (t > 1) t -= 1;
-			if (t < 1/6) return p + (q - p) * 6 * t;
-			if (t < 1/2) return q;
-			if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-			return p;
-		}
-
 		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
 		var p = 2 * l - q;
 		r = hue2rgb(p, q, h + 1/3);
