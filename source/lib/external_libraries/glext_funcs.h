@@ -26,12 +26,12 @@
 
 #include "lib/config2.h" // CONFIG2_GLES
 
-#if CONFIG2_GLES
-# include <GLES2/gl2ext.h>
-#elif OS_MACOSX
-# include <OpenGL/glext.h>
-#else
-# include <GL/glext.h>
+#if !CONFIG2_GLES
+# if OS_MACOSX
+#  include <OpenGL/glext.h>
+# else
+#  include <GL/glext.h>
+# endif
 #endif
 
 #if OS_WIN
