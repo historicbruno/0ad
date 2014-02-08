@@ -27,6 +27,8 @@
 #include "lib/timer.h"
 #include "lib/utf8.h"
 #include "lib/sysdep/sysdep.h"
+#include "lobby/IXmppClient.h"
+#include "lobby/sha.h"
 #include "maths/FixedVector3D.h"
 #include "network/NetClient.h"
 #include "network/NetServer.h"
@@ -35,6 +37,7 @@
 #include "ps/CConsole.h"
 #include "ps/Errors.h"
 #include "ps/Game.h"
+#include "ps/GUID.h"
 #include "ps/World.h"
 #include "ps/Hotkey.h"
 #include "ps/Overlay.h"
@@ -60,7 +63,6 @@
 #include "simulation2/helpers/Selection.h"
 
 #include "js/jsapi.h"
-
 /*
  * This file defines a set of functions that are available to GUI scripts, to allow
  * interaction with the rest of the engine.
@@ -176,35 +178,6 @@ void SetPlayerID(void* UNUSED(cbdata), int id)
 {
 	if (g_Game)
 		g_Game->SetPlayerID(id);
-}
-
-std::wstring GetDefaultPlayerName(void* UNUSED(cbdata))
-{
-	CStr playername;
-	CFG_GET_VAL("playername", String, playername);
-	std::wstring name = playername.FromUTF8();
-	if (!name.empty())
-		return name;
-
-	name = sys_get_user_name();
-	if (!name.empty())
-		return name;
-
-	return L"anonymous";
-}
-
-std::wstring GetDefaultMPServer(void* UNUSED(cbdata))
-{
-	CStr server;
-	CFG_GET_VAL("multiplayerserver", String, server);
-	return server.FromUTF8();
-}
-
-void SaveMPConfig(void* UNUSED(cbdata), std::wstring playerName, std::wstring server)
-{
-	g_ConfigDB.CreateValue(CFG_USER, "playername")->m_String = CStrW(playerName).ToUTF8();
-	g_ConfigDB.CreateValue(CFG_USER, "multiplayerserver")->m_String = CStrW(server).ToUTF8();
-	g_ConfigDB.WriteFile(CFG_USER);
 }
 
 void StartNetworkGame(void* UNUSED(cbdata))
@@ -400,6 +373,11 @@ void OpenURL(void* UNUSED(cbdata), std::string url)
 	sys_open_url(url);
 }
 
+std::wstring GetMatchID(void* UNUSED(cbdata))
+{
+	return ps_generate_guid().FromUTF8();
+}
+
 void RestartInAtlas(void* UNUSED(cbdata))
 {
 	restart_mainloop_in_atlas();
@@ -500,7 +478,7 @@ entity_id_t GetFollowedEntity(void* UNUSED(cbdata))
 {
 	if (g_Game && g_Game->GetView())
 		return g_Game->GetView()->GetFollowedEntity();
-	
+
 	return INVALID_ENTITY;
 }
 
@@ -635,6 +613,255 @@ void RewindTimeWarp(void* UNUSED(cbdata))
 	g_Game->GetTurnManager()->RewindTimeWarp();
 }
 
+/* Begin lobby related functions */
+
+bool HasXmppClient(void* UNUSED(cbdata))
+{
+	return (g_XmppClient ? true : false);
+}
+
+#if CONFIG2_LOBBY
+void StartXmppClient(void* cbdata, std::wstring username, std::wstring password, std::wstring room, std::wstring nick)
+{
+	CGUIManager* guiManager = static_cast<CGUIManager*> (cbdata);
+
+	ENSURE(!g_XmppClient);
+
+	g_XmppClient = IXmppClient::create(guiManager->GetScriptInterface(),
+		utf8_from_wstring(username), utf8_from_wstring(password),
+		utf8_from_wstring(room), utf8_from_wstring(nick));
+	g_rankedGame = true;
+}
+
+void StartRegisterXmppClient(void* cbdata, std::wstring username, std::wstring password)
+{
+	CGUIManager* guiManager = static_cast<CGUIManager*> (cbdata);
+
+	ENSURE(!g_XmppClient);
+
+	g_XmppClient = IXmppClient::create(guiManager->GetScriptInterface(),
+		utf8_from_wstring(username), utf8_from_wstring(password),
+		"", "", true);
+}
+
+void StopXmppClient(void* UNUSED(cbdata))
+{
+	ENSURE(g_XmppClient);
+	SAFE_DELETE(g_XmppClient);
+	g_rankedGame = false;
+}
+
+void ConnectXmppClient(void* UNUSED(cbdata))
+{
+	ENSURE(g_XmppClient);
+	g_XmppClient->connect();
+}
+
+void DisconnectXmppClient(void* UNUSED(cbdata))
+{
+	ENSURE(g_XmppClient);
+	g_XmppClient->disconnect();
+}
+
+void RecvXmppClient(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->recv();
+}
+
+void SendGetGameList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqGetGameList();
+}
+
+void SendGetBoardList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqGetBoardList();
+}
+
+void SendGameReport(void* UNUSED(cbdata), CScriptVal data)
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqGameReport(data);
+}
+
+void SendRegisterGame(void* UNUSED(cbdata), CScriptVal data)
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqRegisterGame(data);
+}
+
+void SendUnregisterGame(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqUnregisterGame();
+}
+
+void SendChangeStateGame(void* UNUSED(cbdata), std::wstring nbp, std::wstring players)
+{
+	if (!g_XmppClient)
+		return;
+	g_XmppClient->SendIqChangeStateGame(utf8_from_wstring(nbp), utf8_from_wstring(players));
+}
+
+CScriptVal GetPlayerList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return CScriptVal();
+
+	CScriptValRooted playerList = g_XmppClient->GUIGetPlayerList();
+
+	return playerList.get();
+}
+
+CScriptVal GetGameList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return CScriptVal();
+
+	CScriptValRooted gameList = g_XmppClient->GUIGetGameList();
+
+	return gameList.get();
+}
+
+CScriptVal GetBoardList(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return CScriptVal();
+
+	CScriptValRooted boardList = g_XmppClient->GUIGetBoardList();
+
+	return boardList.get();
+}
+
+CScriptVal LobbyGuiPollMessage(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return CScriptVal();
+
+	CScriptValRooted poll = g_XmppClient->GuiPollMessage();
+
+	return poll.get();
+}
+
+void LobbySendMessage(void* UNUSED(cbdata), std::wstring message)
+{
+	if (!g_XmppClient)
+		return;
+
+	g_XmppClient->SendMUCMessage(utf8_from_wstring(message));
+}
+
+void LobbySetPlayerPresence(void* UNUSED(cbdata), std::wstring presence)
+{
+	if (!g_XmppClient)
+		return;
+
+	g_XmppClient->SetPresence(utf8_from_wstring(presence));
+}
+
+void LobbySetNick(void* UNUSED(cbdata), std::wstring nick)
+{
+	if (!g_XmppClient)
+		return;
+
+	g_XmppClient->SetNick(utf8_from_wstring(nick));
+}
+
+std::wstring LobbyGetNick(void* UNUSED(cbdata))
+{
+	if (!g_XmppClient)
+		return L"";
+
+	std::string nick;
+	g_XmppClient->GetNick(nick);
+	return wstring_from_utf8(nick);
+}
+
+void LobbyKick(void* UNUSED(cbdata), std::wstring nick, std::wstring reason)
+{
+	if (!g_XmppClient)
+		return;
+
+	g_XmppClient->kick(utf8_from_wstring(nick), utf8_from_wstring(reason));
+}
+
+void LobbyBan(void* UNUSED(cbdata), std::wstring nick, std::wstring reason)
+{
+	if (!g_XmppClient)
+		return;
+
+	g_XmppClient->ban(utf8_from_wstring(nick), utf8_from_wstring(reason));
+}
+
+std::wstring LobbyGetPlayerPresence(void* UNUSED(cbdata), std::wstring nickname)
+{
+	if (!g_XmppClient)
+		return L"";
+
+	std::string presence;
+	g_XmppClient->GetPresence(utf8_from_wstring(nickname), presence);
+	return wstring_from_utf8(presence);
+}
+
+// Non-public secure PBKDF2 hash function with salting and 1,337 iterations
+static std::string EncryptPassword(const std::string& password, const std::string& username)
+{
+	const int DIGESTSIZE = SHA_DIGEST_SIZE;
+	const int ITERATIONS = 1337;
+
+	static const byte salt_base[DIGESTSIZE] = {
+			244, 243, 249, 244, 32, 33, 34, 35, 10, 11, 12, 13, 14, 15, 16, 17,
+			18, 19, 20, 32, 33, 244, 224, 127, 129, 130, 140, 153, 133, 123, 234, 123 };
+
+	// initialize the salt buffer
+	byte salt_buffer[DIGESTSIZE] = {0};
+	SHA256 hash;
+	hash.update(salt_base, sizeof(salt_base));
+	hash.update(username.c_str(), username.length());
+	hash.finish(salt_buffer);
+
+	// PBKDF2 to create the buffer
+	byte encrypted[DIGESTSIZE];
+	pbkdf2(encrypted, (byte*)password.c_str(), password.length(), salt_buffer, DIGESTSIZE, ITERATIONS);
+
+	static const char base16[] = "0123456789ABCDEF";
+	char hex[2 * DIGESTSIZE];
+	for (int i = 0; i < DIGESTSIZE; ++i)
+	{
+		hex[i*2] = base16[encrypted[i] >> 4];		   // 4 high bits
+		hex[i*2 + 1] = base16[encrypted[i] & 0x0F];// 4 low bits
+	}
+	return std::string(hex, sizeof(hex));
+}
+
+// Public hash interface.
+std::wstring EncryptPassword(void* UNUSED(cbdata), std::wstring pass, std::wstring user)
+{
+	return wstring_from_utf8(EncryptPassword(utf8_from_wstring(pass), utf8_from_wstring(user)));
+}
+
+bool IsRankedGame(void* UNUSED(cbdata))
+{
+	return g_rankedGame;
+}
+
+void SetRankedGame(void* UNUSED(cbdata), bool isRanked)
+{
+	g_rankedGame = isRanked;
+}
+#endif // CONFIG2_LOBBY
+
+/* End lobby related functions */
+
 void QuickSave(void* UNUSED(cbdata))
 {
 	g_Game->GetTurnManager()->QuickSave();
@@ -701,10 +928,8 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<std::wstring, std::wstring, &SetCursor>("SetCursor");
 	scriptInterface.RegisterFunction<int, &GetPlayerID>("GetPlayerID");
 	scriptInterface.RegisterFunction<void, int, &SetPlayerID>("SetPlayerID");
-	scriptInterface.RegisterFunction<std::wstring, &GetDefaultPlayerName>("GetDefaultPlayerName");
-	scriptInterface.RegisterFunction<std::wstring, &GetDefaultMPServer>("GetDefaultMPServer");
-	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SaveMPConfig>("SaveMPConfig");
 	scriptInterface.RegisterFunction<void, std::string, &OpenURL>("OpenURL");
+	scriptInterface.RegisterFunction<std::wstring, &GetMatchID>("GetMatchID");
 	scriptInterface.RegisterFunction<void, &RestartInAtlas>("RestartInAtlas");
 	scriptInterface.RegisterFunction<bool, &AtlasIsAvailable>("AtlasIsAvailable");
 	scriptInterface.RegisterFunction<bool, &IsAtlasRunning>("IsAtlasRunning");
@@ -743,4 +968,35 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	scriptInterface.RegisterFunction<void, unsigned int, &EnableTimeWarpRecording>("EnableTimeWarpRecording");
 	scriptInterface.RegisterFunction<void, &RewindTimeWarp>("RewindTimeWarp");
 	scriptInterface.RegisterFunction<void, bool, &SetBoundingBoxDebugOverlay>("SetBoundingBoxDebugOverlay");
+
+	// Lobby functions
+	scriptInterface.RegisterFunction<bool, &HasXmppClient>("HasXmppClient");
+#if CONFIG2_LOBBY // Allow the lobby to be disabled
+	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, std::wstring, std::wstring, &StartXmppClient>("StartXmppClient");
+	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &StartRegisterXmppClient>("StartRegisterXmppClient");
+	scriptInterface.RegisterFunction<void, &StopXmppClient>("StopXmppClient");
+	scriptInterface.RegisterFunction<void, &ConnectXmppClient>("ConnectXmppClient");
+	scriptInterface.RegisterFunction<void, &DisconnectXmppClient>("DisconnectXmppClient");
+	scriptInterface.RegisterFunction<void, &RecvXmppClient>("RecvXmppClient");
+	scriptInterface.RegisterFunction<void, &SendGetGameList>("SendGetGameList");
+	scriptInterface.RegisterFunction<void, &SendGetBoardList>("SendGetBoardList");
+	scriptInterface.RegisterFunction<void, CScriptVal, &SendRegisterGame>("SendRegisterGame");
+	scriptInterface.RegisterFunction<void, CScriptVal, &SendGameReport>("SendGameReport");
+	scriptInterface.RegisterFunction<void, &SendUnregisterGame>("SendUnregisterGame");
+	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &SendChangeStateGame>("SendChangeStateGame");
+	scriptInterface.RegisterFunction<CScriptVal, &GetPlayerList>("GetPlayerList");
+	scriptInterface.RegisterFunction<CScriptVal, &GetGameList>("GetGameList");
+	scriptInterface.RegisterFunction<CScriptVal, &GetBoardList>("GetBoardList");
+	scriptInterface.RegisterFunction<CScriptVal, &LobbyGuiPollMessage>("LobbyGuiPollMessage");
+	scriptInterface.RegisterFunction<void, std::wstring, &LobbySendMessage>("LobbySendMessage");
+	scriptInterface.RegisterFunction<void, std::wstring, &LobbySetPlayerPresence>("LobbySetPlayerPresence");
+	scriptInterface.RegisterFunction<void, std::wstring, &LobbySetNick>("LobbySetNick");
+	scriptInterface.RegisterFunction<std::wstring, &LobbyGetNick>("LobbyGetNick");
+	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &LobbyKick>("LobbyKick");
+	scriptInterface.RegisterFunction<void, std::wstring, std::wstring, &LobbyBan>("LobbyBan");
+	scriptInterface.RegisterFunction<std::wstring, std::wstring, &LobbyGetPlayerPresence>("LobbyGetPlayerPresence");
+	scriptInterface.RegisterFunction<std::wstring, std::wstring, std::wstring, &EncryptPassword>("EncryptPassword");
+	scriptInterface.RegisterFunction<bool, &IsRankedGame>("IsRankedGame");
+	scriptInterface.RegisterFunction<void, bool, &SetRankedGame>("SetRankedGame");
+#endif // CONFIG2_LOBBY
 }

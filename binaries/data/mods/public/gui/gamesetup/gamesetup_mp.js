@@ -1,24 +1,41 @@
 var g_IsConnecting = false;
 var g_GameType; // "server" or "client"
+var g_ServerName = "";
 
 var g_IsRejoining = false;
 var g_GameAttributes; // used when rejoining
 var g_PlayerAssignments; // used when rejoining
 
-function init(multiplayerGameType)
+function init(attribs)
 {
-	switch (multiplayerGameType)
+	switch (attribs.multiplayerGameType)
 	{
 	case "join":
-		getGUIObjectByName("pageJoin").hidden = false;
-		getGUIObjectByName("pageHost").hidden = true;
+		if(Engine.HasXmppClient())
+		{
+			if (startJoin(attribs.name, attribs.ip))
+				switchSetupPage("pageJoin", "pageConnecting");
+		}
+		else
+		{
+			getGUIObjectByName("pageJoin").hidden = false;
+			getGUIObjectByName("pageHost").hidden = true;
+		}
 		break;
 	case "host":
 		getGUIObjectByName("pageJoin").hidden = true;
 		getGUIObjectByName("pageHost").hidden = false;
+		if(Engine.HasXmppClient())
+		{
+			getGUIObjectByName("hostServerNameWrapper").hidden = false;
+			getGUIObjectByName("hostPlayerName").caption = attribs.name;
+			getGUIObjectByName("hostServerName").caption = attribs.name + "'s game";
+		}
+		else
+			getGUIObjectByName("hostPlayerNameWrapper").hidden = false;
 		break;
 	default:
-		error("Unrecognised multiplayer game type : " + multiplayerGameType);
+		error("Unrecognised multiplayer game type : " + attribs.multiplayerGameType);
 		break;
 	}
 }
@@ -27,7 +44,10 @@ function cancelSetup()
 {
 	if (g_IsConnecting)
 		Engine.DisconnectNetworkGame();
-	Engine.PopGuiPage();	
+	// Set player lobby presence
+	if (Engine.HasXmppClient())
+		Engine.LobbySetPlayerPresence("available");
+	Engine.PopGuiPage();
 }
 
 function startConnectionStatus(type)
@@ -43,6 +63,11 @@ function onTick()
 	if (!g_IsConnecting)
 		return;
 
+	pollAndHandleNetworkClient();
+}
+
+function pollAndHandleNetworkClient()
+{
 	while (true)
 	{
 		var message = Engine.PollNetworkClient();
@@ -118,7 +143,7 @@ function onTick()
 					}
 					else
 					{
-						Engine.SwitchGuiPage("page_gamesetup.xml", { "type": g_GameType });
+						Engine.SwitchGuiPage("page_gamesetup.xml", { "type": g_GameType, "serverName": g_ServerName });
 						return; // don't process any more messages - leave them for the game GUI loop
 					}
 
@@ -148,6 +173,18 @@ function switchSetupPage(oldpage, newpage)
 
 function startHost(playername, servername)
 {
+	// Disallow identically named games in the multiplayer lobby
+	if (Engine.HasXmppClient())
+	{
+		for each (g in Engine.GetGameList())
+		{
+			if (g.name === servername)
+			{
+				getGUIObjectByName("hostFeedback").caption = "Game name already in use.";
+				return false;
+			}
+		}
+	}
 	try
 	{
 		Engine.StartNetworkHost(playername);
@@ -162,8 +199,10 @@ function startHost(playername, servername)
 	}
 
 	startConnectionStatus("server");
-	// TODO: ought to do something(?) with servername
-
+	g_ServerName = servername;
+	// Set player lobby presence
+	if (Engine.HasXmppClient())
+		Engine.LobbySetPlayerPresence("playing");
 	return true;
 }
 
@@ -183,5 +222,8 @@ function startJoin(playername, ip)
 	}
 
 	startConnectionStatus("client");
+	// Set player lobby presence
+	if (Engine.HasXmppClient())
+		Engine.LobbySetPlayerPresence("playing");
 	return true;
 }

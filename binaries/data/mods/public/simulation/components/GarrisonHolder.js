@@ -21,7 +21,12 @@ GarrisonHolder.prototype.Schema =
 	"</element>" +
 	"<element name='LoadingRange' a:help='The maximum distance from this holder at which entities are allowed to garrison. Should be about 2.0 for land entities and preferably greater for ships'>" +
 		"<ref name='nonNegativeDecimal'/>" +
-	"</element>";
+	"</element>" +
+	"<optional>" +
+		"<element name='Pickup' a:help='This garrisonHolder will move to pick up units to be garrisoned'>" +
+			"<data type='boolean'/>" +
+		"</element>" +
+	"</optional>";
 
 /**
  * Initialize GarrisonHolder Component
@@ -42,6 +47,21 @@ GarrisonHolder.prototype.GetLoadingRange = function()
 	var max = +this.template.LoadingRange;
 	return { "max": max, "min": 0 };
 };
+
+/**
+ * Return true if this garrisonHolder can pickup ent
+ */
+GarrisonHolder.prototype.CanPickup = function(ent)
+{
+	if (!this.template.Pickup || this.IsFull())
+		return false;
+	var cmpOwner = Engine.QueryInterface(this.entity, IID_Ownership);
+	if (!cmpOwner)
+		return false;
+	var player = cmpOwner.GetOwner();
+	return IsOwnedByPlayer(player, ent);
+};
+
 
 /**
  * Return the list of entities garrisoned inside
@@ -66,7 +86,15 @@ GarrisonHolder.prototype.GetAllowedClassesList = function()
  */
 GarrisonHolder.prototype.GetCapacity = function()
 {
-	return ApplyTechModificationsToEntity("GarrisonHolder/Max", +this.template.Max, this.entity);
+	return ApplyValueModificationsToEntity("GarrisonHolder/Max", +this.template.Max, this.entity);
+};
+
+/**
+ * Return true if this garrisonHolder is full
+ */
+GarrisonHolder.prototype.IsFull = function()
+{
+	return this.GetGarrisonedEntitiesCount() >= this.GetCapacity();
 };
 
 /**
@@ -74,7 +102,7 @@ GarrisonHolder.prototype.GetCapacity = function()
  */
 GarrisonHolder.prototype.GetHealRate = function()
 {
-	return ApplyTechModificationsToEntity("GarrisonHolder/BuffHeal", +this.template.BuffHeal, this.entity);
+	return ApplyValueModificationsToEntity("GarrisonHolder/BuffHeal", +this.template.BuffHeal, this.entity);
 };
 
 GarrisonHolder.prototype.EjectEntitiesOnDestroy = function()
@@ -109,6 +137,22 @@ GarrisonHolder.prototype.IsGarrisoningAllowed = function()
 			return false;
 	}
 	return true;
+};
+
+/**
+ * Return the number of recursively garrisoned units
+ */
+GarrisonHolder.prototype.GetGarrisonedEntitiesCount = function()
+{
+	var count = 0;
+	for each (var ent in this.entities)
+	{
+		count++;
+		var cmpGarrisonHolder = Engine.QueryInterface(ent, IID_GarrisonHolder);
+		if (cmpGarrisonHolder)
+			count += cmpGarrisonHolder.GetGarrisonedEntitiesCount();
+	}
+	return count;
 };
 
 /**
@@ -164,7 +208,12 @@ GarrisonHolder.prototype.Garrison = function(entity)
 	if(!this.AllowedToGarrison(entity))
 		return false;
 
-	if (this.entities.length >= this.GetCapacity())
+	// check the capacity
+	var extraCount = 0;
+	var cmpGarrisonHolder = Engine.QueryInterface(entity, IID_GarrisonHolder);
+	if (cmpGarrisonHolder)
+		extraCount += cmpGarrisonHolder.GetGarrisonedEntitiesCount();
+	if (this.GetGarrisonedEntitiesCount() + extraCount >= this.GetCapacity())
 		return false;
 
 	var cmpPosition = Engine.QueryInterface(entity, IID_Position);
@@ -184,6 +233,10 @@ GarrisonHolder.prototype.Garrison = function(entity)
 	var cmpProductionQueue = Engine.QueryInterface(entity, IID_ProductionQueue);
 	if (cmpProductionQueue)
 		cmpProductionQueue.PauseProduction();
+
+	var cmpAura = Engine.QueryInterface(entity, IID_Auras);
+	if (cmpAura && cmpAura.HasGarrisonAura())
+		cmpAura.ApplyGarrisonBonus(this.entity);	
 
 	Engine.PostMessage(this.entity, MT_GarrisonedUnitsChanged, {});
 	return true;
@@ -228,6 +281,11 @@ GarrisonHolder.prototype.Eject = function(entity, forced)
 	var cmpProductionQueue = Engine.QueryInterface(entity, IID_ProductionQueue);
 	if (cmpProductionQueue)
 		cmpProductionQueue.UnpauseProduction();
+
+	var cmpAura = Engine.QueryInterface(entity, IID_Auras);
+	if (cmpAura && cmpAura.HasGarrisonAura())
+		cmpAura.RemoveGarrisonBonus(this.entity);	
+
 	
 	var cmpNewPosition = Engine.QueryInterface(entity, IID_Position);
 	cmpNewPosition.JumpTo(pos.x, pos.z);
@@ -371,7 +429,7 @@ GarrisonHolder.prototype.UnloadAllOwn = function(forced)
  */
 GarrisonHolder.prototype.UnloadAll = function(forced)
 {
-	var entities = this.entities.slice(0);
+	var entities = this.entities.slice();
 	return this.PerformEject(entities, forced);
 };
 
@@ -381,8 +439,11 @@ GarrisonHolder.prototype.UnloadAll = function(forced)
  */
 GarrisonHolder.prototype.OnHealthChanged = function(msg)
 {
-	if (!this.HasEnoughHealth())
-		this.EjectOrKill(this.entities);
+	if (!this.HasEnoughHealth() && this.entities.length)
+	{
+		var entities = this.entities.slice();
+		this.EjectOrKill(entities);
+	}
 };
 
 /**
@@ -523,26 +584,25 @@ GarrisonHolder.prototype.OnDiplomacyChanged = function()
 GarrisonHolder.prototype.EjectOrKill = function(entities)
 {
 	var cmpPosition = Engine.QueryInterface(this.entity, IID_Position);
-	// Destroy the garrisoned units if the holder kill his entities on destroy or
-	// is not in the world (generally means this holder is inside 
-	// a holder which kills its entities which has sunk).
-	if (!this.EjectEntitiesOnDestroy() || !cmpPosition.IsInWorld())
-	{
-		for each (var entity in entities)
-		{
-			var cmpHealth = Engine.QueryInterface(entity, IID_Health);
-			if (cmpHealth)
-				cmpHealth.Kill();
-			var entityIndex = this.entities.indexOf(entity);
-			this.entities.splice(entityIndex, 1);
-			Engine.PostMessage(this.entity, MT_GarrisonedUnitsChanged, {});
-		}
-		this.UpdateGarrisonFlag();
-	}
-	else
-	{	// Building - force ejection
+	// Eject the units which can be ejected (if not in world, it generally means this holder
+	// is inside a holder which kills its entities, so do not eject)
+	if (cmpPosition.IsInWorld() && this.EjectEntitiesOnDestroy())
 		this.PerformEject(entities, true);
+
+	// And destroy all remaining entities
+	for each (var entity in entities)
+	{
+		var entityIndex = this.entities.indexOf(entity);
+		if (entityIndex == -1)
+			continue;
+		var cmpHealth = Engine.QueryInterface(entity, IID_Health);
+		if (cmpHealth)
+			cmpHealth.Kill();
+		this.entities.splice(entityIndex, 1);
 	}
+
+	Engine.PostMessage(this.entity, MT_GarrisonedUnitsChanged, {});
+	this.UpdateGarrisonFlag();
 };
 
 Engine.RegisterComponentType(IID_GarrisonHolder, "GarrisonHolder", GarrisonHolder);

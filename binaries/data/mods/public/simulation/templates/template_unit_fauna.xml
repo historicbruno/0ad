@@ -20,11 +20,7 @@
     <Type>food</Type>
     <Colour r="115" g="70" b="30"/>
   </Minimap>
-  <ResourceGatherer>
-    <Rates>
-      <treasure disable=""/>
-    </Rates>
-  </ResourceGatherer>
+  <ResourceGatherer disable=""/>
   <UnitAI>
     <RoamDistance>8.0</RoamDistance>
     <FleeDistance>24.0</FleeDistance>
@@ -41,6 +37,7 @@
   </UnitMotion>
   <Vision>
     <RetainInFog>true</RetainInFog>
+    <Range>0</Range>
   </Vision>
   <VisualActor>
     <SilhouetteDisplay>false</SilhouetteDisplay>

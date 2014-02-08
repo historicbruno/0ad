@@ -28,7 +28,7 @@ TechnologyManager.prototype.Init = function ()
 	
 	// This stores the modifications to unit stats from researched technologies
 	// Example data: {"ResourceGatherer/Rates/food.grain": [ 
-	//                     {"multiplier": 1.15, "affects": ["Female", "Infantry Swordsman"]},
+	//                     {"multiply": 1.15, "affects": ["Female", "Infantry Swordsman"]},
 	//                     {"add": 2}
 	//                 ]}
 	this.modifications = {};
@@ -219,8 +219,6 @@ TechnologyManager.prototype.OnGlobalOwnershipChanged = function (msg)
 		//	we want it to maintain whatever technologies previously applied)
 		if (msg.from == -1)
 		{
-			var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
-			var playerID = cmpPlayer.GetPlayerID();
 			var modifiedComponents = {};
 			for (var name in this.modifications)
 			{
@@ -234,7 +232,7 @@ TechnologyManager.prototype.OnGlobalOwnershipChanged = function (msg)
 
 			// Send mesage(s) to the entity so it knows about researched techs
 			for (var component in modifiedComponents)
-				Engine.PostMessage(msg.entity, MT_TechnologyModification, { "component": component, "player": playerID });
+				Engine.PostMessage(msg.entity, MT_ValueModification, { "component": component });
 		}
 	}
 	if (msg.from == playerID)
@@ -331,15 +329,9 @@ TechnologyManager.prototype.ResearchTechnology = function (tech)
 	
 	this.UpdateAutoResearch();
 	
-	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
-	var player = cmpPlayer.GetPlayerID();
 	// TODO: Handle technology broadcasting for autoresearch properly (some components might not be initialized currently)
-	if (player === undefined)
-		return;
-	
-	for (var component in modifiedComponents){
-		Engine.BroadcastMessage(MT_TechnologyModification, { "component": component, "player": player });
-	}
+	for (var component in modifiedComponents)
+		Engine.BroadcastMessage(MT_ValueModification, { "component": component });
 };
 
 // Clears the cached data for an entity from the modifications cache

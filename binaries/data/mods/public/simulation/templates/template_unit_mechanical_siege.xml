@@ -6,11 +6,12 @@
     <Crush>5</Crush>
   </Armour>
   <Cost>
-    <Population>3</Population>
+    <Population>5</Population>
   </Cost>
   <Identity>
 	<Classes datatype="tokens">Siege</Classes>
     <GenericName>Siege</GenericName>
+    <RequiredTechnology>phase_city</RequiredTechnology>
   </Identity>
   <Position>
     <Anchor>pitch-roll</Anchor>

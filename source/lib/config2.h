@@ -1,4 +1,4 @@
-/* Copyright (c) 2012 Wildfire Games
+/* Copyright (c) 2013 Wildfire Games
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -109,6 +109,11 @@
 // allow use of NVTT
 #ifndef CONFIG2_NVTT
 # define CONFIG2_NVTT 1
+#endif
+
+// allow use of lobby
+#ifndef CONFIG2_LOBBY
+# define CONFIG2_LOBBY 1
 #endif
 
 #endif	// #ifndef INCLUDED_CONFIG2

@@ -34,6 +34,7 @@ Player.prototype.Init = function()
 	this.cheatsEnabled = false;
 	this.cheatTimeMultiplier = 1;
 	this.heroes = [];
+	Engine.QueryInterface(SYSTEM_ENTITY, IID_EndGameManager).CheckPlayers();
 };
 
 Player.prototype.SetPlayerID = function(id)
@@ -108,7 +109,7 @@ Player.prototype.SetMaxPopulation = function(max)
 
 Player.prototype.GetMaxPopulation = function()
 {
-	return Math.round(ApplyTechModificationsToPlayer("Player/MaxPopulation", this.maxPop, this.entity));
+	return Math.round(ApplyValueModificationsToPlayer("Player/MaxPopulation", this.maxPop, this.entity));
 };
 
 Player.prototype.SetGatherRateMultiplier = function(value)
@@ -481,6 +482,9 @@ Player.prototype.OnGlobalOwnershipChanged = function(msg)
 	{
 		if (cmpIdentity && cmpIdentity.HasClass("ConquestCritical"))
 			this.conquestCriticalEntitiesCount--;
+
+		if (this.conquestCriticalEntitiesCount == 0) // end game when needed
+			Engine.QueryInterface(SYSTEM_ENTITY, IID_EndGameManager).CheckPlayers();
 
 		if (cmpCost)
 		{

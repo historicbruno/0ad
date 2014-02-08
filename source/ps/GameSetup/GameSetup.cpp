@@ -36,6 +36,7 @@
 #endif
 
 #include "graphics/CinemaTrack.h"
+#include "graphics/FontMetrics.h"
 #include "graphics/GameView.h"
 #include "graphics/LightEnv.h"
 #include "graphics/MapReader.h"
@@ -47,7 +48,6 @@
 #include "gui/scripting/JSInterface_GUITypes.h"
 #include "gui/scripting/ScriptFunctions.h"
 #include "maths/MathUtil.h"
-#include "maths/scripting/JSInterface_Vector3D.h"
 #include "network/NetServer.h"
 #include "network/NetClient.h"
 
@@ -55,7 +55,6 @@
 #include "ps/CLogger.h"
 #include "ps/ConfigDB.h"
 #include "ps/Filesystem.h"
-#include "ps/Font.h"
 #include "ps/Game.h"
 #include "ps/GameSetup/Atlas.h"
 #include "ps/GameSetup/GameSetup.h"
@@ -88,6 +87,7 @@
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
+#include "lobby/IXmppClient.h"
 #include "soundmanager/scripting/JSInterface_Sound.h"
 #include "soundmanager/ISoundManager.h"
 #include "tools/atlas/GameInterface/GameLoop.h"
@@ -281,8 +281,12 @@ void Render()
 			glLoadMatrixf(&transform._11);
 #endif
 
+#if OS_ANDROID
+#warning TODO: cursors for Android
+#else
 			if (cursor_draw(g_VFS, cursorName.c_str(), g_mouse_x, g_yres-g_mouse_y, forceGL) < 0)
 				LOGWARNING(L"Failed to draw cursor '%ls'", cursorName.c_str());
+#endif
 
 #if CONFIG2_GLES
 #warning TODO: implement cursors for GLES
@@ -318,9 +322,6 @@ void Render()
 
 static void RegisterJavascriptInterfaces()
 {
-	// maths
-	JSI_Vector3D::init();
-
 	// GUI
 	CGUI::ScriptingInit();
 
@@ -507,7 +508,7 @@ static void InitPs(bool setup_gui, const CStrW& gui_page, CScriptVal initData)
 		g_Console->UpdateScreenSize(g_xres, g_yres);
 
 		// Calculate and store the line spacing
-		CFont font(CONSOLE_FONT);
+		CFontMetrics font(CStrIntern(CONSOLE_FONT));
 		g_Console->m_iFontHeight = font.GetLineSpacing();
 		g_Console->m_iFontWidth = font.GetCharacterWidth(L'C');
 		g_Console->m_charsPerPage = (size_t)(g_xres / g_Console->m_iFontWidth);
@@ -683,6 +684,8 @@ void EndGame()
 void Shutdown(int UNUSED(flags))
 {
 	EndGame();
+
+	SAFE_DELETE(g_XmppClient);
 
 	ShutdownPs(); // Must delete g_GUI before g_ScriptingHost
 

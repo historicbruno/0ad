@@ -160,6 +160,10 @@ var UnitFsmSpec = {
 		// ignore
 	},
 
+	"PickupCanceled": function(msg) {
+		// ignore
+	},
+
 	// Formation handlers:
 
 	"FormationLeave": function(msg) {
@@ -325,6 +329,31 @@ var UnitFsmSpec = {
 			// We are already at the target, or can't move at all
 			this.StopMoving();
 			this.FinishOrder();
+		}
+	},
+
+	"Order.PickupUnit": function(msg) {
+		var cmpGarrisonHolder = Engine.QueryInterface(this.entity, IID_GarrisonHolder);
+		if (!cmpGarrisonHolder || cmpGarrisonHolder.IsFull())
+		{
+			this.FinishOrder();
+			return;
+		}
+
+		// TODO improve these movements in case of ship: the MoveToTarget of the units brings
+		// them to the nearest point-on-land from the ship, while the MoveToPoint of the ship
+		// brings it to the nearest point-on-water from the units, and these can be quite
+		// different in some cases leading to weird movements. MoveToTarget should update its path
+		// according to the target movement more often.
+		if (this.MoveToTarget(this.order.data.target))
+		{
+			this.SetNextState("INDIVIDUAL.PICKUP.APPROACHING");
+		}
+		else
+		{
+			// We are already at the target, or can't move at all
+			this.StopMoving();
+			this.SetNextState("INDIVIDUAL.PICKUP.LOADING");
 		}
 	},
 
@@ -573,10 +602,24 @@ var UnitFsmSpec = {
 	},
 
 	"Order.Trade": function(msg) {
-		if (this.MoveToMarket(this.order.data.firstMarket))
+		// We must check if this trader has both markets in case it was a back-to-work order
+		var cmpTrader = Engine.QueryInterface(this.entity, IID_Trader);
+		if (!cmpTrader || ! cmpTrader.HasBothMarkets())
 		{
-			// We've started walking to the first market
-			this.SetNextState("INDIVIDUAL.TRADE.APPROACHINGFIRSTMARKET");
+			this.FinishOrder();
+			return;
+		}
+
+		var nextMarket = cmpTrader.GetNextMarket();
+		if (nextMarket == this.order.data.firstMarket)
+			var state = "INDIVIDUAL.TRADE.APPROACHINGFIRSTMARKET";
+		else
+			var state = "INDIVIDUAL.TRADE.APPROACHINGSECONDMARKET";
+
+		if (this.MoveToMarket(nextMarket))
+		{
+			// We've started walking to the next market
+			this.SetNextState(state);
 		}
 	},
 
@@ -608,7 +651,7 @@ var UnitFsmSpec = {
 			return;
 		}
 
-		if (this.MoveToTarget(this.order.data.target))
+		if (this.MoveToGarrisonRange(this.order.data.target))
 		{
 			this.SetNextState("INDIVIDUAL.GARRISON.APPROACHING");
 		}
@@ -727,26 +770,31 @@ var UnitFsmSpec = {
 		},
 
 		"Order.Garrison": function(msg) {
-			// TODO: on what should we base this range?
-			// Check if we are already in range, otherwise walk there
-			if (!this.CheckTargetRangeExplicit(msg.data.target, 0, 10))
+			if (!Engine.QueryInterface(msg.data.target, IID_GarrisonHolder))
 			{
-				if (!this.TargetIsAlive(msg.data.target) || !this.CheckTargetVisible(msg.data.target))
-					// The target was destroyed
-					this.FinishOrder();
-				else
-					// Out of range; move there in formation
-					this.PushOrderFront("WalkToTargetRange", { "target": msg.data.target, "min": 0, "max": 10 });
+				this.FinishOrder();
 				return;
 			}
+			// Check if we are already in range, otherwise walk there
+			if (!this.CheckGarrisonRange(msg.data.target))
+			{
+				if (!this.CheckTargetVisible(msg.data.target))
+				{
+					this.FinishOrder();
+					return;
+				}
+				else
+				{
+					// Out of range; move there in formation
+					if (this.MoveToGarrisonRange(msg.data.target))
+					{
+						this.SetNextState("GARRISON.APPROACHING");
+						return;
+					}
+				}
+			}
 
-			var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
-			// We don't want to rearrange the formation if the individual units are carrying
-			// out a task and one of the members dies/leaves the formation.
-			cmpFormation.SetRearrange(false);
-			cmpFormation.CallMemberFunction("Garrison", [msg.data.target, false]);
-
-			this.SetNextStateAlwaysEntering("MEMBER");
+			this.SetNextState("GARRISON.GARRISONING");
 		},
 
 		"Order.Gather": function(msg) {
@@ -974,6 +1022,57 @@ var UnitFsmSpec = {
 
 				// No more orders left.
 				cmpFormation.Disband();
+			},
+		},
+
+		"GARRISON":{
+			"enter": function() {
+				// If the garrisonholder should pickup, warn it so it can take needed action
+				var cmpGarrisonHolder = Engine.QueryInterface(this.order.data.target, IID_GarrisonHolder);
+				if (cmpGarrisonHolder && cmpGarrisonHolder.CanPickup(this.entity))
+				{
+					this.pickup = this.order.data.target;       // temporary, deleted in "leave"
+					Engine.PostMessage(this.pickup, MT_PickupRequested, { "entity": this.entity });
+				}
+			},
+
+			"leave": function() {
+				// If a pickup has been requested and not yet canceled, cancel it
+				if (this.pickup)
+				{
+					Engine.PostMessage(this.pickup, MT_PickupCanceled, { "entity": this.entity });
+					delete this.pickup;
+				}
+			},
+
+
+			"APPROACHING": {
+				"MoveStarted": function(msg) {
+					var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+					cmpFormation.SetRearrange(true);
+					cmpFormation.MoveMembersIntoFormation(true, true);
+				},
+
+				"MoveCompleted": function(msg) {
+					this.SetNextState("GARRISONING");
+				},
+			},
+
+			"GARRISONING": {
+				"enter": function() {
+					// If a pickup has been requested, cancel it as it will be requested by members
+					if (this.pickup)
+					{
+						Engine.PostMessage(this.pickup, MT_PickupCanceled, { "entity": this.entity });
+						delete this.pickup;
+					}
+					var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+					// We don't want to rearrange the formation if the individual units are carrying
+					// out a task and one of the members dies/leaves the formation.
+					cmpFormation.SetRearrange(false);
+					cmpFormation.CallMemberFunction("Garrison", [this.order.data.target, false]);
+					this.SetNextStateAlwaysEntering("MEMBER");
+				},
 			},
 		},
 
@@ -2257,6 +2356,26 @@ var UnitFsmSpec = {
 		},
 
 		"GARRISON": {
+			"enter": function() {
+				// If the garrisonholder should pickup, warn it so it can take needed action
+				var cmpGarrisonHolder = Engine.QueryInterface(this.order.data.target, IID_GarrisonHolder);
+				if (cmpGarrisonHolder && cmpGarrisonHolder.CanPickup(this.entity))
+				{
+					this.pickup = this.order.data.target;       // temporary, deleted in "leave"
+					Engine.PostMessage(this.pickup, MT_PickupRequested, { "entity": this.entity });
+				}
+			},
+
+			"leave": function() {
+				// If a pickup has been requested and not yet canceled, cancel it
+				if (this.pickup)
+				{
+					Engine.PostMessage(this.pickup, MT_PickupCanceled, { "entity": this.entity });
+					delete this.pickup;
+				}
+
+			},
+
 			"APPROACHING": {
 				"enter": function() {
 					this.SelectAnimation("move");
@@ -2265,10 +2384,6 @@ var UnitFsmSpec = {
 				"MoveCompleted": function() {
 					this.SetNextState("GARRISONED");
 				},
-				
-				"leave": function() {
-					this.StopTimer();
-				}
 			},
 
 			"GARRISONED": {
@@ -2300,14 +2415,31 @@ var UnitFsmSpec = {
 										this.SetGathererAnimationOverride();
 									}
 								}
+
+								// If a pickup has been requested, remove it
+								if (this.pickup)
+								{
+									Engine.PostMessage(this.pickup, MT_PickupCanceled, { "entity": this.entity });
+									delete this.pickup;
+								}
 								
 								return false;
 							}
 						}
 						else
 						{
-							// Unable to reach the target, try again
-							// (or follow if it's a moving target)
+							// Unable to reach the target, try again (or follow if it is a moving target)
+							// except if the does not exits anymore or its orders have changed
+							if (this.pickup)
+							{
+								var cmpUnitAI = Engine.QueryInterface(this.pickup, IID_UnitAI);
+								if (!cmpUnitAI || !cmpUnitAI.HasPickupOrder(this.entity))
+								{
+									this.FinishOrder();
+									return true;
+								}
+
+							}
 							if (this.MoveToTarget(target))
 							{
 								this.SetNextState("APPROACHING");
@@ -2385,6 +2517,40 @@ var UnitFsmSpec = {
 
 			"Attacked": function(msg) {
 				// Ignore attacks while unpacking
+			},
+		},
+
+		"PICKUP": {
+			"APPROACHING": {
+				"enter": function() {
+					this.SelectAnimation("move");
+				},
+
+				"MoveCompleted": function() {
+					this.SetNextState("LOADING");
+				},
+
+				"PickupCanceled": function() {
+					this.StopMoving();
+					this.FinishOrder();
+				},
+			},
+
+			"LOADING": {
+				"enter": function() {
+					this.SelectAnimation("idle");
+					var cmpGarrisonHolder = Engine.QueryInterface(this.entity, IID_GarrisonHolder);
+					if (!cmpGarrisonHolder || cmpGarrisonHolder.IsFull())
+					{
+						this.FinishOrder();
+						return true;
+					}
+					return false;
+				},
+
+				"PickupCanceled": function() {
+					this.FinishOrder();
+				},
 			},
 		},
 	},
@@ -2525,6 +2691,9 @@ UnitAI.prototype.Init = function()
 	this.isIdle = false;
 	this.lastFormationName = "";
 	this.finishedOrder = false; // used to find if all formation members finished the order
+	
+	// Queue of remembered works
+	this.workOrders = [];
 
 	// For preventing increased action rate due to Stop orders or target death.
 	this.lastAttacked = undefined;
@@ -2657,6 +2826,39 @@ UnitAI.prototype.OnVisionRangeChanged = function(msg)
 	// Update range queries
 	if (this.entity == msg.entity)
 		this.SetupRangeQueries();
+};
+
+UnitAI.prototype.HasPickupOrder = function(entity)
+{
+	for each (var order in this.orderQueue)
+		if (order.type == "PickupUnit" && order.data.target == entity)
+			return true;
+	return false;
+};
+
+UnitAI.prototype.OnPickupRequested = function(msg)
+{
+	// First check if we already have such a request
+	if (this.HasPickupOrder(msg.entity))
+		return;
+	// Otherwise, insert the PickUp order after the last forced order
+	this.PushOrderAfterForced("PickupUnit", { "target": msg.entity });
+};
+
+UnitAI.prototype.OnPickupCanceled = function(msg)
+{
+	var cmpUnitAI = Engine.QueryInterface(msg.entity, IID_UnitAI);
+	for (var i = 0; i < this.orderQueue.length; ++i)
+	{
+		if (this.orderQueue[i].type == "PickupUnit" && this.orderQueue[i].data.target == msg.entity)
+		{
+			if (i == 0)
+				UnitFsm.ProcessMessage(this, {"type": "PickupCanceled", "data": msg});
+			else
+				this.orderQueue.splice(i, 1);
+			break;
+		}
+	}
 };
 
 // Wrapper function that sets up the normal, healer, and Gaia range queries.
@@ -2817,7 +3019,8 @@ UnitAI.prototype.FinishOrder = function()
 		error("FinishOrder called for entity " + this.entity + " (" + template + ") when order queue is empty\n" + stack);
 	}
 
-	this.orderQueue.shift();
+	// Remove the order from the queue
+	var finishedOrder = this.orderQueue.shift();
 	this.order = this.orderQueue[0];
 
 	if (this.orderQueue.length)
@@ -2924,8 +3127,46 @@ UnitAI.prototype.PushOrderFront = function(type, data)
 	}
 };
 
+/**
+ * Insert an order after the last forced order onto the queue
+ * and after the other orders of the same type
+ */
+UnitAI.prototype.PushOrderAfterForced = function(type, data)
+{
+	if (!this.order || ((!this.order.data || !this.order.data.force) && this.order.type != type))
+	{
+		this.PushOrderFront(type, data);
+	}
+	else
+	{
+		for (var i = 1; i < this.orderQueue.length; ++i)
+		{
+			if (this.orderQueue[i].data && this.orderQueue[i].data.force)
+				continue;
+			if (this.orderQueue[i].type == type)
+				continue;
+			this.orderQueue.splice(i, 0, {"type": type, "data": data});
+			return;
+		}
+		this.PushOrder(type, data);
+	}
+};
+
 UnitAI.prototype.ReplaceOrder = function(type, data)
 {
+	// Remember the previous work orders to be able to go back to them later if required
+	if (data && data.force)
+	{
+		if (this.IsFormationController())
+		{
+			var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
+			if (cmpFormation)
+				cmpFormation.CallMemberFunction("UpdateWorkOrders", [type]);
+		}
+		else
+			this.UpdateWorkOrders(type);
+	}
+
 	// Special cases of orders that shouldn't be replaced:
 	// 1. Cheering - we're invulnerable, add order after we finish
 	// 2. Packing/unpacking - we're immobile, add order after we finish (unless it's cancel)
@@ -2934,13 +3175,13 @@ UnitAI.prototype.ReplaceOrder = function(type, data)
 	{
 		var order = { "type": type, "data": data };
 		var cheeringOrder = this.orderQueue.shift();
-		this.orderQueue = [ cheeringOrder, order ];
+		this.orderQueue = [cheeringOrder, order];
 	}
 	else if (this.IsPacking() && type != "CancelPack" && type != "CancelUnpack")
 	{
 		var order = { "type": type, "data": data };
 		var packingOrder = this.orderQueue.shift();
-		this.orderQueue = [ packingOrder, order ];
+		this.orderQueue = [packingOrder, order];
 	}
 	else
 	{
@@ -2970,6 +3211,94 @@ UnitAI.prototype.GetOrderData = function()
 			orders.push(deepcopy(this.orderQueue[i].data));
 		}
 	return orders;
+};
+
+UnitAI.prototype.UpdateWorkOrders = function(type)
+{
+	var isWorkType = function(type){
+		return (type == "Gather" || type == "Trade" || type == "Repair" || type == "ReturnResource");
+	};
+	
+	// If we are being reaffected to a work order, forgot the previous ones
+	if (isWorkType(type))
+	{
+		this.workOrders = [];
+		return;
+	}
+	
+	// Then if we already have work orders, keep them
+	if (this.workOrders.length)
+		return;
+	
+	// First if the unit is in a formation, get its workOrders from it
+	if (this.IsFormationMember())
+	{
+		var cmpUnitAI = Engine.QueryInterface(this.formationController, IID_UnitAI);
+		if (cmpUnitAI)
+		{
+			for (var i = 0; i < cmpUnitAI.orderQueue.length; ++i)
+			{
+				if (isWorkType(cmpUnitAI.orderQueue[i].type))
+				{
+					this.workOrders = cmpUnitAI.orderQueue.slice(i);
+					return;
+				}
+			}
+		}
+	}
+
+	// If nothing found, take the unit orders
+	for (var i = 0; i < this.orderQueue.length; ++i)
+	{
+		if (isWorkType(this.orderQueue[i].type))
+		{
+			this.workOrders = this.orderQueue.slice(i);
+			return;
+		}
+	}
+};
+
+UnitAI.prototype.BackToWork = function()
+{	
+	if (this.workOrders.length == 0)
+		return false;
+	
+	// Clear the order queue considering special orders not to avoid
+	if (this.order && this.order.type == "Cheering")
+	{
+		var cheeringOrder = this.orderQueue.shift();
+		this.orderQueue = [cheeringOrder];
+	}
+	else
+		this.orderQueue = [];
+		
+	this.AddOrders(this.workOrders);
+		
+	// And if the unit is in a formation, remove it from the formation
+	if (this.IsFormationMember())
+	{
+		var cmpFormation = Engine.QueryInterface(this.formationController, IID_Formation);
+		if (cmpFormation)
+			cmpFormation.RemoveMembers([this.entity]);
+	}
+		
+	this.workOrders = [];
+	return true;
+};
+
+UnitAI.prototype.HasWorkOrders = function()
+{
+	return this.workOrders.length > 0;
+};
+
+UnitAI.prototype.GetWorkOrders = function()
+{
+	return this.workOrders;
+};
+
+UnitAI.prototype.SetWorkOrders = function(orders)
+{
+	this.workOrders = orders;
 };
 
 UnitAI.prototype.TimerHandler = function(data, lateness)
@@ -3409,6 +3738,20 @@ UnitAI.prototype.MoveToTargetRangeExplicit = function(target, min, max)
 	return cmpUnitMotion.MoveToTargetRange(target, min, max);
 };
 
+UnitAI.prototype.MoveToGarrisonRange = function(target)
+{
+	if (!this.CheckTargetVisible(target))
+		return false;
+
+	var cmpGarrisonHolder = Engine.QueryInterface(target, IID_GarrisonHolder);
+	if (!cmpGarrisonHolder)
+		return false;
+	var range = cmpGarrisonHolder.GetLoadingRange();
+
+	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
+	return cmpUnitMotion.MoveToTargetRange(target, range.min, range.max);
+};
+
 UnitAI.prototype.CheckPointRangeExplicit = function(x, z, min, max)
 {
 	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
@@ -3470,6 +3813,8 @@ UnitAI.prototype.CheckTargetRangeExplicit = function(target, min, max)
 UnitAI.prototype.CheckGarrisonRange = function(target)
 {
 	var cmpGarrisonHolder = Engine.QueryInterface(target, IID_GarrisonHolder);
+	if (!cmpGarrisonHolder)
+		return false;
 	var range = cmpGarrisonHolder.GetLoadingRange();
 
 	var cmpUnitMotion = Engine.QueryInterface(this.entity, IID_UnitMotion);
@@ -4079,7 +4424,7 @@ UnitAI.prototype.PerformTradeAndMoveToNextMarket = function(currentMarket, nextM
 
 	if (this.CheckTargetRange(currentMarket, IID_Trader))
 	{
-		this.PerformTrade();
+		this.PerformTrade(currentMarket);
 		if (this.MoveToMarket(nextMarket))
 		{
 			// We've started walking to the next market
@@ -4093,10 +4438,10 @@ UnitAI.prototype.PerformTradeAndMoveToNextMarket = function(currentMarket, nextM
 	}
 };
 
-UnitAI.prototype.PerformTrade = function()
+UnitAI.prototype.PerformTrade = function(currentMarket)
 {
 	var cmpTrader = Engine.QueryInterface(this.entity, IID_Trader);
-	cmpTrader.PerformTrade();
+	cmpTrader.PerformTrade(currentMarket);
 };
 
 UnitAI.prototype.StopTrading = function()

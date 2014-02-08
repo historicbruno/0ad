@@ -37,6 +37,7 @@
     <List datatype="tokens">Support Infantry Cavalry</List>
     <BuffHeal>1</BuffHeal>
     <LoadingRange>10</LoadingRange>
+    <Pickup>true</Pickup>
   </GarrisonHolder>
   <Health>
     <Max>800</Max>
@@ -44,7 +45,7 @@
   <Identity>
     <GenericName>Light Warship</GenericName>
     <Tooltip>Classes: Light Warship Ranged</Tooltip>
-    <Classes datatype="tokens">Warship Light</Classes>
+    <Classes datatype="tokens">Warship Light Bow</Classes>
 	<RequiredTechnology>phase_town</RequiredTechnology>
   </Identity>
   <ResourceGatherer disable=""/>

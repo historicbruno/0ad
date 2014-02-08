@@ -10,12 +10,17 @@ newoption { trigger = "minimal-flags", description = "Only set compiler/linker f
 newoption { trigger = "without-nvtt", description = "Disable use of NVTT" }
 newoption { trigger = "without-tests", description = "Disable generation of test projects" }
 newoption { trigger = "without-pch", description = "Disable generation and usage of precompiled headers" }
+newoption { trigger = "without-lobby", description = "Disable the use of gloox and the multiplayer lobby" }
 newoption { trigger = "with-system-nvtt", description = "Search standard paths for nvidia-texture-tools library, instead of using bundled copy" }
 newoption { trigger = "with-system-enet", description = "Search standard paths for libenet, instead of using bundled copy" }
 newoption { trigger = "with-system-mozjs185", description = "Search standard paths for libmozjs185, instead of using bundled copy" }
+newoption { trigger = "with-c++11", description = "Enable C++11 on GCC" }
 newoption { trigger = "sysroot", description = "Set compiler system root path, used for building against a non-system SDK. For example /usr/local becomes SYSROOT/user/local" }
 newoption { trigger = "macosx-version-min", description = "Set minimum required version of the OS X API, the build will possibly fail if an older SDK is used, while newer API functions will be weakly linked (i.e. resolved at runtime)" }
 newoption { trigger = "macosx-bundle", description = "Enable OSX bundle, the argument is the bundle identifier string (e.g. com.wildfiregames.0ad)" }
+
+newoption { trigger = "build-shared-glooxwrapper", description = "Rebuild glooxwrapper DLL for Windows. Requires the same compiler version that gloox was built with" }
+newoption { trigger = "use-shared-glooxwrapper", description = "Use prebuilt glooxwrapper DLL for Windows" }
 
 newoption { trigger = "bindir", description = "Directory for executables (typically '/usr/games'); default is to be relocatable" }
 newoption { trigger = "datadir", description = "Directory for data files (typically '/usr/share/games/0ad'); default is ../data/ relative to executable" }
@@ -173,6 +178,10 @@ function project_set_build_flags()
 		defines { "CONFIG2_NVTT=0" }
 	end
 
+	if _OPTIONS["without-lobby"] then
+		defines { "CONFIG2_LOBBY=0" }
+	end
+
 	-- required for the lowlevel library. must be set from all projects that use it, otherwise it assumes it is
 	-- being used as a DLL (which is currently not the case in 0ad)
 	defines { "LIB_STATIC_LINK" }
@@ -182,6 +191,7 @@ function project_set_build_flags()
 
 		-- use native wchar_t type (not typedef to unsigned short)
 		flags { "NativeWChar" }
+		flags { "EnableSSE2" } -- Enable SSE2 code generation for VS
 
 		-- VC++ 2008 has implied FPO as the default (newer versions default to /Oy-)
 		-- disable it explicitly since it breaks our stack walker in release build
@@ -270,18 +280,23 @@ function project_set_build_flags()
 						"-march=i686"
 					}
 				end
-
+			end
+			
+			if _OPTIONS["with-c++11"] then
+				buildoptions {
+					-- Enable C++11 standard. VS2010 and higher automatically support C++11
+					-- but we have to enable it manually on GNU C++ and Intel C++
+					"-std=c++0x"
+				}
 			end
 
 			if arch == "arm" then
-				-- disable warnings about va_list ABI change
+				-- disable warnings about va_list ABI change and use
+				-- compile-time flags for futher configuration.
 				buildoptions { "-Wno-psabi" }
 				if _OPTIONS["android"] then
-					-- target generic arm CPUs with NEON
-					buildoptions { "-mtune=generic-arm -mfpu=neon -mfloat-abi=softfp" }
-				else
-					-- target Cortex-A15 CPUs with NEON
-					buildoptions { "-mtune=cortex-a15 -mfpu=neon-vfpv4 -mfloat-abi=hard" }
+					-- Android uses softfp, so we should too.
+					buildoptions { "-mfloat-abi=softfp" }
 				end
 			end
 
@@ -493,6 +508,8 @@ end
 -- names of all static libs created. automatically added to the
 -- main app project later (see explanation at end of this file)
 static_lib_names = {}
+static_lib_names_debug = {}
+static_lib_names_release = {}
 
 -- set up one of the static libraries into which the main engine code is split.
 -- extra_params:
@@ -513,6 +530,24 @@ function setup_static_lib_project (project_name, rel_source_dirs, extern_libs, e
 
 	if os.is("windows") then
 		flags { "NoRTTI" }
+	end
+end
+
+function setup_shared_lib_project (project_name, rel_source_dirs, extern_libs, extra_params)
+
+	local target_type = "SharedLib"
+	project_create(project_name, target_type)
+	project_add_contents(source_root, rel_source_dirs, {}, extra_params)
+	project_add_extern_libs(extern_libs, target_type)
+	project_add_x11_dirs()
+
+	if not extra_params["no_default_link"] then
+		table.insert(static_lib_names, project_name)
+	end
+
+	if os.is("windows") then
+		flags { "NoRTTI" }
+		links { "delayimp" }
 	end
 end
 
@@ -538,6 +573,44 @@ function setup_all_libs ()
 		"boost",	-- dragged in via server->simulation.h->random
 	}
 	setup_static_lib_project("network", source_dirs, extern_libs, {})
+
+
+	if not _OPTIONS["without-lobby"] then
+		source_dirs = {
+			"lobby",
+		}
+
+		extern_libs = {
+			"spidermonkey",
+			"boost",
+			"gloox",
+		}
+		setup_static_lib_project("lobby", source_dirs, extern_libs, {})
+
+		if _OPTIONS["use-shared-glooxwrapper"] and not _OPTIONS["build-shared-glooxwrapper"] then
+			table.insert(static_lib_names_debug, "glooxwrapper_dbg")
+			table.insert(static_lib_names_release, "glooxwrapper")
+		else
+			source_dirs = {
+				"lobby/glooxwrapper",
+			}
+			extern_libs = {
+				"boost",
+				"gloox",
+			}
+			if _OPTIONS["build-shared-glooxwrapper"] then
+				setup_shared_lib_project("glooxwrapper", source_dirs, extern_libs, {})
+			else
+				setup_static_lib_project("glooxwrapper", source_dirs, extern_libs, {})
+			end
+		end
+	else
+		extern_libs = {
+			"boost"
+		}
+		setup_static_lib_project("lobby", {}, extern_libs, {})
+		files { source_root.."lobby/Globals.cpp" }
+	end
 
 
 	source_dirs = {
@@ -591,7 +664,7 @@ function setup_all_libs ()
 		"zlib",
 		"boost",
 		"enet",
-		"libcurl"
+		"libcurl",
 	}
 	
 	if not _OPTIONS["without-audio"] then
@@ -620,6 +693,7 @@ function setup_all_libs ()
 	end
 	setup_static_lib_project("graphics", source_dirs, extern_libs, {})
 
+
 	source_dirs = {
 		"tools/atlas/GameInterface",
 		"tools/atlas/GameInterface/Handlers"
@@ -641,7 +715,7 @@ function setup_all_libs ()
 		"spidermonkey",
 		"sdl",	-- key definitions
 		"opengl",
-		"boost"
+		"boost",
 	}
 	setup_static_lib_project("gui", source_dirs, extern_libs, {})
 
@@ -707,7 +781,7 @@ function setup_all_libs ()
 	end
 
 	-- runtime-library-specific
-	if _ACTION == "vs2005" or _ACTION == "vs2008" or _ACTION == "vs2010" then
+	if _ACTION == "vs2005" or _ACTION == "vs2008" or _ACTION == "vs2010" or _ACTION == "vs2012" or _ACTION == "vs2013" then
 		table.insert(source_dirs, "lib/sysdep/rtl/msc");
 	else
 		table.insert(source_dirs, "lib/sysdep/rtl/gcc");
@@ -782,6 +856,10 @@ if not _OPTIONS["without-nvtt"] then
 	table.insert(used_extern_libs, "nvtt")
 end
 
+if not _OPTIONS["without-lobby"] then
+	table.insert(used_extern_libs, "gloox")
+end
+
 -- Bundles static libs together with main.cpp and builds game executable.
 function setup_main_exe ()
 
@@ -830,6 +908,8 @@ function setup_main_exe ()
 		if _OPTIONS["android"] then
 			-- NDK's STANDALONE-TOOLCHAIN.html says this is required
 			linkoptions { "-Wl,--fix-cortex-a8" }
+
+			links { "log" }
 		end
 
 		if os.is("linux") or os.getversion().description == "GNU/kFreeBSD" then
@@ -1187,7 +1267,7 @@ function configure_cxxtestgen()
 		lcxxtestpath = path.translate(lcxxtestpath, "\\")
 	end
 
-	if _ACTION ~= "gmake" and _ACTION ~= "vs2010" then
+	if _ACTION ~= "gmake" and _ACTION ~= "vs2010" and _ACTION ~= "vs2012" and _ACTION ~= "vs2013" then
 		prebuildcommands { lcxxtestpath.." --root "..lcxxtestrootoptions.." -o "..lcxxtestrootfile }
 	end
 
@@ -1205,7 +1285,7 @@ function configure_cxxtestgen()
 			files { src_file }
 			cxxtesthdrfiles { v }
 
-			if _ACTION ~= "gmake" and _ACTION ~= "vs2010" then
+			if _ACTION ~= "gmake" and _ACTION ~= "vs2010" and _ACTION ~= "vs2012" and _ACTION ~= "vs2013" then
 				-- see detailed comment above.
 				src_file = path.rebase(src_file, path.getabsolute("."), _OPTIONS["outpath"])
 				v = path.rebase(v, path.getabsolute("."), _OPTIONS["outpath"])
@@ -1231,6 +1311,12 @@ function setup_tests()
 	configure_cxxtestgen()
 
 	links { static_lib_names }
+	configuration "Debug"
+		links { static_lib_names_debug }
+	configuration "Release"
+		links { static_lib_names_release }
+	configuration { }
+
 	links { "mocks_test" }
 	if _OPTIONS["atlas"] then
 		links { "AtlasObject" }
@@ -1255,6 +1341,8 @@ function setup_tests()
 
 		-- see wstartup.h
 		linkoptions { "/INCLUDE:_wstartup_InitAndRegisterShutdown" }
+		-- Enables console for the TEST project on Windows
+		linkoptions { "/SUBSYSTEM:CONSOLE" }
 
 		project_add_manifest()
 
@@ -1309,6 +1397,11 @@ setup_all_libs()
 -- work when changing the static lib breakdown.
 project("pyrogenesis") -- Set the main project active
 	links { static_lib_names }
+	configuration "Debug"
+		links { static_lib_names_debug }
+	configuration "Release"
+		links { static_lib_names_release }
+	configuration { }
 
 if _OPTIONS["atlas"] then
 	setup_atlas_projects()
