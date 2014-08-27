@@ -88,17 +88,17 @@ public:
 		shared_ptr<u8> file; size_t fileSize;
 		RETURN_STATUS_IF_ERR(vfs->LoadFile(pathname, file, fileSize));
 
-		ScopedTex t;
-		RETURN_STATUS_IF_ERR(tex_decode(file, fileSize, &t));
+		Tex t;
+		RETURN_STATUS_IF_ERR(t.decode(file, fileSize));
 
 		// convert to required BGRA format.
-		const size_t flags = (t.flags | TEX_BGR) & ~TEX_DXT;
-		RETURN_STATUS_IF_ERR(tex_transform_to(&t, flags));
-		void* bgra_img = tex_get_data(&t);
+		const size_t flags = (t.m_Flags | TEX_BGR) & ~TEX_DXT;
+		RETURN_STATUS_IF_ERR(t.transform_to(flags));
+		void* bgra_img = t.get_data();
 		if(!bgra_img)
 			WARN_RETURN(ERR::FAIL);
 
-		surface = SDL_CreateRGBSurfaceFrom(bgra_img, (int)t.w, (int)t.h, 32, (int)t.w*4, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+		surface = SDL_CreateRGBSurfaceFrom(bgra_img, (int)t.m_Width, (int)t.m_Height, 32, (int)t.m_Width*4, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 		if (!surface)
 			return ERR::FAIL;
 		cursor = SDL_CreateColorCursor(surface, hotspotx_, hotspoty_);
