@@ -578,7 +578,11 @@ extern_lib_defs = {
 				-- Support SDL_CONFIG for overriding for the default PATH-based sdl-config
 				sdl_config_path = os.getenv("SDL_CONFIG")
 				if not sdl_config_path then
-					sdl_config_path = "sdl-config"
+					if _OPTIONS["sdl2"] then
+						sdl_config_path = "sdl2-config"
+					else
+						sdl_config_path = "sdl-config"
+					end
 				end
 
 				-- "pkg-config sdl --libs" appears to include both static and dynamic libs
