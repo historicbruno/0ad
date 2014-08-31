@@ -328,6 +328,13 @@ void CVideoMode::Shutdown()
 
 	m_IsFullscreen = false;
 	m_IsInitialised = false;
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	if (m_Window)
+	{
+		SDL_DestroyWindow(m_Window);
+		m_Window = NULL;
+	}
+#endif
 }
 
 void CVideoMode::EnableS3TC()
