@@ -1,4 +1,4 @@
-/* Copyright (c) 2013 Wildfire Games
+/* Copyright (c) 2014 Wildfire Games
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,15 +27,15 @@
 #include "precompiled.h"
 #include "cursor.h"
 
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <sstream>
 
 #include "lib/external_libraries/libsdl.h"
 #include "lib/ogl.h"
+#include "lib/res/h_mgr.h"
 #include "lib/sysdep/cursor.h"
 #include "ogl_tex.h"
-#include "lib/res/h_mgr.h"
 
 // On Windows, allow runtime choice between system cursors and OpenGL
 // cursors (Windows = more responsive, OpenGL = more consistent with what
@@ -75,7 +75,8 @@ static Status load_sys_cursor(const PIVFS& vfs, const VfsPath& pathname, int hx,
 	return INFO::OK;
 # endif // ALLOW_SYS_CURSOR
 }
-#endif // !SDL_VERSION_ATLEAST(2,0,0)
+
+#else // SDL_VERSION_ATLEAST(2,0,0)
 
 class SDLCursor
 {
@@ -119,6 +120,7 @@ public:
 		SDL_FreeSurface(surface);
 	}
 };
+#endif // SDL_VERSION_ATLEAST(2,0,0)
 
 // no init is necessary because this is stored in struct Cursor, which
 // is 0-initialized by h_mgr.
@@ -194,8 +196,11 @@ public:
 enum CursorKind
 {
 	CK_Default,
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	CK_System,
+#else
 	CK_SDL,
+#endif
 	CK_OpenGL
 };
 
@@ -206,15 +211,19 @@ struct Cursor
 
 	CursorKind kind;
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	// valid iff kind == CK_System
 	sys_cursor system_cursor;
-
+#else
 	// valid iff kind == CK_SDL
 	SDLCursor sdl_cursor;
+#endif
 
 	// valid iff kind == CK_OpenGL
 	GLCursor gl_cursor;
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	sys_cursor gl_empty_system_cursor;
+#endif
 };
 
 H_TYPE_DEFINE(Cursor);
@@ -231,13 +240,15 @@ static void Cursor_dtor(Cursor* c)
 	case CK_Default:
 		break;	// nothing to do
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	case CK_System:
 		sys_cursor_free(c->system_cursor);
 		break;
-
+#else
 	case CK_SDL:
 		c->sdl_cursor.destroy();
 		break;
+#endif
 
 	case CK_OpenGL:
 		c->gl_cursor.destroy();
@@ -269,18 +280,15 @@ static Status Cursor_reload(Cursor* c, const PIVFS& vfs, const VfsPath& name, Ha
 
 	const VfsPath pathnameImage = pathname.ChangeExtension(L".png");
 
-	if(!c->forceGL)
-	{
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-		// try loading as SDL 2.0 cursor
-		if (c->sdl_cursor.create(vfs, pathnameImage, hotspotx, hotspoty) == INFO::OK)
-			c->kind = CK_SDL;
+	// try loading as SDL2 cursor
+	if (!c->forceGL && c->sdl_cursor.create(vfs, pathnameImage, hotspotx, hotspoty) == INFO::OK)
+		c->kind = CK_SDL;
 #else
-		// try loading as system cursor (2d, hardware accelerated)
-		if (load_sys_cursor(vfs, pathnameImage, hotspotx, hotspoty, &c->system_cursor) == INFO::OK)
-			c->kind = CK_System;
+	// try loading as system cursor (2d, hardware accelerated)
+	if (!c->forceGL && load_sys_cursor(vfs, pathnameImage, hotspotx, hotspoty, &c->system_cursor) == INFO::OK)
+		c->kind = CK_System;
 #endif
-	}
 	// fall back to GLCursor (system cursor code is disabled or failed)
 	else if(c->gl_cursor.create(vfs, pathnameImage, hotspotx, hotspoty) == INFO::OK)
 	{
@@ -304,13 +312,15 @@ static Status Cursor_validate(const Cursor* c)
 	case CK_Default:
 		break;	// nothing to do
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	case CK_System:
 		if(c->system_cursor == 0)
 			WARN_RETURN(ERR::_1);
 		break;
-
+#else
 	case CK_SDL:
 		break;	// nothing to do
+#endif
 
 	case CK_OpenGL:
 		RETURN_STATUS_IF_ERR(c->gl_cursor.validate());
@@ -333,13 +343,15 @@ static Status Cursor_to_string(const Cursor* c, wchar_t* buf)
 		type = L"default";
 		break;
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	case CK_System:
 		type = L"sys";
 		break;
-
+#else
 	case CK_SDL:
 		type = L"sdl";
 		break;
+#endif
 
 	case CK_OpenGL:
 		type = L"gl";
@@ -404,14 +416,16 @@ Status cursor_draw(const PIVFS& vfs, const wchar_t* name, int x, int y, bool for
 	case CK_Default:
 		break;
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
 	case CK_System:
 		sys_cursor_set(c->system_cursor);
 		break;
-		
+#else
 	case CK_SDL:
 		c->sdl_cursor.set();
 		SDL_ShowCursor(SDL_ENABLE);
 		break;
+#endif
 
 	case CK_OpenGL:
 		c->gl_cursor.draw(x, y);
