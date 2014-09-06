@@ -571,6 +571,7 @@ extern_lib_defs = {
 			if os.is("windows") then
 				if _OPTIONS["sdl2"] then
 					includedirs { libraries_dir .. "sdl2/include/SDL" }
+					defines { "CONFIG2_WSDL=0" }
 				else
 					includedirs { libraries_dir .. "sdl/include/SDL" }
 				end
