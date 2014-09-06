@@ -220,6 +220,16 @@ InReaction HotkeyInputHandler( const SDL_Event_* ev )
 			keycode = MOUSE_WHEELDOWN;
 			break;
 		}
+		else if (ev->ev.wheel.x > 0)
+		{
+			keycode = MOUSE_X2;
+			break;
+		}
+		else if (ev->ev.wheel.x < 0)
+		{
+			keycode = MOUSE_X1;
+			break;
+		}
 		return IN_PASS;
 #endif
 
