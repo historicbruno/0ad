@@ -430,7 +430,7 @@ InReaction CInput::ManuallyHandleEvent(const SDL_Event_* ev)
 				// In SDL2, we no longer get Unicode wchars via SDL_Keysym
 				// we use text input events instead and they provide UTF-8 chars
 				if (ev->ev.type == SDL_KEYDOWN && cooked == 0)
-					return IN_PASS;
+					return IN_HANDLED;
 				else if (ev->ev.type == SDL_TEXTINPUT)
 				{
 					std::wstring wstr = wstring_from_utf8(ev->ev.text.text);
