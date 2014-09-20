@@ -206,8 +206,16 @@ InReaction HotkeyInputHandler( const SDL_Event_* ev )
 
 	case SDL_MOUSEBUTTONDOWN:
 	case SDL_MOUSEBUTTONUP:
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+		// Mousewheel events are no longer buttons, but we want to maintain the order
+		// expected by g_mouse_buttons for compatibility
+		if (ev->ev.button.button >= SDL_BUTTON_X1)
+			keycode = MOUSE_BASE + (int)ev->ev.button.button + 2;
+		else
+#endif
 		keycode = MOUSE_BASE + (int)ev->ev.button.button;
 		break;
+
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	case SDL_MOUSEWHEEL:
 		if (ev->ev.wheel.y > 0)
