@@ -1,4 +1,4 @@
-/* Copyright (C) 2013 Wildfire Games.
+/* Copyright (C) 2014 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -744,6 +744,7 @@ InReaction conInputHandler(const SDL_Event_* ev)
 			g_Console->InsertChar(0, wstr[i]);
 		return IN_HANDLED;
 	}
+	// TODO: text editing events for IME support
 #endif
 
 	if (ev->ev.type != SDL_KEYDOWN)
