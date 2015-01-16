@@ -597,6 +597,17 @@ MESSAGE(SetBandbox,
 		((int, sy1))
 		);
 
+
+struct eObjectBrushReplaceMode { enum { NONE, ALL, TEMPLATE_MATCH }; };
+COMMAND(ObjectBrush, MERGE,
+		((std::wstring, id)) // should be in preview?
+		((sObjectSettings, settings))
+		((Position, pos))
+		((float, density)) // should be in preview?
+		((bool, rotate)) // should be in preview?
+		((int, replace))
+		);
+
 //////////////////////////////////////////////////////////////////////////
 
 QUERY(GetCinemaPaths,

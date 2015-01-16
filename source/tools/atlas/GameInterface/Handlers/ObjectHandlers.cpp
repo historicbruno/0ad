@@ -21,6 +21,7 @@
 #include <map>
 
 #include "MessageHandler.h"
+#include "../Brushes.h"
 #include "../CommandProc.h"
 #include "../SimState.h"
 #include "../View.h"
@@ -33,6 +34,7 @@
 #include "graphics/Terrain.h"
 #include "graphics/Unit.h"
 #include "lib/ogl.h"
+#include "lib/utf8.h"
 #include "maths/MathUtil.h"
 #include "maths/Matrix3D.h"
 #include "ps/CLogger.h"
@@ -41,6 +43,8 @@
 #include "renderer/Renderer.h"
 #include "renderer/WaterManager.h"
 #include "simulation2/Simulation2.h"
+#include "simulation2/components/ICmpObstruction.h"
+#include "simulation2/components/ICmpObstructionManager.h"
 #include "simulation2/components/ICmpOwnership.h"
 #include "simulation2/components/ICmpPosition.h"
 #include "simulation2/components/ICmpPlayer.h"
@@ -753,5 +757,177 @@ MESSAGEHANDLER(SetBandbox)
 {
 	AtlasView::GetView_Game()->SetBandbox(msg->show, (float)msg->sx0, (float)msg->sy0, (float)msg->sx1, (float)msg->sy1);
 }
+
+
+BEGIN_COMMAND(ObjectBrush)
+{
+	// TODO: merge and undo data
+	// (have to keep list of entities created, using struct with entity ID, template, owner, pos, rot, etc.)
+	// (as well as entities destroyed by replace)
+
+	struct Object
+	{
+		entity_id_t entityID;
+		CStrW templateName;
+		player_id_t owner;
+		entity_pos_t posX;
+		entity_pos_t posZ;
+		entity_angle_t rotY;
+	};
+
+	std::vector<Object> newObjects;
+	std::vector<Object> oldObjects; // replaced objects
+
+	// TODO: should a different size be used?
+	entity_pos_t TILE_WIDTH;
+	entity_pos_t TILE_HEIGHT;
+
+	cObjectBrush() : TILE_WIDTH(entity_pos_t::FromInt(4)), TILE_HEIGHT(entity_pos_t::FromInt(4))
+	{
+	}
+
+	void Do()
+	{
+		g_CurrentBrush.m_Centre = msg->pos->GetWorldSpace();
+
+		CVector3D pos = GetUnitPos(msg->pos, true); // don't really care about floating
+
+		CSimulation2& sim = *g_Game->GetSimulation2();
+		CmpPtr<ICmpObstructionManager> cmpObstructionManager(sim, SYSTEM_ENTITY);
+		CmpPtr<ICmpTemplateManager> cmpTemplateManager(sim, SYSTEM_ENTITY);
+		ENSURE(cmpObstructionManager && cmpTemplateManager);
+
+		NullObstructionFilter filter;
+		float density = msg->density;
+		int replaceMode = msg->replace;
+		bool randomAngle = msg->rotate;
+		CStrW name = *msg->id;
+		player_id_t player = msg->settings->player;
+
+		// TODO: need a good algorithm for placing random clumps
+		for (ssize_t dy = 0; dy < g_CurrentBrush.m_H; ++dy)
+		{
+			for (ssize_t dx = 0; dx < g_CurrentBrush.m_W; ++dx)
+			{
+				// TODO: what rotation to use if not random?
+				entity_angle_t angle = randomAngle ? entity_angle_t::FromFloat(((float)rand() / (float)RAND_MAX) * 2.0f * 3.14159f) : entity_angle_t::FromInt(0);
+				// tile to world unit conversion
+				entity_pos_t x = entity_pos_t::FromFloat(pos.X + ((float)dx - (float)g_CurrentBrush.m_W * 0.5f) * 4.0f);
+				entity_pos_t z = entity_pos_t::FromFloat(pos.Z + ((float)dy - (float)g_CurrentBrush.m_H * 0.5f) * 4.0f);
+
+				if (g_CurrentBrush.Get(dx, dy) > 0.5f
+						&& ((float)rand() / (float)RAND_MAX) <= density)
+				{
+					std::vector<entity_id_t> out;
+					if (cmpObstructionManager->TestStaticShape(filter, x, z, angle, TILE_WIDTH, TILE_HEIGHT, &out))
+					{
+						if (replaceMode == eObjectBrushReplaceMode::NONE)
+							continue;
+						if (replaceMode == eObjectBrushReplaceMode::TEMPLATE_MATCH)
+						{
+							bool canReplace = true;
+							for (size_t i = 0; i < out.size(); ++i)
+							{
+								if (cmpTemplateManager->GetCurrentTemplateName(out[i]) != name.ToUTF8())
+								{
+									canReplace = false;
+									break;
+								}
+							}
+
+							if (canReplace)
+							{
+								// replace (delete) old entities
+								// TODO: save them for undo
+								for (size_t i = 0; i < out.size(); ++i)
+									sim.DestroyEntity(out[i]);
+							}
+							else
+								continue;
+						}
+					}
+
+					entity_id_t ent = sim.AddEntity(name);
+					if (ent == INVALID_ENTITY)
+						return;
+
+					CmpPtr<ICmpPosition> cmpPosition(sim, ent);
+					if (cmpPosition)
+					{
+						cmpPosition->JumpTo(x, z);
+						cmpPosition->SetYRotation(angle);
+					}
+
+					CmpPtr<ICmpOwnership> cmpOwnership(sim, ent);
+					if (cmpOwnership)
+						cmpOwnership->SetOwner(player);
+
+					// Add obstruction for every entity
+					CmpPtr<ICmpObstruction> cmpObstruction(sim, ent);
+					if (!cmpObstruction)
+						cmpObstructionManager->AddStaticShape(ent, x, z, angle, TILE_WIDTH, TILE_HEIGHT, 0, 0);
+
+					Object newObject;
+					newObject.entityID = ent;
+					newObject.templateName = name;
+					newObject.owner = player;
+					newObject.posX = x;
+					newObject.posZ = z;
+					newObject.rotY = angle;
+					newObjects.push_back(newObject);
+				}
+			}
+		}
+	}
+
+	void Redo()
+	{
+		CSimulation2& sim = *g_Game->GetSimulation2();
+		CmpPtr<ICmpObstructionManager> cmpObstructionManager(sim, SYSTEM_ENTITY);
+		ENSURE(cmpObstructionManager);
+		for (size_t i = 0; i < newObjects.size(); ++i)
+		{
+			const Object& obj = newObjects[i];
+			// TODO: move this into helper shared with Do()
+			entity_id_t ent = sim.AddEntity(obj.templateName, obj.entityID);
+			if (ent == INVALID_ENTITY)
+				return;
+
+			CmpPtr<ICmpPosition> cmpPosition(sim, ent);
+			if (cmpPosition)
+			{
+				cmpPosition->JumpTo(obj.posX, obj.posZ);
+				cmpPosition->SetYRotation(obj.rotY);
+			}
+
+			CmpPtr<ICmpOwnership> cmpOwnership(sim, ent);
+			if (cmpOwnership)
+				cmpOwnership->SetOwner(obj.owner);
+
+			// Add obstruction for every entity
+			CmpPtr<ICmpObstruction> cmpObstruction(sim, ent);
+			if (!cmpObstruction)
+				cmpObstructionManager->AddStaticShape(ent, obj.posX, obj.posZ, obj.rotY, TILE_WIDTH, TILE_HEIGHT, 0, 0);
+		}
+
+		// TODO: re-delete replaced entities
+	}
+
+	void Undo()
+	{
+		CSimulation2& sim = *g_Game->GetSimulation2();
+		for (size_t i = 0; i < newObjects.size(); ++i)
+			sim.DestroyEntity(newObjects[i].entityID);
+
+		// TODO: restore replaced entities
+	}
+
+	void MergeIntoPrevious(cObjectBrush* prev)
+	{
+		prev->newObjects.insert(prev->newObjects.end(), newObjects.begin(), newObjects.end());
+		// TODO: merge replaced entities
+	}
+};
+END_COMMAND(ObjectBrush)
 
 }

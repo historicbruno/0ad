@@ -38,6 +38,8 @@ enum
 	ID_PlayerSelect,
 	ID_SelectObject,
 	ID_ToggleViewer,
+	ID_PlaceOptions,
+	ID_DeleteOptions,
 	ID_ViewerWireframe,
 	ID_ViewerMove,
 	ID_ViewerGround,
@@ -73,6 +75,8 @@ public:
 
 	void OnFirstDisplay();
 	void ShowActorViewer(bool show);
+	void ShowPlaceOptions(bool show);
+	void ShowDeleteOptions(bool show);
 
 private:
 	void OnViewerSetting(wxCommandEvent& evt);
@@ -90,6 +94,7 @@ private:
 	int m_ViewerPropPointsMode; // 0 disabled, 1 for point markers, 2 for point markers + axes
 
 	wxPanel* m_ViewerPanel;
+	wxPanel* m_ObjectBrushPanel;
 
 	ObjectSidebarImpl* p;
 	ScenarioEditor& m_ScenarioEditor;
@@ -183,7 +188,12 @@ ObjectSidebar::~ObjectSidebar()
 
 void ObjectSidebar::OnToolChange(ITool* tool)
 {
-	if (wxString(tool->GetClassInfo()->GetClassName()) == _T("ActorViewerTool"))
+	ObjectBottomBar* bottomBar = static_cast<ObjectBottomBar*>(m_BottomBar);
+
+	wxString toolName = wxString(tool->GetClassInfo()->GetClassName());
+
+	// Toggle actor viewer
+	if (toolName == _T("ActorViewerTool"))
 	{
 		p->m_ActorViewerActive = true;
 		p->ActorViewerPostToGame();
@@ -194,8 +204,24 @@ void ObjectSidebar::OnToolChange(ITool* tool)
 		p->m_ActorViewerActive = false;
 		wxDynamicCast(FindWindow(ID_ToggleViewer), wxButton)->SetLabel(_("Switch to Actor Viewer"));
 	}
+	bottomBar->ShowActorViewer(p->m_ActorViewerActive);
 
-	static_cast<ObjectBottomBar*>(m_BottomBar)->ShowActorViewer(p->m_ActorViewerActive);
+	// Handle object and delete brush options
+	if (toolName == _T("ObjectBrush"))
+	{
+		bottomBar->ShowPlaceOptions(true);
+		bottomBar->ShowDeleteOptions(false);
+	}
+	else if (toolName == _T("DeleteBrush"))
+	{
+		bottomBar->ShowPlaceOptions(false);
+		bottomBar->ShowDeleteOptions(true);
+	}
+	else
+	{
+		bottomBar->ShowPlaceOptions(false);
+		bottomBar->ShowDeleteOptions(false);
+	}
 }
 
 void ObjectSidebar::OnFirstDisplay()
@@ -270,7 +296,11 @@ void ObjectSidebar::OnSelectObject(wxCommandEvent& evt)
 	else
 	{
 		// On selecting an object, enable the PlaceObject tool with this object
-		m_ScenarioEditor.GetToolManager().SetCurrentTool(_T("PlaceObject"), &id);
+		g_SelectedObject = id;
+		g_SelectedObject.NotifyObservers();
+		// Slight hack: if the user already selected object brush, don't changeback to single placement
+		if (m_ScenarioEditor.GetToolManager().GetCurrentToolName() != _T("ObjectBrush"))
+			m_ScenarioEditor.GetToolManager().SetCurrentTool(_T("PlaceObject"));
 	}
 }
 
@@ -442,6 +472,68 @@ ObjectBottomBar::ObjectBottomBar(
 	m_ViewerPanel->Layout(); // prevents strange visibility glitch of the animation buttons on my machine (Vista 32-bit SP1) -- vtsj
 	m_ViewerPanel->Show(false);
 
+	// --- object brush options panel -------------------------------------------------------------------------------
+
+	m_ObjectBrushPanel = new wxPanel(this, wxID_ANY);
+	wxSizer* entityBrushSizer = new wxStaticBoxSizer(wxVERTICAL, m_ObjectBrushPanel, _("Object brush"));
+	{
+		// Brush modes: place / delete
+		wxSizer* gridSizer = new wxGridSizer(2);
+		gridSizer->Add(new ToolButton(scenarioEditor.GetToolManager(), m_ObjectBrushPanel, _("Place"), _T("ObjectBrush")), wxSizerFlags().Expand());
+		gridSizer->Add(new ToolButton(scenarioEditor.GetToolManager(), m_ObjectBrushPanel, _("Delete"), _T("DeleteBrush")), wxSizerFlags().Expand());
+		entityBrushSizer->Add(gridSizer, wxSizerFlags().Expand());
+	}
+	{
+		// Brush size
+		wxSizer* sizeSizer = new wxBoxSizer(wxHORIZONTAL);
+		sizeSizer->Add(new wxStaticText(m_ObjectBrushPanel, wxID_ANY, _("Size")), wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT));
+		sizeSizer->Add(new wxSpinCtrl(m_ObjectBrushPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0));
+		entityBrushSizer->Add(sizeSizer, wxSizerFlags().Expand());
+	}
+	{
+		// Place mode options
+		wxPanel* panel = new wxPanel(m_ObjectBrushPanel, ID_PlaceOptions);
+		wxSizer* placeSizer = new wxStaticBoxSizer(wxVERTICAL, panel, _("Options"));
+
+		wxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+		sizer->Add(new wxStaticText(panel, wxID_ANY, _("Density")), wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT));
+		sizer->Add(new wxSpinCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0));
+		placeSizer->Add(sizer, wxSizerFlags().Expand());
+
+		placeSizer->AddSpacer(2);
+
+		sizer = new wxBoxSizer(wxHORIZONTAL);
+		sizer->Add(new wxStaticText(panel, wxID_ANY, _("Random rotation")), wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT));
+		sizer->Add(new wxCheckBox(panel, wxID_ANY, wxEmptyString));
+		placeSizer->Add(sizer, wxSizerFlags().Expand());
+
+		placeSizer->AddSpacer(2);
+
+		wxArrayString replaceTypes;
+		replaceTypes.Add(_("None"));
+		replaceTypes.Add(_("All"));
+		replaceTypes.Add(_("Template match"));
+
+		sizer = new wxBoxSizer(wxHORIZONTAL);
+		sizer->Add(new wxStaticText(panel, wxID_ANY, _("Replace")), wxSizerFlags().Align(wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT));
+		sizer->Add(new wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, replaceTypes));
+		placeSizer->Add(sizer, wxSizerFlags().Expand());
+
+		panel->SetSizer(placeSizer);
+		entityBrushSizer->Add(panel, wxSizerFlags().Expand());
+	}
+	{
+		// Delete mode options
+		wxPanel* panel = new wxPanel(m_ObjectBrushPanel, ID_DeleteOptions);
+		entityBrushSizer->Add(panel, wxSizerFlags().Expand());
+	}
+
+	m_ObjectBrushPanel->SetSizer(entityBrushSizer);
+	mainSizer->Add(m_ObjectBrushPanel, wxSizerFlags().Expand());
+
+	m_ObjectBrushPanel->Layout();
+	//m_ObjectBrushPanel->Show(false);
+
 	// --- add player/variation selection -------------------------------------------------------------------------------
 
 	wxSizer* playerSelectionSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -502,6 +594,16 @@ void ObjectBottomBar::ShowActorViewer(bool show)
 {
 	m_ViewerPanel->Show(show);
 	Layout();
+}
+
+void ObjectBottomBar::ShowPlaceOptions(bool show)
+{
+	wxDynamicCast(FindWindow(ID_PlaceOptions), wxPanel)->Show(show);
+}
+
+void ObjectBottomBar::ShowDeleteOptions(bool show)
+{
+	wxDynamicCast(FindWindow(ID_DeleteOptions), wxPanel)->Show(show);
 }
 
 void ObjectBottomBar::OnViewerSetting(wxCommandEvent& evt)

@@ -22,3 +22,5 @@
 Observable<wxString> g_SelectedTexture;
 
 Observable<std::vector<AtlasMessage::ObjectID> > g_SelectedObjects;
+
+Observable<wxString> g_SelectedObject;

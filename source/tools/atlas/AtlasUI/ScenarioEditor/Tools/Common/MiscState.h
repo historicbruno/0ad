@@ -29,4 +29,6 @@ extern Observable<wxString> g_SelectedTexture;
 
 extern Observable<std::vector<AtlasMessage::ObjectID> > g_SelectedObjects;
 
+extern Observable<wxString> g_SelectedObject;
+
 #endif // INCLUDED_MISCSTATE
