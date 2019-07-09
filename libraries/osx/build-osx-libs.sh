@@ -169,7 +169,7 @@ then
   pushd $LIB_DIRECTORY
 
   # patch zlib's configure script to use our CFLAGS and LDFLAGS
-  (patch -p0 -i ../../patches/zlib_flags.diff && CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$ZLIB_DIR" --static && make ${JOBS} && make install) || die "zlib build failed"
+  (patch -Np0 -i ../../patches/zlib_flags.diff && CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./configure --prefix="$ZLIB_DIR" --static && make ${JOBS} && make install) || die "zlib build failed"
   popd
   touch .already-built
 else
@@ -521,7 +521,7 @@ then
   tar -xf $LIB_ARCHIVE
   pushd $LIB_DIRECTORY
 
-(./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" --with-include-path="${GMP_DIR}/include" --with-lib-path="${GMP_DIR}/lib" --prefix="$INSTALL_DIR" --disable-shared --disable-documentation --disable-openssl --disable-assembler && make ${JOBS} && make install) || die "Nettle build failed"
+  (./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" --with-include-path="${GMP_DIR}/include" --with-lib-path="${GMP_DIR}/lib" --prefix="$INSTALL_DIR" --disable-shared --disable-documentation --disable-openssl --disable-assembler && make ${JOBS} && make install) || die "Nettle build failed"
   popd
   touch .already-built
 else
@@ -553,7 +553,9 @@ then
   tar -xf $LIB_ARCHIVE
   pushd $LIB_DIRECTORY
 
-(./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" NETTLE_CFLAGS="-I${NETTLE_DIR}/include" NETTLE_LIBS="-L${NETTLE_DIR}/lib -lnettle" HOGWEED_CFLAGS="-I${NETTLE_DIR}/include" HOGWEED_LIBS="-L${NETTLE_DIR}/lib -lhogweed" GMP_CFLAGS="-I${GMP_DIR}/include" GMP_LIBS="-L${GMP_DIR}/lib -lgmp" --prefix="$INSTALL_DIR" --enable-shared=no --without-idn --with-included-unistring --with-included-libtasn1 --without-p11-kit --disable-tests && make ${JOBS} && make install) || die "GnuTLS build failed"
+  # GnuTLS configure script implicitly requires pkg-config, which is not available
+  # TODO: consider upstream patch to allow builds without pkg-config
+  (patch -Np0 -i ../../patches/gnutls-nettle-fix.diff && ./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" NETTLE_CFLAGS="-I${NETTLE_DIR}/include" NETTLE_LIBS="-L${NETTLE_DIR}/lib -lnettle" HOGWEED_CFLAGS="-I${NETTLE_DIR}/include" HOGWEED_LIBS="-L${NETTLE_DIR}/lib -lhogweed" GMP_CFLAGS="-I${GMP_DIR}/include" GMP_LIBS="-L${GMP_DIR}/lib -lgmp" --prefix="$INSTALL_DIR" --enable-shared=no --without-idn --with-included-unistring --with-included-libtasn1 --without-p11-kit --disable-tests && make ${JOBS} && make install) || die "GnuTLS build failed"
   popd
   touch .already-built
 else
