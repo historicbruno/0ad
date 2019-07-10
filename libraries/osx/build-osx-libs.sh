@@ -35,9 +35,9 @@ OGG_VERSION="libogg-1.3.3"
 VORBIS_VERSION="libvorbis-1.3.6"
 # gloox requires GnuTLS, GnuTLS requires Nettle and GMP
 GMP_VERSION="gmp-6.1.2"
-NETTLE_VERSION="nettle-3.4"
-GNUTLS_VERSION="gnutls-3.5.19"
-GLOOX_VERSION="gloox-1.0.20"
+NETTLE_VERSION="nettle-3.5.1"
+GNUTLS_VERSION="gnutls-3.6.8"
+GLOOX_VERSION="gloox-1.0.22"
 # NSPR is necessary for threadsafe Spidermonkey
 NSPR_VERSION="4.15"
 # OS X only includes part of ICU, and only the dylib
@@ -489,7 +489,7 @@ then
   tar -xf $LIB_ARCHIVE
   pushd $LIB_DIRECTORY
 
-  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" --enable-fat --disable-shared && make ${JOBS} && make install) || die "GMP build failed"
+  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" --disable-shared && make ${JOBS} && make install) || die "GMP build failed"
   popd
   touch .already-built
 else
@@ -521,7 +521,7 @@ then
   tar -xf $LIB_ARCHIVE
   pushd $LIB_DIRECTORY
 
-  (./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" --with-include-path="${GMP_DIR}/include" --with-lib-path="${GMP_DIR}/lib" --prefix="$INSTALL_DIR" --disable-shared --disable-documentation --disable-openssl --disable-assembler && make ${JOBS} && make install) || die "Nettle build failed"
+  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --with-include-path="${GMP_DIR}/include" --with-lib-path="${GMP_DIR}/lib" --prefix="$INSTALL_DIR" --disable-shared --disable-documentation --disable-openssl --disable-assembler && make ${JOBS} && make install) || die "Nettle build failed"
   popd
   touch .already-built
 else
@@ -553,9 +553,10 @@ then
   tar -xf $LIB_ARCHIVE
   pushd $LIB_DIRECTORY
 
-  # GnuTLS configure script implicitly requires pkg-config, which is not available
-  # TODO: consider upstream patch to allow builds without pkg-config
-  (patch -Np0 -i ../../patches/gnutls-nettle-fix.diff && ./configure CFLAGS="$CFLAGS -m64" CXXFLAGS="$CXXFLAGS -m64" LDFLAGS="$LDFLAGS -m64" NETTLE_CFLAGS="-I${NETTLE_DIR}/include" NETTLE_LIBS="-L${NETTLE_DIR}/lib -lnettle" HOGWEED_CFLAGS="-I${NETTLE_DIR}/include" HOGWEED_LIBS="-L${NETTLE_DIR}/lib -lhogweed" GMP_CFLAGS="-I${GMP_DIR}/include" GMP_LIBS="-L${GMP_DIR}/lib -lgmp" --prefix="$INSTALL_DIR" --enable-shared=no --without-idn --with-included-unistring --with-included-libtasn1 --without-p11-kit --disable-tests && make ${JOBS} && make install) || die "GnuTLS build failed"
+  # GnuTLS 3.6.8 added the TCP Fast Open feature, which requires connectx
+  # but that's only available on OS X 10.11+ (GnuTLS doesn't support SDK based builds yet)
+  # So we disable that functionality
+  (patch -Np0 -i ../../patches/gnutls-disable-tcpfastopen.diff && ./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" LIBS="-L${GMP_DIR}/lib -lgmp" NETTLE_CFLAGS="-I${NETTLE_DIR}/include" NETTLE_LIBS="-L${NETTLE_DIR}/lib -lnettle" HOGWEED_CFLAGS="-I${NETTLE_DIR}/include" HOGWEED_LIBS="-L${NETTLE_DIR}/lib -lhogweed" GMP_CFLAGS="-I${GMP_DIR}/include" GMP_LIBS="-L${GMP_DIR}/lib -lgmp" --prefix="$INSTALL_DIR" --enable-shared=no --without-idn --with-included-unistring --with-included-libtasn1 --without-p11-kit --disable-tests && make ${JOBS} && make install) || die "GnuTLS build failed"
   popd
   touch .already-built
 else

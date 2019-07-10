@@ -55,22 +55,9 @@ libraries/source/spidermonkey/mozjs-38.0.0/
 libraries/source/nvtt/src/build/
 
 # Build files (libs) (OS X)
-libraries/osx/boost/
-libraries/osx/enet/
-libraries/osx/gloox/
-libraries/osx/iconv/
-libraries/osx/icu/
-libraries/osx/libcurl/
-libraries/osx/libjpg/
-libraries/osx/libogg/
-libraries/osx/libpng/
-libraries/osx/libxml2/
-libraries/osx/miniupnpc/
-libraries/osx/nspr/
-libraries/osx/sdl2/
-libraries/osx/vorbis/
-libraries/osx/wxwidgets/
-libraries/osx/zlib/
+libraries/osx/*
+!libraries/osx/patches/
+!libraries/osx/build-osx-libs.sh
 libraries/source/fcollada/.already-built
 libraries/source/nvtt/.already-built
 
