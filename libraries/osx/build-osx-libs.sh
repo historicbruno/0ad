@@ -539,7 +539,7 @@ echo -e "Building GnuTLS..."
 LIB_VERSION="${GNUTLS_VERSION}"
 LIB_ARCHIVE="$LIB_VERSION.tar.xz"
 LIB_DIRECTORY="$LIB_VERSION"
-LIB_URL="https://www.gnupg.org/ftp/gcrypt/gnutls/v3.5/"
+LIB_URL="https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/"
 
 mkdir -p gnutls
 pushd gnutls > /dev/null
@@ -591,7 +591,7 @@ then
   pushd $LIB_DIRECTORY
 
   # TODO: pulls in libresolv dependency from /usr/lib
-  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" GNUTLS_CFLAGS="-I${GNUTLS_DIR}/include" GNUTLS_LIBS="-L${GNUTLS_DIR}/lib -lgnutls" --enable-shared=no --with-zlib="${ZLIB_DIR}" --without-libidn --with-gnutls="yes" --without-openssl --without-tests --without-examples && make ${JOBS} && make install) || die "gloox build failed"
+  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" GNUTLS_CFLAGS="-I${GNUTLS_DIR}/include" GNUTLS_LIBS="-L${GNUTLS_DIR}/lib -lgnutls" --enable-shared=no --with-zlib="${ZLIB_DIR}" --without-libidn --with-gnutls="yes" --without-openssl --without-tests --without-examples --disable-getaddrinfo && make ${JOBS} && make install) || die "gloox build failed"
   popd
   touch .already-built
 else
