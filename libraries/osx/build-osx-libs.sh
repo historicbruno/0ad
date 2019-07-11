@@ -491,7 +491,7 @@ then
 
   # NOTE: enable-fat in this case allows building and running on different CPUS.
   # Otherwise CPU-specific instructions will be used with no fallback for older CPUs.
-  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" --enable-fat --disable-shared && make ${JOBS} && make install) || die "GMP build failed"
+  (./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" --prefix="$INSTALL_DIR" --enable-fat --disable-shared --with-pic && make ${JOBS} && make install) || die "GMP build failed"
   popd
   touch .already-built
 else
