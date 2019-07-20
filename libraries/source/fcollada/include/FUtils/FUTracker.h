@@ -116,10 +116,10 @@ public:
 	/** Copy constructor.
 		@param _ptr The object to track. This pointer can be NULL to indicate
 			that no object should be tracked at this time. */
-	FUTrackedPtr(ObjectClass* _ptr = NULL) : ptr(_ptr)
+	FUTrackedPtr(ObjectClass* _ptr = nullptr) : ptr(_ptr)
 	{
-		if (ptr != NULL) FUTracker::TrackObject((FUTrackable*) ptr);
-		ptr = ptr;
+		if (ptr != nullptr)
+			FUTracker::TrackObject(static_cast<FUTrackable*>(ptr));
 	}
 
 	/** Destructor.
