@@ -32,10 +32,12 @@ namespace fm
 		@param buffer The memory buffer to deallocate.*/
 	typedef void (*FreeFunc)(void* buffer);
 
+#ifndef WIN32
 	/** Sets the FCollada memory allocation / deallocation functions.
 		@param a The Allocation function. Defaults to malloc.
 		@param f The Deallocation function. Defaults to free.*/
 	FCOLLADA_EXPORT void SetAllocationFunctions(AllocateFunc a, FreeFunc f);
+#endif
 
 	/** Allocates a requested amount of memory.
 		@param byteCount The amount of memory to allocate, in bytes.

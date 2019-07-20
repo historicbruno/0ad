@@ -11,6 +11,18 @@
 
 namespace fm
 {
+#ifdef WIN32
+	// TODO: allocator override on MSVC
+	void* Allocate(size_t byteCount)
+	{
+		return malloc(byteCount);
+	}
+
+	void Release(void* buffer)
+	{
+		free(buffer);
+	}
+#else
 	// default to something: static initialization!
 	AllocateFunc af = malloc;
 	FreeFunc ff = free;
@@ -32,5 +44,6 @@ namespace fm
 	{
 		(*ff)(buffer);
 	}
+#endif
 };
 
