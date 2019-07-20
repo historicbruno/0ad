@@ -2,13 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ExportImport">
-      <UniqueIdentifier>{5ca49b55-3846-4748-b153-7f8409dcaea8}</UniqueIdentifier>
+      <UniqueIdentifier>{61c13c43-5cc1-4d21-8738-64104e77457b}</UniqueIdentifier>
     </Filter>
     <Filter Include="External References">
-      <UniqueIdentifier>{bf5f8451-4ab5-4512-9381-faa9e0c8d1fb}</UniqueIdentifier>
+      <UniqueIdentifier>{35d4a381-7698-46fc-ae2c-461ceb4abbe8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Asset Management">
-      <UniqueIdentifier>{29b7fc7d-fb86-4e62-9717-b14deaddcc10}</UniqueIdentifier>
+      <UniqueIdentifier>{61df868e-4a89-4911-bf40-60559a54487f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

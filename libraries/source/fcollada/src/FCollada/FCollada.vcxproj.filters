@@ -2,145 +2,145 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="FMath">
-      <UniqueIdentifier>{2b61c997-170e-4343-87b6-23580d78cc4b}</UniqueIdentifier>
+      <UniqueIdentifier>{cacdd77c-c6e1-4881-b47f-f823b10d1489}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Collection">
-      <UniqueIdentifier>{24633298-9502-4327-a3f9-99da1dd2a1b1}</UniqueIdentifier>
+      <UniqueIdentifier>{b0301dcf-9263-476d-bca3-dfb9a9a9ee17}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Color">
-      <UniqueIdentifier>{544c7ff1-d080-4901-bb4e-02ebc9ccf77e}</UniqueIdentifier>
+      <UniqueIdentifier>{fda6af3b-e084-4d4f-b4fd-883c4653b078}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Interpolation">
-      <UniqueIdentifier>{9651268d-6c46-4237-b8d3-f12e3bc314a6}</UniqueIdentifier>
+      <UniqueIdentifier>{5e365c19-fa18-4692-868b-e6f686e019ff}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Scalar">
-      <UniqueIdentifier>{55caf4f5-bc59-46ab-9288-f5612862eead}</UniqueIdentifier>
+      <UniqueIdentifier>{f9541bad-8deb-4d5d-9540-3d5c78d70c70}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Vector">
-      <UniqueIdentifier>{03ab0d44-fd1c-4830-8d8b-b86ed976de47}</UniqueIdentifier>
+      <UniqueIdentifier>{ed3fe310-0885-4518-9471-0736e8ee64de}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Volume">
-      <UniqueIdentifier>{59f83399-4c79-4ae2-bc02-2b4c9455c72d}</UniqueIdentifier>
+      <UniqueIdentifier>{8911cece-becc-4efd-91b8-27120369c874}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Transforms">
-      <UniqueIdentifier>{b8d59fcb-dd99-48cb-98f8-942b9c99e7b3}</UniqueIdentifier>
+      <UniqueIdentifier>{ae4ab572-616f-45bf-a3de-77e6d93e1e27}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Transforms\Matrix">
-      <UniqueIdentifier>{132155c4-d52e-409f-902e-445d5b495271}</UniqueIdentifier>
+      <UniqueIdentifier>{528659ea-2b92-4a2a-a458-b2ec2760d282}</UniqueIdentifier>
     </Filter>
     <Filter Include="FMath\Transforms\Quaternion">
-      <UniqueIdentifier>{48993afe-b9aa-4a14-9b59-cc8fbcf20723}</UniqueIdentifier>
+      <UniqueIdentifier>{697bbfb3-1476-47be-b896-163e5f1bf4df}</UniqueIdentifier>
     </Filter>
     <Filter Include="PCH">
-      <UniqueIdentifier>{2dac8988-b6f7-49c7-becd-62f4938b415f}</UniqueIdentifier>
+      <UniqueIdentifier>{ab3d1acd-b839-43b4-8552-99860d85b1ad}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils">
-      <UniqueIdentifier>{59eb6048-e7ef-4330-a77e-62684b49411c}</UniqueIdentifier>
+      <UniqueIdentifier>{73e6d964-fefb-4aea-a108-b829625c5cb7}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\CRC32">
-      <UniqueIdentifier>{08fb49f8-0d4f-49aa-a4a9-351146aecdf2}</UniqueIdentifier>
+      <UniqueIdentifier>{b858c9f2-9723-40ff-9e4e-03b8c44bbc45}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Debug">
-      <UniqueIdentifier>{ef0ea1c1-3dab-4530-b64f-4da4af34bb6b}</UniqueIdentifier>
+      <UniqueIdentifier>{db1f3424-57d4-4c02-be7e-e0dd261785ff}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\File System">
-      <UniqueIdentifier>{8ed8f14a-db41-456c-af2e-9098aafbd55e}</UniqueIdentifier>
+      <UniqueIdentifier>{12ea84ed-dddb-4e9b-b5af-103d1f952b97}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\File System\Plugins">
-      <UniqueIdentifier>{91f6adaa-51b5-4c21-9276-221c160e5cec}</UniqueIdentifier>
+      <UniqueIdentifier>{df15c699-bae4-4bd4-9027-4f2e50a6c625}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\File System\Files">
-      <UniqueIdentifier>{41fe3a92-287b-464a-aee1-58d5acb1080d}</UniqueIdentifier>
+      <UniqueIdentifier>{00052857-a70b-4d89-9eac-2b2560434cb9}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Patterns">
-      <UniqueIdentifier>{9e8d4045-c1e4-422c-a5e5-57d887962e87}</UniqueIdentifier>
+      <UniqueIdentifier>{7e56d23e-ab13-4ffc-8f2b-0c5a0cc6e926}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Patterns\Parameters">
-      <UniqueIdentifier>{0ebb0660-c021-4a6a-a18a-61bc598ced36}</UniqueIdentifier>
+      <UniqueIdentifier>{15fd7fef-c71e-42f1-85ac-af134d3cc384}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Patterns\Functors &amp; Events">
-      <UniqueIdentifier>{7b644851-50d2-423e-92be-d91495e295f4}</UniqueIdentifier>
+      <UniqueIdentifier>{336dee50-a869-493b-8e44-a82c75bd5591}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Patterns\Base Objects">
-      <UniqueIdentifier>{67c6690a-44af-49d8-b915-504234ce0e77}</UniqueIdentifier>
+      <UniqueIdentifier>{9cb496eb-22e1-42ab-bf15-b8d05cb3bd4e}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Strings">
-      <UniqueIdentifier>{e2e204d9-2258-4d55-b4ff-e0b2609ab84d}</UniqueIdentifier>
+      <UniqueIdentifier>{97d08b4c-412c-4fae-ab40-9b76f9ead9bf}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Structures">
-      <UniqueIdentifier>{6a6972f5-d6e6-44dd-be2c-2742a1c97e22}</UniqueIdentifier>
+      <UniqueIdentifier>{b7b43d17-ff67-4f64-8c9b-e1d88aeb1c25}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\XML">
-      <UniqueIdentifier>{0e7d6f66-5bfb-473c-9d9c-6af7da0fc958}</UniqueIdentifier>
+      <UniqueIdentifier>{ca242f25-7dc1-4a0e-a18b-49319e82631a}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Base64">
-      <UniqueIdentifier>{c3f16a32-36c1-4f07-ac8d-525ebb1cf4f1}</UniqueIdentifier>
+      <UniqueIdentifier>{d35d495e-9bd7-4a56-bfbf-c20dc285919c}</UniqueIdentifier>
     </Filter>
     <Filter Include="FUtils\Synchronization">
-      <UniqueIdentifier>{fd68900b-31e2-4388-965f-9f0c71c7d280}</UniqueIdentifier>
+      <UniqueIdentifier>{c7feb223-7658-413f-b6e5-6cbe8ad2b68b}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument">
-      <UniqueIdentifier>{330b06ff-ac0e-46ea-b49a-2561d0039cd8}</UniqueIdentifier>
+      <UniqueIdentifier>{5d12eb1c-d567-4d7b-8141-ecb701ee0b10}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Instantiation">
-      <UniqueIdentifier>{b482a7fe-9fb6-4ae4-9dc1-1ddd8de99e90}</UniqueIdentifier>
+      <UniqueIdentifier>{53165eeb-1900-4e7f-9f72-efe34873d36d}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries">
-      <UniqueIdentifier>{cff14ae2-cd42-4e20-a133-a6f8875cb4d7}</UniqueIdentifier>
+      <UniqueIdentifier>{d660494d-42b9-48ff-9ef1-8473ab2819bb}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Animations">
-      <UniqueIdentifier>{07e2cdee-9cb8-4be7-b14f-1cc0ef947afb}</UniqueIdentifier>
+      <UniqueIdentifier>{0bbc2519-43e5-4659-b5ce-c6aaf32321a9}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Animations\Animated &amp; ParameterAnimatable">
-      <UniqueIdentifier>{bd0fa312-a742-408d-b873-1ad193bdbb01}</UniqueIdentifier>
+      <UniqueIdentifier>{abd1fee9-3211-4220-b76f-e6a4294ec7f7}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Geometries">
-      <UniqueIdentifier>{a1c5762b-0219-4281-b229-c324b445eb26}</UniqueIdentifier>
+      <UniqueIdentifier>{9c5cc799-6383-4fbe-bf03-88fd30216a45}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Materials">
-      <UniqueIdentifier>{6a521504-ce16-4a8d-a3fc-823fa50d5aea}</UniqueIdentifier>
+      <UniqueIdentifier>{3453942e-52d7-4e45-8e4d-44af3d5a96ac}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Materials\Effects">
-      <UniqueIdentifier>{55cd86a9-3968-4468-b346-a2d36e894f4c}</UniqueIdentifier>
+      <UniqueIdentifier>{b793faa8-d035-40c9-96ea-01516578165f}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Materials\Images and Textures">
-      <UniqueIdentifier>{fe44dace-29cc-4bae-ac19-c8b715751ace}</UniqueIdentifier>
+      <UniqueIdentifier>{3af3a43e-930d-41f7-823a-41a78bdd5635}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Controllers">
-      <UniqueIdentifier>{24373244-b689-4aea-9122-d76bc4f7f339}</UniqueIdentifier>
+      <UniqueIdentifier>{5bc957be-ce6c-496e-8426-559bee263db4}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Cameras and Lights">
-      <UniqueIdentifier>{6326ea41-5f23-401c-9f7b-b86ae47f1a9b}</UniqueIdentifier>
+      <UniqueIdentifier>{788cbfc3-4eb6-459e-abe2-afe90190a799}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\Emitters">
-      <UniqueIdentifier>{2d6754a9-7ba0-47cb-8045-85b0a494ce47}</UniqueIdentifier>
+      <UniqueIdentifier>{40eb4361-8210-484a-b2a5-c89651a402b6}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Libraries\ForceFields">
-      <UniqueIdentifier>{1d03326f-b8fe-4726-8584-0de7e4518568}</UniqueIdentifier>
+      <UniqueIdentifier>{133d28d2-56d1-43b3-a608-2d5a0e2b3477}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Document">
-      <UniqueIdentifier>{783f6490-0ba6-407a-b784-a1ea5d0fbaad}</UniqueIdentifier>
+      <UniqueIdentifier>{db778a5c-b9cc-4662-9c7c-746fabe75953}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Document\Extra">
-      <UniqueIdentifier>{84ba0586-958e-4f49-9aae-fc8db5e428f1}</UniqueIdentifier>
+      <UniqueIdentifier>{27ec59fa-aed6-4057-97f9-663eba00c4b6}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Document\External References">
-      <UniqueIdentifier>{d6b851c5-6d93-4b73-b42d-bf7dd9dc9387}</UniqueIdentifier>
+      <UniqueIdentifier>{08ad8838-305e-4993-b646-aee05eee73cf}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Physics">
-      <UniqueIdentifier>{95876dbf-ade8-4547-b4b5-034e2c65c204}</UniqueIdentifier>
+      <UniqueIdentifier>{89c1b3ea-f7a9-4bbb-8cbd-2de1f19e460e}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Physics\Parameters">
-      <UniqueIdentifier>{467eb55e-89c6-4683-9049-a78292fd35ce}</UniqueIdentifier>
+      <UniqueIdentifier>{3654a775-009a-45bb-a19b-aa61de868158}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Scene Graph">
-      <UniqueIdentifier>{e4a300a8-7472-4693-9b2b-d92c2df02045}</UniqueIdentifier>
+      <UniqueIdentifier>{b7b76b7c-b701-42b2-9f0d-d53491511800}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCDocument\Object">
-      <UniqueIdentifier>{cf1b72c1-1bb0-43b0-bf22-d57989fbef0a}</UniqueIdentifier>
+      <UniqueIdentifier>{3b1b2d4e-bc5e-4318-9637-3513ded08be2}</UniqueIdentifier>
     </Filter>
     <Filter Include="FCollada">
-      <UniqueIdentifier>{27e2567f-6902-4922-961b-d716af25480b}</UniqueIdentifier>
+      <UniqueIdentifier>{f6eb0d82-600f-4a49-aeca-5a0b0d98377b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

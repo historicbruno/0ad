@@ -2,13 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Importer">
-      <UniqueIdentifier>{50c54fe2-8bc5-4733-87db-0f60ed81bc33}</UniqueIdentifier>
+      <UniqueIdentifier>{23624ef1-22a1-4e50-9277-5da98efcc9d2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Exporter">
-      <UniqueIdentifier>{2c4355fc-037a-461e-a80f-16dcd61690ca}</UniqueIdentifier>
+      <UniqueIdentifier>{6d143ecb-ed3c-46ee-98f8-4cba62a78fdc}</UniqueIdentifier>
     </Filter>
     <Filter Include="Helpers">
-      <UniqueIdentifier>{22e353d8-bb13-47e9-9f14-bb8a0b54e54a}</UniqueIdentifier>
+      <UniqueIdentifier>{46cc70ef-1147-4f89-893c-9c9f8813e7f8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
