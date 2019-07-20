@@ -46,7 +46,11 @@ bool FUTestBed::RunTestbed(FUTestSuite* headTestSuite)
 		returnCode = MessageBox(NULL, TO_FSTRING(sz).c_str(), FC("Testbed"), MB_OKCANCEL);
 		if (returnCode == IDCANCEL)
 		{
-			snprintf(sz, 1024, "write %s ", filename.c_str());
+# ifdef _UNICODE
+			snprintf(sz, 1024, "write %ls ", filename.c_str());
+# else
+			snprintf(sz, 1024, "write %hs ", filename.c_str());
+# endif
 			sz[1023] = 0;
 			system(sz);
 			return false;
