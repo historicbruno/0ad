@@ -217,7 +217,7 @@ bool FArchiveXML::LoadPhysicsRigidBodyParameters(FCDPhysicsRigidBodyParameters* 
 		}
 
 		float radiusCubed = 0.75f * volume / (float)FMath::Pi;
-		float I = 0.4f * parameters->GetMass() * pow(radiusCubed, 2.0f / 3.0f);
+		float I = 0.4f * parameters->GetMass() * (float)pow(radiusCubed, 2.0f / 3.0f);
 		parameters->SetInertia(FMVector3(I, I, I));
 		parameters->SetInertiaAccurate(false);
 	}

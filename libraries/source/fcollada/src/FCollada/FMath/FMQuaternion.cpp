@@ -149,14 +149,14 @@ FMVector3 FMQuaternion::ToEuler(FMVector3* previousAngles) const
 	{ 
 		angles.y = (float) FMath::Pi / 2;
 
-		angles.x = 2 * atan2(x,w);
+		angles.x = 2.0f * (float) atan2(x,w);
 		angles.z = 0;
 	}
 	else if (siny < -1.0f + FLT_TOLERANCE) // singularity at south pole
 	{
 		angles.y = (float) -FMath::Pi / 2;
 
-		angles.x = -2 * atan2(x,w);
+		angles.x = -2.0f * (float) atan2(x,w);
 		angles.z = 0;
 	}
 	else
