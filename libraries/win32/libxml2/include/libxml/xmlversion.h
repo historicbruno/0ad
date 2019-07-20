@@ -29,28 +29,28 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * the version string like "1.2.3"
  */
-#define LIBXML_DOTTED_VERSION "2.9.4"
+#define LIBXML_DOTTED_VERSION "2.9.9"
 
 /**
  * LIBXML_VERSION:
  *
  * the version number: 1.2.3 value is 10203
  */
-#define LIBXML_VERSION 20904
+#define LIBXML_VERSION 20909
 
 /**
  * LIBXML_VERSION_STRING:
  *
  * the version number string, 1.2.3 value is "10203"
  */
-#define LIBXML_VERSION_STRING "20904"
+#define LIBXML_VERSION_STRING "20909"
 
 /**
  * LIBXML_VERSION_EXTRA:
  *
  * extra version information, used to show a CVS compilation
  */
-#define LIBXML_VERSION_EXTRA ""
+#define LIBXML_VERSION_EXTRA "-GITv2.9.9-rc2-2-g7c4949afa"
 
 /**
  * LIBXML_TEST_VERSION:
@@ -58,7 +58,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  * Macro to check that the libxml version in use is compatible with
  * the version the software has been compiled against
  */
-#define LIBXML_TEST_VERSION xmlCheckVersion(20904);
+#define LIBXML_TEST_VERSION xmlCheckVersion(20909);
 
 #ifndef VMS
 #if 0
@@ -174,7 +174,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the FTP support is configured in
  */
-#if 1
+#if 0
 #define LIBXML_FTP_ENABLED
 #endif
 
@@ -183,7 +183,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the HTTP support is configured in
  */
-#if 1
+#if 0
 #define LIBXML_HTTP_ENABLED
 #endif
 
@@ -201,7 +201,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the HTML support is configured in
  */
-#if 1
+#if 0
 #define LIBXML_HTML_ENABLED
 #endif
 
@@ -410,9 +410,6 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
 #endif
 
 #ifdef __GNUC__
-#ifdef HAVE_ANSIDECL_H
-#include <ansidecl.h>
-#endif
 
 /**
  * ATTRIBUTE_UNUSED:
